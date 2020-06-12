@@ -33,3 +33,7 @@ Community Forum
 ---------------
   * https://www.opencontentplatform.org/forums/forum/public/
 
+License
+-------
+  * GNU Lesser General Public License: https://github.com/opencontentplatform/ocp/blob/master/LICENSE
+
