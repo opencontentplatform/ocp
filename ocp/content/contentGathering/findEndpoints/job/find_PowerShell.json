@@ -1,0 +1,45 @@
+{
+	"jobName" : "find_PowerShell",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"protocolType" : "ProtocolPowerShell",
+	"numberOfJobThreads" : 30,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 30,
+	"endpointQueueSize" : 30,
+	"jobScript" : "find_PowerShell",
+	"endpointQuery" : "ipv4NoSSH",
+	"endpointIdColumn" : "address",
+	"loadConfigGroups" : true,
+	"isDisabled" : false,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"portTestBeforeConnectionAttempt" : true,
+		"portsToTest" : [5985, 5986],
+		"printDebug" : false
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : "1,3",
+		"day_of_week" : "sun",
+		"hour" : 23,
+		"minute" : 1,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

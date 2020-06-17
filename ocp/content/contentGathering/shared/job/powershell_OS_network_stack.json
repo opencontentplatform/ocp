@@ -1,0 +1,40 @@
+{
+	"jobName" : "powershell_OS_network_stack",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolPowerShell",
+	"numberOfJobThreads" : 10,
+	"jobScript" : "shell_OS_network_stack",
+	"endpointQuery" : "powershell_with_node_ips",
+	"endpointIdColumn" : "ipaddress",
+	"loadConfigGroups" : true,
+	"updateParameters" : true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"printDebug" : true
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : "mon,tue,wed,thu,fri,sat",
+		"hour" : "1,5,9,13,17,21",
+		"minute" : 33,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

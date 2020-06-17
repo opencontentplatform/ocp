@@ -1,0 +1,32 @@
+{
+	"jobName" : "normalize_job",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "normalize_job",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"inputParameters" : {
+		"printDebug" : true
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : null,
+		"minute" : null,
+		"second" : "31",
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

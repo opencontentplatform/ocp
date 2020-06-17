@@ -1,0 +1,45 @@
+[
+	{
+		"description": "Match private 192.168.x.x addresses. Replace with [IpLocal:<integer>].",
+		"matchExpression": "192\\.168\\.\\d{1,3}\\.\\d{1,3}",
+		"ignoreExpressions": [],
+		"replaceStringStart": "[IpLocal:",
+		"replaceStringEnd": "]",
+		"replaceType": "integer"
+	},
+	{
+		"description": "Match private 10.x.x.x addresses. Replace with [IpCorp:<integer>].",
+		"matchExpression": "10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}",
+		"ignoreExpressions": [],
+		"replaceStringStart": "[IpCorp:",
+		"replaceStringEnd": "]",
+		"replaceType": "integer"
+	},
+	{
+		"description": "Match any remaining IPv4 addresses, excluding 255.255.255.x, 0.0.0.0, 127.0.0.1. Replace with [IpAddress:<integer>].",
+		"matchExpression": "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}",
+		"ignoreExpressions": ["255\\.255\\.255\\.\\d{1,3}",
+							  "0\\.0\\.0\\.0",
+							  "127\\.0\\.0\\.1"],
+		"replaceStringStart": "[IpAddress:",
+		"replaceStringEnd": "]",
+		"replaceType": "integer"
+	},
+	{
+		"description": "Match server naming conventions. Replace all matches [e.g. CAQWAPP020 or nydxdb001] with a UUID.",
+		"matchExpression": "(?:(?:[Nn][Yy])|(?:[Cc][Aa]))[DdQqPp][WwXx]\\D{2,3}\\d{3}",
+		"ignoreExpressions": [],
+		"replaceStringStart": "",
+		"replaceStringEnd": "",
+		"replaceType": "uuid"
+	},
+	{
+		"description": "Match a named context (often in domain names) [e.g. CMSConstruct]. Replace with a static value.",
+		"matchExpression": "[Cc][Mm][Ss][Cc]onstruct",
+		"ignoreExpressions": [],
+		"replaceStringStart": "",
+		"replaceStringEnd": "",
+		"replaceType": "static",
+		"replaceValue": "anonymous"
+	}
+]

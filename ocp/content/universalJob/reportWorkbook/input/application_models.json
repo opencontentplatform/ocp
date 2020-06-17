@@ -1,0 +1,66 @@
+{
+	"objects": [{
+		"label": "APPLICATION",
+		"class_name": "BusinessApplication",
+		"attributes": ["caption", "element_id", "short_name", "time_created", "time_updated"],
+		"minimum": "1",
+		"maximum": "",
+		"linchpin": true
+	}, {
+		"label": "ENVIRONMENT",
+		"class_name": "EnvironmentGroup",
+		"attributes": ["name"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "SOFTWARE",
+		"class_name": "SoftwareGroup",
+		"attributes": ["name"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "LOCATION",
+		"class_name": "LocationGroup",
+		"attributes": ["name"],
+		"minimum": "0",
+		"maximum": ""
+	}, {
+		"label": "MODELOBJECT",
+		"class_name": "ModelObject",
+		"attributes": ["model_object_name","target_match_class","target_match_attribute","target_match_value","target_container"],
+		"minimum": "0",
+		"maximum": ""
+	}, {
+		"label": "DISCOVERABLE",
+		"class_name": "SoftwareElement",
+		"attributes": ["caption"],
+		"minimum": "0",
+		"maximum": ""
+	}],
+	"links": [{
+		"label": "APP_TO_ENV",
+		"class_name": "Contain",
+		"first_id": "APPLICATION",
+		"second_id": "ENVIRONMENT"
+	}, {
+		"label": "ENV_TO_SW",
+		"class_name": "Contain",
+		"first_id": "ENVIRONMENT",
+		"second_id": "SOFTWARE"
+	}, {
+		"label": "SW_TO_LOC",
+		"class_name": "Contain",
+		"first_id": "SOFTWARE",
+		"second_id": "LOCATION"
+	}, {
+		"label": "LOC_TO_OBJECT",
+		"class_name": "Contain",
+		"first_id": "LOCATION",
+		"second_id": "MODELOBJECT"
+	}, {
+		"label": "OBJECT_TO_PROCESS",
+		"class_name": "Usage",
+		"first_id": "MODELOBJECT",
+		"second_id": "DISCOVERABLE"
+	}]
+}

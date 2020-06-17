@@ -1,0 +1,45 @@
+{
+	"ClientStartup" : {
+		"fileName" : "clientStartup.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(filename)-21s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ClientStatus" : {
+		"fileName" : "clientStatus.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(filename)-21s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ContentGatheringClient" : {
+		"fileNameJson" : "contentGatheringClientJson.log",
+		"fileNameText" : "contentGatheringClient.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S.%f%z"
+	},
+	"ResultProcessingClient" : {
+		"fileNameJson" : "resultsProcessingClientJson.log",
+		"fileNameText" : "resultsProcessingClient.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S.%f%z"
+	},
+	"UniversalJobClient" : {
+		"fileNameJson" : "universalJobClientJson.log",
+		"fileNameText" : "universalJobClient.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S.%f%z"
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"jobName" : "get_python_modules",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "get_python_modules",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "all",
+	"endpointIdColumn" : "value",
+	"isDisabled" : false,
+	"inputParameters" : {
+		"printDebug" : true
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : 7,
+		"minute" : 1,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

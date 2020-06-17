@@ -1,0 +1,55 @@
+{
+	"objects": [{
+		"label": "SERVER",
+		"class_name": "Node",
+		"attributes": ["caption"],
+		"minimum": "1",
+		"maximum": "",
+		"linchpin": true
+	}, {
+		"label": "PROCESS1",
+		"class_name": "ProcessFingerprint",
+		"attributes": ["name", "process_hierarchy", "process_owner", "path_from_process"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "PORT",
+		"class_name": "TcpIpPort",
+		"attributes": ["caption", "port_type", "ip"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "PROCESS2",
+		"class_name": "ProcessFingerprint",
+		"attributes": ["name", "process_hierarchy", "process_owner", "path_from_process"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "CLIENT",
+		"class_name": "Node",
+		"attributes": ["caption"],
+		"minimum": "1",
+		"maximum": ""
+	}],
+	"links": [{
+		"label": "SERVER_TO_PROCESS1",
+		"class_name": "Enclosed",
+		"first_id": "SERVER",
+		"second_id": "PROCESS1"
+	}, {
+		"label": "PROCESS1_TO_PORT",
+		"class_name": "Usage",
+		"first_id": "PROCESS1",
+		"second_id": "PORT"
+	}, {
+		"label": "PORT_TO_PROCESS2",
+		"class_name": "ServerClient",
+		"first_id": "PORT",
+		"second_id": "PROCESS2"
+	}, {
+		"label": "CLIENT_TO_PROCESS2",
+		"class_name": "Enclosed",
+		"first_id": "CLIENT",
+		"second_id": "PROCESS2"
+	}]
+}

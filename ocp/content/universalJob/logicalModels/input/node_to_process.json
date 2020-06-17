@@ -1,0 +1,52 @@
+{
+	"objects": [{
+			"label": "Node",
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [],
+			"linchpin": true
+		},
+		{
+			"label": "ProcessFingerprint",
+			"class_name": "ProcessFingerprint",
+			"attributes": ["name", "path_from_process", "process_hierarchy", "process_args", "process_owner"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": []
+		},
+		{
+			"label": "IpAddress",
+			"class_name": "IpAddress",
+			"attributes": ["address"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": []
+		},
+		{
+			"label": "NameRecord",
+			"class_name": "NameRecord",
+			"attributes": ["name", "value"],
+			"minimum": "0",
+			"maximum": "",
+			"filter": []
+		}
+	],
+	"links": [{
+		"label": "Node_to_ProcessFingerprint",
+		"class_name": "Enclosed",
+		"first_id": "Node",
+		"second_id": "ProcessFingerprint"
+	},{
+		"label": "Node_to_IpAddress",
+		"class_name": "Usage",
+		"first_id": "Node",
+		"second_id": "IpAddress"
+	},{
+		"label": "IpAddress_to_NameRecord",
+		"class_name": "Usage",
+		"first_id": "IpAddress",
+		"second_id": "NameRecord"
+	}]
+}

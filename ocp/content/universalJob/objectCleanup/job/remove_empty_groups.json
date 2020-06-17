@@ -1,0 +1,33 @@
+{
+	"jobName" : "remove_empty_groups",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "remove_empty_groups",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"inputParameters" : {
+		"printDebug" : true,
+		"objectTypes" : ["ProcessSignature", "SoftwareSignature"]
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : 6,
+		"minute" : 7,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

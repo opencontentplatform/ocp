@@ -1,0 +1,43 @@
+{
+	"jobName" : "find_SSH_test",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"protocolType" : "ProtocolSsh",
+	"numberOfJobThreads" : 1,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 6,
+	"endpointQueueSize" : 20,
+	"jobScript" : "find_SSH",
+	"endpointQuery" : "ipv4NoPowerShell",
+	"endpointIdColumn" : "address",
+	"loadConfigGroups" : true,
+	"singleEndpointTest" : false,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"portTestBeforeConnectionAttempt" : true,
+		"portsToTest" : [22],
+		"printDebug" : true
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 21,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

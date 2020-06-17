@@ -1,0 +1,39 @@
+{
+	"objects": [
+		{
+			"label": "Server",
+			"class_name": "Node",
+			"attributes": ["caption"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},
+		{
+			"label": "Process",
+			"class_name": "ProcessFingerprint",
+			"attributes": ["name", "path_from_process", "process_owner", "process_hierarchy"],
+			"minimum": "1",
+			"maximum": ""
+		},
+		{
+			"label": "Software",
+			"class_name": "SoftwareFingerprint",
+			"attributes": [ "name", "software_info", "software_version", "vendor"],
+			"minimum": "0",
+			"maximum": ""
+		}
+	],
+	"links": [
+		{
+			"label": "Server_to_Process",
+			"class_name": "Enclosed",
+			"first_id": "Server",
+			"second_id": "Process"
+		},{
+			"label": "Software_to_Process",
+			"class_name": "Usage",
+			"first_id": "Software",
+			"second_id": "Process"
+		}
+	]
+}

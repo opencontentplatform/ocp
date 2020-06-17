@@ -1,0 +1,38 @@
+{
+	"jobName" : "find_ICMP_cmdline_test",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"numberOfJobThreads" : 10,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 50,
+	"endpointQueueSize" : 100,
+	"jobScript" : "find_ICMP_cmdline",
+	"endpointScript" : "realmScope",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"printDebug" : false
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 60,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

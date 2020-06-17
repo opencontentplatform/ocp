@@ -1,0 +1,42 @@
+{
+	"jobName" : "find_WMI_test",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"protocolType" : "ProtocolWmi",
+	"numberOfJobThreads" : 3,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 1,
+	"endpointQueueSize" : 6,
+	"jobScript" : "find_WMI",
+	"endpointQuery" : "ipv4NoSSH",
+	"endpointIdColumn" : "address",
+	"singleEndpointTest" : false,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"portTestBeforeConnectionAttempt" : true,
+		"portsToTest" : [135],
+		"printDebug" : false
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 31,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

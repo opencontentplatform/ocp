@@ -1,0 +1,34 @@
+{
+	"jobName" : "remove_stale_dynamic_data",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "remove_stale_objects",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"inputParameters" : {
+		"printDebug" : true,
+		"objectTypes" : ["ProcessFingerprint", "ProcessSignature", "SoftwareFingerprint", "SoftwareSignature", "TcpIpPortClient", "TcpIpPort"],
+		"thresholdInNumberOfDays" : 90
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : 2,
+		"minute" : 5,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

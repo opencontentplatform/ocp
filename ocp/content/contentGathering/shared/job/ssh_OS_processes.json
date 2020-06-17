@@ -1,0 +1,31 @@
+{
+	"jobName" : "ssh_OS_processes",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolSsh",
+	"numberOfJobThreads" : 10,
+	"jobScript" : "shell_OS_processes",
+	"endpointQuery" : "ssh_with_node",
+	"endpointIdColumn" : "ipaddress",
+	"loadConfigGroups" : true,
+	"updateParameters" : true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"printDebug" : false
+	},
+	"triggerType" : "date",
+	"triggerArgs" : {
+		"run_date" : "2018-06-05 11:58:00"
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

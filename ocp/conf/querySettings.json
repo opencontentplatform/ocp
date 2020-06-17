@@ -1,0 +1,6 @@
+{
+	"waitSecondsBetweenCacheCleanupJobs" : 300,
+	"maxSecondsForRetainingCachedQueryResult" : 1800,
+	"kafkaPollTimeOut": 2,
+	"kafkaPollMaxRecords" : 1
+}

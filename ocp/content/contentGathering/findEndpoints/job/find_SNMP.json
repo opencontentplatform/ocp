@@ -1,0 +1,43 @@
+{
+	"jobName" : "find_SNMP",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"protocolType" : "ProtocolSnmp",
+	"numberOfJobThreads" : 30,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 30,
+	"endpointQueueSize" : 30,
+	"jobScript" : "find_SNMP",
+	"endpointQuery" : "ipv4NoShell",
+	"endpointIdColumn" : "address",
+	"isDisabled" : false,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"queryForFQDN" : true,
+		"printDebug" : true
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : "1,3",
+		"day_of_week" : "sun",
+		"hour" : 23,
+		"minute" : 31,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

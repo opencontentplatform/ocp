@@ -1,0 +1,42 @@
+{
+	"jobName" : "powershell_sample_hostname",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolPowerShell",
+	"numberOfJobThreads" : 5,
+	"jobScript" : "shell_sample_hostname",
+	"endpointQuery" : "powershell_with_node",
+	"endpointIdColumn" : "ipaddress",
+	"loadConfigGroups" : true,
+	"updateParameters" : true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"printDebug" : true,
+		"answer": 42,
+		"john": "doe"
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : "mon,tue,wed,thu,fri",
+		"hour" : 11,
+		"minute" : 2,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

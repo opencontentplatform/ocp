@@ -1,0 +1,134 @@
+{
+	"Main" : {
+		"fileNameJson" : "openContentPlatform.log",
+		"fileNameText" : "openContentPlatform.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S.%f%z"
+	},
+	"QueryService" : {
+		"_fileName" : "queryService.log",
+		"fileNameJson" : "queryServiceJson.log",
+		"fileNameText" : "queryService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"QueryServiceDebug" : {
+		"_fileName" : "queryServiceDebug.log",
+		"fileNameJson" : "queryServiceJson.log",
+		"fileNameText" : "queryService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"UniversalJobService" : {
+		"_fileName" : "universalJobService.log",
+		"fileNameJson" : "universalJobServiceJson.log",
+		"fileNameText" : "universalJobService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ContentGatheringService" : {
+		"_fileName" : "contentGatheringService.log",
+		"fileNameJson" : "contentGatheringServiceJson.log",
+		"fileNameText"  : "contentGatheringService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S.%f%z"
+	},
+	"ResultProcessingService" : {
+		"_fileName" : "resultProcessingService.log",
+		"fileNameJson" : "resultProcessingServiceJson.log",
+		"fileNameText" : "resultProcessingService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S.%f%z"
+	},
+	"LogCollectionService" : {
+		"_fileName" : "logCollectionService.log",
+		"fileNameJson" : "logCollectionServiceJson.log",
+		"fileNameText" : "logCollectionService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"TransportService" : {
+		"_fileName" : "transportService.log",
+		"fileNameJson" : "transportServiceJson.log",
+		"fileNameText" : "transportService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ServiceCommunication" : {
+		"_fileName" : "serviceCommunication.log",
+		"fileName" : "serviceCommunication.log",
+		"fileNameJson" : "serviceCommunicationJson.log",
+		"fileNameText" : "serviceCommunication.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ApiService" : {
+		"_fileName" : "apiService.log",
+		"fileNameJson" : "apiServiceJson.log",
+		"fileNameText" : "apiService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ApiApplication" : {
+		"_fileName" : "apiApplication.log",
+		"fileName" : "apiApplication.log",
+		"fileNameJson" : "apiApplicationJson.log",
+		"fileNameText" : "apiApplication.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"ServerSideService" : {
+		"_fileName" : "serverSideService.log",
+		"fileNameJson" : "serverSideServiceJson.log",
+		"fileNameText" : "serverSideService.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"TestService" : {
+		"_fileName" : "test.log",
+		"fileName" : "test.log",
+		"fileNameJson" : "testJson.log",
+		"fileNameText" : "test.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	}
+}

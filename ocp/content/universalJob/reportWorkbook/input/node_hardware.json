@@ -1,0 +1,22 @@
+{
+	"objects": [{
+			"class_name": "Node",
+			"attributes": ["hostname"],
+			"minimum": "1",
+			"maximum": "1",
+			"linchpin": true
+		},{
+			"class_name": "HardwareNode",
+			"attributes": ["vendor", "model", "serial_number", "bios_info", "uuid"],
+			"minimum": "1",
+			"maximum": ""
+		}
+	],
+	"links": [{
+		"label": "NODE_TO_SHELL",
+		"class_name": "Usage",
+		"attributes": [],
+		"first_id": "Node",
+		"second_id": "HardwareNode"
+	}]
+}

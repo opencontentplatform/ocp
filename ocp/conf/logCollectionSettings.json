@@ -1,0 +1,4 @@
+{
+	"kafkaPollTimeOut": 2,
+	"kafkaPollMaxRecords" : 1
+}

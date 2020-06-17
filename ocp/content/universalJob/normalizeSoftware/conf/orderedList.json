@@ -1,0 +1,21 @@
+[
+	{
+		"inputName" : "mf_obm_gateway",
+		"transformName" : "mf_obm_gateway"
+	},{
+		"inputName" : "crowdstrike_antivirus",
+		"transformName" : "crowdstrike_antivirus"
+	},{
+		"inputName" : "ivanti",
+		"transformName" : "ivanti"
+	},{
+		"inputName" : "oracle_linux_dbs",
+		"transformName" : "oracle_linux_dbs"
+	},{
+		"inputName" : "python_software",
+		"transformName" : "python_software"
+	},{
+		"inputName" : "python_process_only",
+		"transformName" : "python_process_only"
+	}
+]

@@ -1,0 +1,30 @@
+{
+	"objects": [{
+		"class_name": "IpAddress",
+		"attributes": ["address", "realm"],
+		"minimum": "1",
+		"maximum": "",
+		"filter": [{
+				"condition": {
+					"attribute": "is_ipv4",
+					"operator": "==",
+					"value": true
+				}
+			},{
+				"condition": {
+					"attribute": "address",
+					"operator": "!=",
+					"value": "127.0.0.1"
+				}
+			},{
+				"condition": {
+					"attribute": "address",
+					"operator": "!=",
+					"value": "0.0.0.0"
+				}
+			}
+		],
+		"linchpin": true
+	}],
+	"links": []
+}

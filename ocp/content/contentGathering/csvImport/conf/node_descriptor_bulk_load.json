@@ -1,0 +1,61 @@
+{
+	"ciDefinitions" : [
+		{
+			"ciType" : "NodeServer",
+			"name" : "genericNode"
+		},{
+			"ciType" : "HardwareNode",
+			"name" : "hardware"
+		}
+	],
+	"linkDefinitions" : [
+		{
+			"linkType" : "Usage",
+			"end1ciName" : "genericNode",
+			"end2ciName" : "hardware"
+		}
+	],
+	"fieldMappings" : [
+		{
+			## Hostname
+			"fieldNumber" : 1,
+			"ciDefinition" : "genericNode",
+			"attributeName" : "hostname"
+		},{
+			## Domain
+			"fieldNumber" : 2,
+			"ciDefinition" : "genericNode",
+			"attributeName" : "domain",
+			"required" : false
+		},{
+			## Description
+			"fieldNumber" : 3,
+			"ciDefinition" : "genericNode",
+			"attributeName" : "description",
+			"required" : false
+		},{
+			## Class
+			"fieldNumber" : 4,
+			"ciDefinition" : "genericNode",
+			#"converter" : "valueToCiType"
+			"attributeName" : "object_type"
+		},{
+			## Serial Number
+			"fieldNumber" : 5,
+			"ciDefinition" : "hardware",
+			"attributeName" : "serial_number"
+		},{
+			## UUID
+			"fieldNumber" : 6,
+			"ciDefinition" : "hardware",
+			"attributeName" : "uuid",
+			"required" : false
+		},{
+			## Asset Tag
+			"fieldNumber" : 7,
+			"ciDefinition" : "hardware",
+			"attributeName" : "asset_tag",
+			"required" : false
+		}
+	]
+}

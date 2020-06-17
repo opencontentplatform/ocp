@@ -1,0 +1,77 @@
+{
+	"objects": [{
+		"label": "SERVER",
+		"class_name": "Node",
+		"attributes": ["hostname"],
+		"minimum": "1",
+		"maximum": "",
+		"linchpin": true
+	}, {
+		"label": "SERVERSOFTWARE",
+		"class_name": "SoftwareFingerprint",
+		"attributes": ["name", "software_version", "software_info", "software_id", "software_source", "vendor"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "SERVERPROCESS",
+		"class_name": "ProcessFingerprint",
+		"attributes": ["name", "process_owner", "process_args", "process_hierarchy", "path_from_process", "path_from_filesystem", "path_from_analysis"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "CLIENTPORT",
+		"class_name": "TcpIpPortClient",
+		"attributes": ["ip", "port"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "CLIENTPROCESS",
+		"class_name": "ProcessFingerprint",
+		"attributes": ["name", "process_owner", "process_args", "process_hierarchy", "path_from_process", "path_from_filesystem", "path_from_analysis"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "CLIENTSOFTWARE",
+		"class_name": "SoftwareFingerprint",
+		"attributes": ["name", "software_version", "software_info", "software_id", "software_source", "vendor"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "CLIENT",
+		"class_name": "Node",
+		"attributes": ["hostname"],
+		"minimum": "1",
+		"maximum": ""
+	}],
+	"links": [{
+		"label": "Server_to_process",
+		"class_name": "Enclosed",
+		"first_id": "SERVER",
+		"second_id": "SERVERSOFTWARE"
+	}, {
+		"label": "Software_to_process",
+		"class_name": "Usage",
+		"first_id": "SERVERSOFTWARE",
+		"second_id": "SERVERPROCESS"
+	}, {
+		"label": "Server_proc_to_port",
+		"class_name": "ServerClient",
+		"first_id": "SERVERPROCESS",
+		"second_id": "CLIENTPORT"
+	}, {
+		"label": "Client_to_port",
+		"class_name": "Usage",
+		"first_id": "CLIENTPROCESS",
+		"second_id": "CLIENTPORT"
+	}, {
+		"label": "Client_to_process",
+		"class_name": "Usage",
+		"first_id": "CLIENTSOFTWARE",
+		"second_id": "CLIENTPROCESS"
+	}, {
+		"label": "Client_to_software",
+		"class_name": "Enclosed",
+		"first_id": "CLIENT",
+		"second_id": "CLIENTSOFTWARE"
+	}]
+}

@@ -1,0 +1,24 @@
+{
+	"objects": [
+		{
+			"class_name": "Node",
+			"attributes": ["hostname"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},{
+			"class_name": "NormalizedSoftware",
+			"attributes": ["name", "version", "path", "vendor"],
+			"minimum": "1",
+			"maximum": ""
+			
+		}
+	],
+	"links": [{
+		"label": "NODE_TO_SW",
+		"class_name": "Enclosed",
+		"attributes": [],
+		"first_id": "Node",
+		"second_id": "NormalizedSoftware"
+	}]
+}

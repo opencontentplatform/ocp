@@ -1,0 +1,127 @@
+{
+	"ciDefinitions" : [
+		## name:             unique definition name in case there are multiple
+		##                   of this type; suggest something close to the ciType
+		## ciType:           UCMDB CI Type (the name, not label; case-sensitive)
+		## staticAttributes: dictionary containing attribute : value pairs for
+		##                   any attribute not provided in the CSV but either
+		##                   required for object creation or desired for loading
+		{
+			"ciType" : "NodeDevice",
+			"name" : "genericNode"
+		},{
+			"ciType" : "IpAddress",
+			"name" : "ipAddress"
+		},{
+			"ciType" : "Hardware",
+			"name" : "hardware"
+		},{
+			"ciType" : "LocationSite",
+			"name" : "siteLocation",
+			"staticAttributes" : {
+				"location_type" : "undefined"
+			}
+		},{
+			"ciType" : "LocationMicro",
+			"name" : "gridLocation"
+		}
+	],
+	"linkDefinitions" : [
+		## linkType:   UCMDB link Type (the name, not label; case-sensitive)
+		## end1ciName: name specified in the ciDefinitions section above;
+		##             this represents to top/parent side of the link.
+		## end2ciName: name specified in the ciDefinitions section above;
+		##             this represents to bottom/child side of the link.
+		{
+			"linkType" : "Usage",
+			"end1ciName" : "genericNode",
+			"end2ciName" : "ipAddress"
+		},{
+			"linkType" : "Usage",
+			"end1ciName" : "genericNode",
+			"end2ciName" : "hardware"
+		},{
+			"linkType" : "Enclosed",
+			"end1ciName" : "siteLocation",
+			"end2ciName" : "gridLocation"
+		},{
+			"linkType" : "Contain",
+			"end1ciName" : "gridLocation",
+			"end2ciName" : "hardware"
+		}
+	],
+	"fieldMappings" : [
+		## fieldNumber:   column number in the CSV); starts at 1
+		## ciDefinition:  definition name specified in the ciDefinitions
+		##                section, associated to this specific attribute
+		## attributeName: UCMDB CI attribute this field is mapped to
+		## required:      value required; skip record if empty. Default is true.
+		## attributeType: type to import value as; valid types follow:
+		##                string, integer, boolean, float, long, date
+		##                Default is string.
+		## converter:     used to convert value in the CSV file to the expected
+		##                value of the CI attribute. Default is no conversion.
+		## ignoreField:   if ignoreField exists and is set true, skip values
+		##                in this column. Default is false.
+		{
+			## TCPIP HostName
+			"fieldNumber" : 1,
+			"ciDefinition" : "genericNode",
+			"attributeName" : "hostname"
+		},{
+			## Device Type
+			"fieldNumber" : 2,
+			"ciDefinition" : "hardware",
+			"attributeName" : "object_type",
+			"converter" : "valueToCiType"
+		},{
+			## IP
+			"fieldNumber" : 3,
+			"ciDefinition" : "ipAddress",
+			"attributeName" : "address"
+		},{
+			## Serial Number
+			"fieldNumber" : 4,
+			"ciDefinition" : "hardware",
+			"attributeName" : "serial_number",
+			"required" : false
+		},{
+			## Asset Tag
+			"fieldNumber" : 5,
+			"ciDefinition" : "hardware",
+			"attributeName" : "asset_tag"
+		},{
+			## Site ID
+			"fieldNumber" : 6,
+			"ciDefinition" : "siteLocation",
+			"attributeName" : "name"
+		},{
+			## Location
+			"fieldNumber" : 7,
+			"ciDefinition" : "siteLocation",
+			"attributeName" : "description"
+		},{
+			## Row/Rack
+			"fieldNumber" : 8,
+			"ciDefinition" : "gridLocation",
+			"attributeName" : "address_coordinate"
+		},{
+			## Business Line
+			"fieldNumber" : 9,
+			"ignoreField" : true
+		},{
+			## Remarks
+			"fieldNumber" : 10,
+			"ignoreField" : true
+		},{
+			## C Brand
+			"fieldNumber" : 11,
+			"ignoreField" : true
+		},{
+			## Model
+			"fieldNumber" : 12,
+			"ciDefinition" : "hardware",
+			"attributeName" : "model"
+		}
+	]
+}

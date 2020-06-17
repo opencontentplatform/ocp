@@ -1,0 +1,43 @@
+{
+	"objects": [
+		{
+			"class_name": "SoftwareFingerprint",
+			"attributes": ["software_info", "software_version"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true,
+			"filter": [{
+				"condition": {
+					"attribute": "software_info",
+					"operator": "iregex",
+					"value": "Crowdstrike Falcon Sensor"
+				}
+			}]
+		},
+		{
+			"label": "ProcessFingerprint",
+			"class_name": "ProcessFingerprint",
+			"attributes": ["path_from_process", "path_from_filesystem", "path_from_analysis"],
+			"minimum": "1",
+			"maximum": ""
+		},
+						{
+			"label": "Node",
+			"class_name": "Node",
+			"attributes": ["hostname", "domain", "object_id"],
+			"minimum": "1",
+			"maximum": "1"
+		}
+	],
+	"links": [{
+		"label": "SW_TO_PROCESS",
+		"class_name": "Usage",
+		"first_id": "SoftwareFingerprint",
+		"second_id": "ProcessFingerprint"
+	},{
+		"label": "NODE_TO_SW",
+		"class_name": "Enclosed",
+		"first_id": "Node",
+		"second_id": "ProcessFingerprint"
+	}]
+}

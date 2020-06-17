@@ -1,0 +1,44 @@
+{
+	"objects": [{
+			"class_name": "WMI",
+			"attributes": ["object_type", "ipaddress", "protocol_reference", "realm", "container", "node_type"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [],
+			"linchpin": true
+		},
+		{
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "1",
+			"maximum": ""
+		},
+		{
+			"class_name": "ProcessFingerprint",
+			"attributes": ["name"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"condition": {
+					"attribute": "name",
+					"operator": "iregex",
+					"value": "^(dns)(?:[.]exe)?$"
+				}
+			}]
+		}
+	],
+	"links": [{
+			"label": "NODE_TO_SHELL",
+			"class_name": "Enclosed",
+			"attributes": [],
+			"first_id": "Node",
+			"second_id": "WMI"
+		},
+		{
+			"label": "NODE_TO_PROCESS",
+			"class_name": "Enclosed",
+			"first_id": "Node",
+			"second_id": "ProcessFingerprint"
+		}
+	]
+}

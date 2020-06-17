@@ -1,0 +1,27 @@
+{
+	"objects": [
+		{
+			"label": "Server",
+			"class_name": "Node",
+			"attributes": ["caption"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},
+		{
+			"label": "Process",
+			"class_name": "ProcessFingerprint",
+			"attributes": ["name", "process_hierarchy", "process_owner", "path_from_process"],
+			"minimum": "1",
+			"maximum": ""
+		}
+	],
+	"links": [
+		{
+			"label": "Server_to_Process",
+			"class_name": "Enclosed",
+			"first_id": "Server",
+			"second_id": "Process"
+		}
+	]
+}

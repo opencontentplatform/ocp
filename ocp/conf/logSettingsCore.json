@@ -1,0 +1,62 @@
+{
+	"Main" : {
+		"fileName" : "main.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(filename)-21s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"Startup" : {
+		"fileName" : "startup.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "5",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"Status" : {
+		"fileName" : "status.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "5",
+		"logLevel" : "INFO",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"Database" : {
+		"fileName" : "database.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "5",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s.%(msecs)03d  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"Protocols" : {
+		"fileName" : "protocols.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "5",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s.%(msecs)03d  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"Packages" : {
+		"fileName" : "packages.log",
+		"fileNameJson" : "packagesJson.log",
+		"fileNameText" : "packages.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "5",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s.%(msecs)03d  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"Testing" : {
+		"fileName" : "testing.log",
+		"fileNameJson" : "testingJson.log",
+		"fileNameText" : "testing.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "5",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s.%(msecs)03d  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	}
+}

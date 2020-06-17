@@ -1,0 +1,79 @@
+{
+	"jobName" : "report_node_details",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "report_workbook",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"inputParameters" : {
+		"printDebug" : false,
+		"reportFile" : "nodeDetails",
+		"worksheets" : [
+			{
+				"sheetName" : "Nodes",
+				"queryName" : "node"
+			},{
+				"sheetName" : "Node IPs and DNS",
+				"queryName" : "node_ip_dns"
+			},{
+				"sheetName" : "Node Hardware",
+				"queryName" : "node_hardware"
+			},{
+				"sheetName" : "Node Software",
+				"queryName" : "node_software"
+			},{
+				"sheetName" : "Node Processes",
+				"queryName" : "node_process"
+			},{
+				"sheetName" : "Node Process & Software",
+				"queryName" : "node_process_software"
+			},{
+				"sheetName" : "Software Groups",
+				"queryName" : "software_groups"
+			},{
+				"sheetName" : "Process Groups",
+				"queryName" : "process_groups"
+			},{
+				"sheetName" : "Node Server SW established",
+				"queryName" : "node_server_software_established"
+			},{
+				"sheetName" : "Node Server SW TCP links",
+				"queryName" : "node_server_software_tcp_links"
+			},{
+				"sheetName" : "Node Server Proc established",
+				"queryName" : "node_server_process_established"
+			},{
+				"sheetName" : "Node Server Proc TCP links",
+				"queryName" : "node_server_process_tcp_links"
+			},{
+				"sheetName" : "Node client Proc established",
+				"queryName" : "node_client_process_established"
+			},{
+				"sheetName" : "Node client Proc TCP links",
+				"queryName" : "node_client_process_tcp_links"
+			}
+
+		]
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : null,
+		"minute" : null,
+		"second" : "33",
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

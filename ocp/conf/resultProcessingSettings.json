@@ -1,0 +1,7 @@
+{
+	"waitSecondsBetweenRequestingDeltaSyncCacheUpdates": 900,
+	"waitSecondsBetweenRequestingFullSyncCacheUpdates": 86400,
+	"waitSecondsBetweenRequestingKafkaPartitionCount" : 100,
+	"kafkaPollTimeOut": 2,
+	"kafkaPollMaxRecords" : 1
+}

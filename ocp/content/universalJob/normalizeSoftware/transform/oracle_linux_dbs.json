@@ -1,0 +1,49 @@
+{
+	"classToCreate" : "Oracle",
+	"attributes": {
+		"name": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {
+				"expression": {
+					"operator": "or",
+					"entries": [
+						{ "condition": ["ProcessFingerprint.name", "oracle(.+)"] }
+					]
+				}
+			}
+		},
+		"version": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {
+				"expression": {
+					"operator": "or",
+					"entries": [
+						{ "condition": ["ProcessFingerprint.path_from_analysis", ".*/product/([0-9.]+)/.*"] },
+						{ "condition": ["ProcessFingerprint.path_from_filesystem", ".*/product/([0-9.]+)/.*"] },
+						{ "condition": ["ProcessFingerprint.path_from_process", ".*/product/([0-9.]+)/.*"] }
+					]
+				}
+			}
+		},
+		"path": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {
+				"expression": {
+					"operator": "or",
+					"entries": [
+						{ "condition": ["ProcessFingerprint.path_from_analysis", "(.*/product/[0-9.]+/.*)/bin/oracle"] },
+						{ "condition": ["ProcessFingerprint.path_from_filesystem", "(.*/product/[0-9.]+/.*)/bin/oracle"] },
+						{ "condition": ["ProcessFingerprint.path_from_process", "(.*/product/[0-9.]+/.*)/bin/oracle"] }
+					]
+				}
+			}
+		},
+		"container": {
+			"class": "Node",
+			"mappingRule": {"condition": [ "Node.object_id" ]}
+		}
+	}
+}

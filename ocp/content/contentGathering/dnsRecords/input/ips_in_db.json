@@ -1,0 +1,13 @@
+{
+	"objects": [
+		{
+			"class_name": "IpAddress",
+			"attributes": ["address"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true,
+			"filter": []
+		}
+	],
+	"links": []
+}

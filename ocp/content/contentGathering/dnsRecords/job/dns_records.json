@@ -1,0 +1,46 @@
+{
+	"jobName" : "dns_records",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolWmi",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "dns_records",
+	"endpointQuery" : "wmi_on_dns_server",
+	"endpointIdColumn" : "ipaddress",
+	"isDisabled" : false,
+	"runTimeValues" : {
+		"maxJobRunTime" : 3600,
+		"maxProtocolTime" : 3600,
+		"maxCommandTime" : 600
+	},
+	"inputParameters" : {
+		"trackEveryIpInDNS" : false,
+		"trackEveryIpInDB" : false,
+		"trackIPsInRealm" : true,
+		"retainCacheAfterJobCompletion" : true,
+		"pullDnsRecordsFromCache": false,
+		"lookupMissingRecords" : true,
+		"chunkSize": 100,
+		"targetQuery" : "ips_in_db",
+		"printDebug" : false
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : "mon",
+		"hour" : 2,
+		"minute" : 11,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

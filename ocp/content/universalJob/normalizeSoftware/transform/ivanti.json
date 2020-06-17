@@ -1,0 +1,47 @@
+{
+	"classToCreate" : "NormalizedSoftware",
+	"attributes": {
+		"name": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {"condition": [ "Ivanti Software" ]}
+		},
+		"version": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {
+				"expression": {
+					"operator": "or",
+					"entries": [
+						{ "condition": ["SoftwareFingerprint.software_version"] },
+						{ "condition": ["Unknown"] }
+					]
+				}
+			}
+		},
+		"vendor": {
+			"isRequired": false,
+			"dataType": "string",
+			"mappingRule": {"condition": [ "Ivanti Corporation" ]}
+		},
+		"path": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {
+				"expression": {
+					"operator": "or",
+					"entries": [
+						{ "condition": ["ProcessFingerprint.path_from_analysis"] },
+						{ "condition": ["ProcessFingerprint.path_from_filesystem"] },
+						{ "condition": ["ProcessFingerprint.path_from_process"] },
+						{ "condition": ["Unknown"] }
+					]
+				}
+			}
+		},
+		"container": {
+			"class": "Node",
+			"mappingRule": {"condition": [ "Node.object_id" ]}
+		}
+	}
+}

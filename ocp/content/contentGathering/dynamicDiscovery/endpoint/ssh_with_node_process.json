@@ -1,0 +1,37 @@
+{
+	"objects": [{
+			"class_name": "SSH",
+			"attributes": ["object_type", "ipaddress", "protocol_reference", "realm", "container", "node_type", "parameters"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [],
+			"linchpin": true
+		},
+		{
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "1",
+			"maximum": "1"
+		},
+		{
+			"class_name": "ProcessFingerprint",
+			"attributes": ["name", "process_hierarchy", "process_owner", "path_from_process"],
+			"minimum": "0",
+			"maximum": ""
+		}
+	],
+	"links": [{
+			"label": "NODE_TO_SHELL",
+			"class_name": "Enclosed",
+			"attributes": [],
+			"first_id": "Node",
+			"second_id": "SSH"
+		},
+		{
+			"label": "NODE_TO_PROCESS",
+			"class_name": "Enclosed",
+			"first_id": "Node",
+			"second_id": "ProcessFingerprint"
+		}
+	]
+}

@@ -1,0 +1,7 @@
+{
+	"backupFileLocation" :"E:\\Work\\openContentPlatform\\dev\\temp\\dbCache_data.dat",
+	"TimeOutwaitSeconds" : "15",
+	"retryAttempts": "5",
+	"pollTimeOut": "500",
+	"pollMaxRecords" : "1"
+}

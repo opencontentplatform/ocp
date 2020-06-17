@@ -1,0 +1,27 @@
+{
+	"objects": [{
+		"label": "Node",
+		"class_name": "Node",
+		"attributes": ["hostname", "domain"],
+		"minimum": "1",
+		"maximum": "1",
+		"linchpin": true,
+		"filter": [{
+			"operator": "and",
+			"expression": [{
+					"condition": {
+						"attribute": "domain",
+						"operator": "!=",
+						"value": null
+					}
+				},{
+					"condition": {
+						"attribute": "reference_id",
+						"operator": "is null"
+					}
+				}
+			]
+		}]
+	}],
+	"links": []
+}

@@ -1,0 +1,26 @@
+{
+	"urlStatus" : {
+		"fileName" : "status.log",
+		"maxSizeInBytes" : "102400",
+		"maxRollovers" : "10",
+		"logLevel" : "INFO",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"urlWarn" : {
+		"fileName" : "warn.log",
+		"maxSizeInBytes" : "102400",
+		"maxRollovers" : "5",
+		"logLevel" : "INFO",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
+	"urlError" : {
+		"fileName" : "error.log",
+		"maxSizeInBytes" : "102400",
+		"maxRollovers" : "5",
+		"logLevel" : "INFO",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s  %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	}
+}

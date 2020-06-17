@@ -1,0 +1,40 @@
+{
+	"jobName" : "powershell_app_components_base",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolPowerShell",
+	"numberOfJobThreads" : 20,
+	"jobScript" : "shell_app_components_base",
+	"endpointQuery" : "powershell_with_node_process",
+	"endpointIdColumn" : "ipaddress",
+	"loadConfigGroups" : true,
+	"updateParameters" : true,
+	"isDisabled" : false,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"printDebug" : false
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : "4,9,14,19",
+		"minute" : 3,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

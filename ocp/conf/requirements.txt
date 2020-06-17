@@ -1,0 +1,29 @@
+## Required general modules
+APScheduler
+Arrow
+hug
+psycopg2
+SQLAlchemy
+requests
+psutil
+fabric
+pyOpenSSL
+service_identity
+Twisted
+confluent-kafka
+concurrent_log_handler
+multiprocessing_logging
+
+
+## Required when running on Windows
+pywin32==224   # 227 breaks win32file, needed by portalocker and concurrent_log_handler
+
+
+## Specific modules follow; not required for the base platform
+## Protocol specific
+pysnmp         # SNMP
+pymi           # WMI
+
+
+## Job specific
+openpyxl       # reportWorkbook

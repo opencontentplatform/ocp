@@ -1,0 +1,13 @@
+{
+	"objects": [{
+		"label": "METADATA",
+		"class_name": "ModelMetaData",
+		"attributes": [],
+		"minimum": "1",
+		"maximum": "",
+		"linchpin": true
+	}],
+	"links": []
+}
+
+

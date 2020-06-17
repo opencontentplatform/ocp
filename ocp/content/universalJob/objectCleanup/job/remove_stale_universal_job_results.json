@@ -1,0 +1,34 @@
+{
+	"jobName" : "remove_stale_universal_job_results",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "remove_stale_results",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : false,
+	"inputParameters" : {
+		"printDebug" : true,
+		"resultType" : "universalJob",
+		"thresholdInNumberOfDays" : 60
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : 4,
+		"minute" : 1,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

@@ -1,0 +1,39 @@
+{
+	"classToCreate" : "NormalizedSoftware",
+	"attributes": {
+		"name": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": { "condition": [ "Python" ] }
+		},
+		"is_filled_out": {
+			"isRequired": true,
+			"dataType": "boolean",
+			"mappingRule": { "condition": [ false ] }
+		},
+		"version": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": { "condition": ["Unknown"] }
+		},
+		"path": {
+			"isRequired": true,
+			"dataType": "string",
+			"mappingRule": {
+				"expression": {
+					"operator": "or",
+					"entries": [
+						{ "condition": ["ProcessFingerprint.path_from_analysis"] },
+						{ "condition": ["ProcessFingerprint.path_from_filesystem"] },
+						{ "condition": ["ProcessFingerprint.path_from_process"] },
+						{ "condition": ["Unknown"] }
+					]
+				}
+			}
+		},
+		"container": {
+			"class": "Node",
+			"mappingRule": {"condition": [ "Node.object_id" ]}
+		}
+	}
+}

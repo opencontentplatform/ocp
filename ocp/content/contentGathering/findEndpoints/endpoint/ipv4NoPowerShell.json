@@ -1,0 +1,53 @@
+{
+	"objects": [{
+			"class_name": "IpAddress",
+			"attributes": ["address", "realm"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"condition": {
+					"attribute": "is_ipv4",
+					"operator": "==",
+					"value": true
+				}
+			},{
+				"condition": {
+					"attribute": "address",
+					"operator": "!=",
+					"value": "127.0.0.1"
+				}
+			}, {
+				"condition": {
+					"attribute": "address",
+					"operator": "!=",
+					"value": "0.0.0.0"
+				}
+			}],
+			"linchpin": true
+		},
+		{
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "0",
+			"maximum": "0"
+		},
+		{
+			"class_name": "PowerShell",
+			"attributes": [],
+			"minimum": "1",
+			"maximum": ""
+		}
+	],
+	"links": [{
+		"label": "NODE_TO_IP",
+		"class_name": "Usage",
+		"attributes": [],
+		"first_id": "Node",
+		"second_id": "IpAddress"
+	}, {
+		"label": "NODE_TO_SHELL",
+		"class_name": "Enclosed",
+		"first_id": "Node",
+		"second_id": "PowerShell"
+	}]
+}

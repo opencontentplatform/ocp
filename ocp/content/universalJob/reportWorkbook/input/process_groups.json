@@ -1,0 +1,40 @@
+{
+	"objects": [
+		{
+			"label": "Group",
+			"class_name": "ProcessSignature",
+			"attributes": ["name", "process_hierarchy"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},
+		{
+			"label": "Process",
+			"class_name": "ProcessFingerprint",
+			"attributes": [ "name", "process_owner", "process_args", "path_from_process", "path_from_filesystem", "process_owner", "process_hierarchy"],
+			"minimum": "0",
+			"maximum": ""
+		},
+		{
+			"label": "Server",
+			"class_name": "Node",
+			"attributes": ["caption"],
+			"minimum": "1",
+			"maximum": ""
+		}
+	],
+	"links": [
+		{
+			"label": "Group_to_Software",
+			"class_name": "Contain",
+			"first_id": "Group",
+			"second_id": "Process"
+		},
+		{
+			"label": "Server_to_Software",
+			"class_name": "Enclosed",
+			"first_id": "Server",
+			"second_id": "Process"
+		}
+	]
+}

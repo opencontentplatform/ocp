@@ -1,0 +1,55 @@
+{
+	"objects": [{
+		"label": "CLIENT",
+		"class_name": "Node",
+		"attributes": ["hostname"],
+		"minimum": "1",
+		"maximum": "",
+		"linchpin": true
+	}, {
+		"label": "CLIENTPROCESS",
+		"class_name": "ProcessFingerprint",
+		"attributes": ["name", "process_owner", "process_args", "process_hierarchy", "path_from_process", "path_from_filesystem", "path_from_analysis"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "CLIENTPORT",
+		"class_name": "TcpIpPortClient",
+		"attributes": ["ip", "port"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "SERVERIP",
+		"class_name": "IpAddress",
+		"attributes": ["address"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "SERVER",
+		"class_name": "Node",
+		"attributes": ["hostname"],
+		"minimum": "0",
+		"maximum": ""
+	}],
+	"links": [{
+		"label": "Client_to_process",
+		"class_name": "Enclosed",
+		"first_id": "CLIENT",
+		"second_id": "CLIENTPROCESS"
+	}, {
+		"label": "Client_to_port",
+		"class_name": "Usage",
+		"first_id": "CLIENTPROCESS",
+		"second_id": "CLIENTPORT"
+	}, {
+		"label": "Server_proc_to_port",
+		"class_name": "ServerClient",
+		"first_id": "SERVERIP",
+		"second_id": "CLIENTPORT"
+	}, {
+		"label": "Server_to_process",
+		"class_name": "Usage",
+		"first_id": "SERVER",
+		"second_id": "SERVERIP"
+	}]
+}

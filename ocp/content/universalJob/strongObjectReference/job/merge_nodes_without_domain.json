@@ -1,0 +1,34 @@
+{
+	"jobName" : "merge_nodes_without_domain",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "merge_nodes_without_domain",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : false,
+	"inputParameters" : {
+		"printDebug" : true,
+		"strongNodesQuery" : "nodes_with_domains",
+		"weakNodesQuery" : "nodes_without_domains"
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : "9,19",
+		"minute" : 2,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}
