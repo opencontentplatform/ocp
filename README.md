@@ -1,6 +1,6 @@
 Open Content Platform
 =====================
-Open Content Platform - Open-Source IT Discovery and Integration Platform
+Open Content Platform: Open-Source IT Discovery and Integration Platform
 
 Project Motivation
 ------------------
