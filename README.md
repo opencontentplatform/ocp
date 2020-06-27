@@ -18,13 +18,7 @@ So why create an open-source offering for IT discovery and integration activitie
 Website
 -------
   * https://www.opencontentplatform.org/
-
-Functional Overview
--------------------
-  * Core Framework: https://www.opencontentplatform.org/core-framework/
-  * Discovery : https://www.opencontentplatform.org/discovery/
-  * Modeling: https://www.opencontentplatform.org/modeling/
-  
+ 
 Installation
 ------------
   * https://www.opencontentplatform.org/installation/
