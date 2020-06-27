@@ -11,6 +11,7 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/config/NetworkScope/{realm}/{object_id}
 	/<root>/config/ConfigGroups
 	/<root>/config/ConfigGroups/{realm}
+	/<root>/config/ConfigGroups/{realm}/{configGroupName}
 	/<root>/config/ConfigDefault
 	/<root>/config/ConfigDefault/{realm}
 	/<root>/config/OsParameters
@@ -122,8 +123,13 @@ def getConfig(request, response):
 		'/config/ConfigGroups/{realm}' : {
 			'methods' : {
 				'GET' : 'Report the ConfigGroup details from the named realm.',
-				'DELETE' : 'Remove entry for the named realm.',
-				'PUT' : 'Updates entry for the named realm.'
+				'DELETE' : 'Remove defined list of entries for the named realm.',
+				'PUT' : 'Inserts or updates an entry for the named realm; supply a single entry, not a modified version of the full list.'
+			}
+		},
+		'/config/ConfigGroups/{realm}/{configGroupName}' : {
+			'methods' : {
+				'DELETE' : 'Remove a named entry from the realm\'s list of entries.',
 			}
 		},
 		'/config/ConfigDefault' : {
@@ -359,6 +365,62 @@ def deleteSpecificConfigGroups(realm:text, request, response):
 			if os.path.isfile(fileToRemove):
 				os.remove(fileToRemove)
 			request.context['payload']['Success'] = 'Removed ConfigGroups for the realm {}'.format(realm)
+
+	except:
+		errorMessage(request, response)
+
+	## end deleteSpecificConfigGroups
+	return cleanPayload(request)
+
+
+@hugWrapper.delete('/ConfigGroups/{realm}/{configGroupName}')
+def deleteRealmConfigGroupEntry(realm:text, configGroupName:text, request, response):
+	"""Delete a named entry from ConfigGroups in the specified realm.
+	
+	Note 1: To expose maximum flexibility, there are no required attributes for
+	an entry in ConfigGroups. It's an ordered list of dictionaries. A name
+	is not required; it's just a suggested convention that is used internally.
+	
+	Note 2: Removing an entry on the list fits best in a RESTful PUT method on
+	/ConfigGroups/{realm}. However, there are good reasons not to add it there.
+	Probably the most important one is if an external tool (eg. OS provisioning)
+	wanted to independently/externally add a new entry, instead of the internal
+	mechanism via the template job. In that case, the external tool would need
+	to pull the current realm setting, remove any potential conflicts (whatever
+	that means) and finally issue a PUT on /ConfigGroups/realm. So, to simplify
+	an update, we allowed a PUT on /ConfigGroups/realm to only contain a single
+	(new or updated) entry, and then common/shared code would do the merge.
+	
+	Note 3: Given note 2, that meant we needed an explicit method to remove a
+	current entry... hence this function that leverages the name. 
+	"""
+	try:
+		request.context['logger'].debug('deleteRealmConfigGroupEntry: configGroupName: {}'.format(configGroupName))
+		dataHandle = request.context['dbSession'].query(platformSchema.ConfigGroups).filter(platformSchema.ConfigGroups.realm==realm).first()
+		if dataHandle is None:
+			request.context['payload']['errors'].append('No ConfigGroups exist for realm {}, in order to delete. Use POST on ./config/ConfigGroups to create.'.format(realm))
+			response.status = HTTP_404
+		else:
+			## Get the previous ConfigGroup contents saved in the DB
+			contentToUpdate = dataHandle.content
+			request.context['logger'].debug('deleteRealmConfigGroupEntry: contentToUpdate 1: {}'.format(contentToUpdate))
+			contentToUpdate[:] = [x for x in contentToUpdate if not (x.get('name') == configGroupName)]
+			request.context['logger'].debug('deleteRealmConfigGroupEntry: contentToUpdate 2: {}'.format(contentToUpdate))
+			
+			## Set the source
+			source = request.context['apiUser']
+			## Create an object to merge/update with the previous DB entry
+			newContent = {'realm' : realm,
+						  'object_updated_by' : source,
+						  'content' : contentToUpdate}
+			dataHandle = platformSchema.ConfigGroups(**newContent)
+			dataHandle = request.context['dbSession'].merge(dataHandle)
+			request.context['dbSession'].commit()
+			request.context['payload']['Success'] = 'Removed ConfigGroup {} from realm {}'.format(configGroupName, realm)
+			## Backup previous local file and create an updated version
+			fileName = 'configGroups_{}.json'.format(realm)
+			modifyPlatformSettingsFile(request, response, fileName, contentToUpdate)
+			request.context['logger'].debug('Updated the local file {}'.format(fileName))
 
 	except:
 		errorMessage(request, response)

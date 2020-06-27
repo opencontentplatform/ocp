@@ -20,4 +20,4 @@ def setCredential(protoWrapper):
 	user = protocol['user']
 	password = protocol['password']
 	prep = '$a="{}";$b="{}";$sp=Convertto-SecureString -String $b -AsPlainText -force;$ocpc=New-object System.Management.Automation.PSCredential $a, $sp'.format(user, password)
-	return psWrapper.send(prep, skipStatusCheck=True)
+	return protoWrapper.send(prep, skipStatusCheck=True)
