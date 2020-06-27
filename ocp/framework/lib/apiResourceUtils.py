@@ -291,15 +291,15 @@ def sendToQueryService(request, response, queryId, content, headers):
 	return
 
 
-## Helper functions for ConfigGroups, DefaultConfig, and OsPArameters
+## Helper function for ConfigGroups
 def removeAndAppendPlatformSettings(request, response, newConfig, configGroupList):
 	## This filters the configGroup list & removes any previous entry with
 	## a name matching the new name just constructed. The purpose is to
 	## allow this job to run multiple times, but to not create duplicate
-	## group entries. It uses list comprehension and assigns the result to
-	## a slice of the original list. Since the slice is actually the entire
-	## list (configGroupList[:]), we're simply mutating the list in place &
-	## removing the named entry if it exists.
+	## group entries. It uses list comprehension to mutate the list in place &
+	## remove the named entry if it exists. Note, ConfigGroups is not a dict()
+	## because order matters here. It could be an OrderedDict data type now, but
+	## no reason to undo all the previous functions just to move to that type.
 	configGroupName = newConfig.get('name')
 	configGroupList[:] = [x for x in configGroupList if not (x.get('name') == configGroupName)]
 	## Now safely add our new configGroup onto the list; this is currently
