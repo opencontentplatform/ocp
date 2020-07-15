@@ -3,7 +3,7 @@
 	"realm" : "default",
 	"clientGroup" : "default",
 	"credentialGroup" : "default",
-	"numberOfJobThreads" : 10,
+	"numberOfJobThreads" : 3,
 	"endpointPipeline": "service",
 	"endpointChunkSize" : 50,
 	"endpointQueueSize" : 100,
@@ -11,6 +11,7 @@
 	"endpointScript" : "realmScope",
 	"endpointIdColumn" : "value",
 	"isDisabled" : true,
+	"singleEndpointTest" : false,
 	"runTimeValues" : {
 		"maxJobRunTime" : 600,
 		"maxProtocolTime" : 600,

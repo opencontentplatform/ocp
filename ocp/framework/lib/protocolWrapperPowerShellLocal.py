@@ -67,7 +67,7 @@ class PowerShellLocal(Shell):
 		self.streamErr = NonBlockingStreamReader(self.process.stderr)
 
 		versionInfo = '$PSVersionTable.PSVersion | ConvertTo-Json'
-		(stdout, stderr, hitProblem) = self.run(versionInfo, timeout=2, skipStatusCheck=True)
+		(stdout, stderr, hitProblem) = self.run(versionInfo, timeout=5, skipStatusCheck=True)
 		self.log('open: PSVersionTable output: {}. stderr: {}. hitProblem: {}'.format(stdout, stderr, hitProblem))
 
 		if hitProblem:
