@@ -149,11 +149,13 @@ def decode(value, thisToken=None, generateToken=False, tokenType=None, returnRaw
 	thisToken = modify(thisToken)
 	decodingUtility = getDecodingUtility(thisToken)
 	## The provided value is most likely a string, but may be bytes
-	if not isinstance(value, bytes):
-		value = bytes(value, 'utf-8')
-	decodedValue = decodingUtility.decrypt(value)
-	if not returnRawFormat:
-		decodedValue = str(decodedValue, 'utf-8')
+	decodedValue = None
+	if value is not None:
+		if not isinstance(value, bytes):
+			value = bytes(value, 'utf-8')
+		decodedValue = decodingUtility.decrypt(value)
+		if not returnRawFormat:
+			decodedValue = str(decodedValue, 'utf-8')
 
 	## end decode
 	return decodedValue

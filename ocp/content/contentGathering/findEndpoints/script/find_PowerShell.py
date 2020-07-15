@@ -44,9 +44,9 @@ def getOsType(runtime, client):
 	"""
 	## Non-Windows OS types are stubbed in, but not tested at this time
 	getOsTypeCmds = {
+		"Windows": ["$Env:OS", "Windows_NT"],
 		"Linux": ["$IsLinux", "True"],
-		"Apple": ["$IsMacOS", "True"],
-		"Windows": ["$Env:OS", "Windows_NT"]
+		"Apple": ["$IsMacOS", "True"]
 	}
 	osType = None
 	for osKey in getOsTypeCmds:
