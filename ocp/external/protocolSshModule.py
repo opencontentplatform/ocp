@@ -17,7 +17,6 @@ externalProtocolHandler = utils.loadExternalLibrary('externalProtocolHandler')
 
 def connection(runtime, protocol, endpoint, connectTimeout=3):
 	"""Extract user & password from protocol, and call wmi.WMI()."""
-	runtime.logger.debug('external SSH module: protocol before: {}'.format(str(protocol)))
 	protocol = externalProtocolHandler.extractProtocol(runtime, protocol)
 	user = protocol['user']
 	password = protocol['password']

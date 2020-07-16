@@ -16,11 +16,20 @@ from pysnmp.hlapi import *
 import utils
 externalProtocolHandler = utils.loadExternalLibrary('externalProtocolHandler')
 
-def snmpGetCmd(runtime, protocol, endpoint, oid):
-	"""Extract community string & port from protocol, and call pysnmp.hlapi.getCmd()"""
+
+def getValues(runtime, protocol):
 	protocol = externalProtocolHandler.extractProtocol(runtime, protocol)
 	communityString = protocol.get('community_string')
 	port = protocol.get('port', 161)
+	## Defaulting the port above, doesn't work if port has None as the value
+	if port is None:
+		port = 161
+	return (protocol, communityString, port)
+
+
+def snmpGetCmd(runtime, protocol, endpoint, oid):
+	"""Extract community string & port from protocol, and call pysnmp.hlapi.getCmd()"""
+	(protocol, communityString, port) = getValues(runtime, protocol)
 	#version = protocol.get('version', 2)
 	return getCmd(SnmpEngine(),
 				  CommunityData(communityString),
@@ -28,11 +37,10 @@ def snmpGetCmd(runtime, protocol, endpoint, oid):
 				  ContextData(),
 				  ObjectType(ObjectIdentity(oid)))
 
+
 def snmpNextCmd(runtime, protocol, endpoint, oid):
 	"""Extract community string & port from protocol, and call pysnmp.hlapi.nextCmd()"""
-	protocol = externalProtocolHandler.extractProtocol(runtime, protocol)
-	communityString = protocol.get('community_string')
-	port = protocol.get('port', 161)
+	(protocol, communityString, port) = getValues(runtime, protocol)
 	return nextCmd(SnmpEngine(),
 				   CommunityData(communityString),
 				   UdpTransportTarget((endpoint, port)),
