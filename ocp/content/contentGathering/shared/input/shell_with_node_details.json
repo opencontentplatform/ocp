@@ -1,6 +1,6 @@
 {
 	"objects": [{
-			"class_name": "SSH",
+			"class_name": <VALUE1>,
 			"attributes": ["object_type", "ipaddress", "protocol_reference", "realm", "container", "node_type", "parameters"],
 			"minimum": "1",
 			"maximum": "",
@@ -8,7 +8,7 @@
 				"condition": {
 					"attribute": "ipaddress",
 					"operator": "==",
-					"value": "192.168.121.190"
+					"value": <VALUE2>
 				}
 			}],
 			"linchpin": true
@@ -25,6 +25,6 @@
 		"class_name": "Enclosed",
 		"attributes": [],
 		"first_id": "Node",
-		"second_id": "SSH"
+		"second_id": <VALUE1>
 	}]
 }

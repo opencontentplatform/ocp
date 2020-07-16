@@ -38,6 +38,10 @@ from osProcesses import getProcesses
 from osSoftwarePackages import getSoftwarePackages
 from osStartTasks import getStartTasks
 from utilities import loadConfigGroupFile, compareFilter, getApiResult
+from utilities import getApiQueryResultsFull
+
+## Global for ease of future change
+validShellTypes = ["PowerShell", "SSH"]
 
 
 def modifyConfigGroupFile(runtime, newConfig):
@@ -284,6 +288,61 @@ def constructParameters(runtime, processDictionary, softwareDictionary, startTas
 	return configParameters
 
 
+def issueApiCall(runtime):
+	endpoint = None
+	## Get the parameters
+	inputQuery = runtime.parameters.get('inputQuery')
+	targetIp = runtime.parameters.get('endpointIp')
+
+	## Corresponding directory for our input query
+	jobScriptPath = os.path.dirname(os.path.realpath(__file__))
+	jobPath = os.path.abspath(os.path.join(jobScriptPath, '..'))
+
+	## Load the file containing the query
+	queryFile = os.path.join(jobPath, 'input', inputQuery + '.json')
+	if not os.path.isfile(queryFile):
+		raise EnvironmentError('JSON query file does not exist: {}'.format(queryFile))
+	queryContent = None
+	with open(queryFile, 'r') as fp:
+		queryContent = fp.read()
+
+	## We do not know shell type, and in the future there may be more. So we
+	## will loop through each one, trying until we find it.
+
+	## Note: previously this was sent in by the endpoint query, but when we
+	## switched over to make the IP a parameter instead... the shell details are
+	## no longer sent into the job. Hence this step to request from the API.
+	## The idea was to simplify user experience by adding more code.
+	queryResults = None
+	for shellType in validShellTypes:
+		thisQuery = queryContent
+		## Replace <VALUE1> and <VALUE2> placeholders:
+		##   VALUE1 = the shell type: PowerShell or SSH
+		##   VALUE2 = the IP address of the target endpoint you wish to template
+		thisQuery = thisQuery.replace('<VALUE1>', '"{}"'.format(shellType))
+		thisQuery = thisQuery.replace('<VALUE2>', '"{}"'.format(targetIp))
+
+		queryResults = getApiQueryResultsFull(runtime, thisQuery, resultsFormat='Nested', headers={'removeEmptyAttributes': False})
+		if queryResults is not None and len(queryResults[shellType]) > 0:
+			break
+
+	if queryResults is None or len(queryResults[shellType]) <= 0:
+		raise EnvironmentError('Could not find endpoint {} with a correspoinding shell. Please make sure to run the corresponding "Find" job first.'.format(targetIp))
+
+	runtime.logger.report('queryResults: {queryResults!r}...', queryResults=queryResults)
+	## Set the protocol data on runtime, as though it was sent in regularly.
+	## And don't use 'get'; allow exceptions here if endpoint values are missing
+	endpoint = queryResults[shellType][0]
+	runtime.endpoint = {
+		"class_name" : endpoint["class_name"],
+		"identifier" : endpoint["identifier"],
+		"data" : endpoint["data"]
+	}
+	runtime.setParameters()
+
+	return endpoint
+
+
 def getNodeDetails(runtime):
 	"""Pull attributes off the node sent in the endpoint.
 
@@ -292,8 +351,10 @@ def getNodeDetails(runtime):
 	                   the job thread through its runtime.
 	"""
 	nodeDetails = {}
-	## Assuming that the Node is directly connected to the endpoint linchpin
-	objectsLinkedToLinchpin = runtime.endpoint.get('children',{})
+	endpoint = issueApiCall(runtime)
+
+	## Node should be directly connected to the endpoint linchpin
+	objectsLinkedToLinchpin = endpoint.get('children',{})
 	nodeFound = False
 	hostname = None
 	for objectLabel, objectList in objectsLinkedToLinchpin.items():
@@ -323,6 +384,8 @@ def startJob(runtime):
 	"""
 	client = None
 	try:
+		nodeDetails = getNodeDetails(runtime)
+
 		## Pull details from the node object, used in creating automated entry
 		nodeDetails = getNodeDetails(runtime)
 		if nodeDetails is None:
