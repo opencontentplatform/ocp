@@ -384,9 +384,7 @@ def startJob(runtime):
 	"""
 	client = None
 	try:
-		nodeDetails = getNodeDetails(runtime)
-
-		## Pull details from the node object, used in creating automated entry
+		## Issue API query for the node, and get details for creating this entry
 		nodeDetails = getNodeDetails(runtime)
 		if nodeDetails is None:
 			raise EnvironmentError('Unable to pull node details from endpoint.')
