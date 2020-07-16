@@ -58,8 +58,10 @@ class Runtime():
 		## Create a log utility that in addition to standard log functions, will
 		## conditionally report messages based on the setting of a job parameter
 		self.logger = jobParameterizedLogger(logger, self.parameters.get('printDebug', False))
-		## Update parameters for endpoint (globals, config group, OS type)
-		self.setParameters()
+		if self.jobMetaData.get('updateParameters', False):
+			## Update parameters for endpoint (globals, config group, OS type)
+			self.setParameters()
+		self.setupComplete = True
 
 
 	def __str__(self):
@@ -155,16 +157,24 @@ class Runtime():
 		objects to ignore or include with discovery jobs, etc.
 		"""
 		try:
-			if self.jobMetaData.get('updateParameters', False):
-				if len(self.shellConfig) <= 0:
-					raise EnvironmentError('Unable to read shellConfig; aborting Runtime initialization.')
+			if len(self.shellConfig) <= 0:
+				raise EnvironmentError('Unable to read shellConfig; aborting Runtime initialization.')
 
-				## Get the OS and config group parameters for shell protocols
-				osParameters = self.shellConfig.get('osParameters', {})
-				configDefault = self.shellConfig.get('configDefault', {})
-				configGroups = self.shellConfig.get('configGroups', {})
+			## Get the OS and config group parameters for shell protocols
+			osParameters = self.shellConfig.get('osParameters', {})
+			configDefault = self.shellConfig.get('configDefault', {})
+			configGroups = self.shellConfig.get('configGroups', {})
 
-				parameters = self.endpoint.get('data').get('parameters')
+			## The following section is not yet valid for the template job; the
+			## shell type & instance parameter of the protocol (Shell/OS params)
+			## are not available until the script runs, as they were not
+			## passed in to the job. Need to be able to call this from the job.
+			## Without knowing the OS, we cannot default or update these yet,
+			## but the service needs to have provided the shellConfig above...
+			## so 'updateParameters' must be set to 'true' in the job metadata.
+
+			parameters = self.endpoint.get('data', {}).get('parameters')
+			if parameters is not None:
 				osType = parameters.get('osType')
 				configGroupName = parameters.get('configGroup')
 
@@ -180,7 +190,6 @@ class Runtime():
 						updateParameters(parameters, configGroup.get('parameters', {}))
 						break
 				self.logger.report('setParameters: {parameters!r}', parameters=parameters)
-			self.setupComplete = True
 
 		except:
 			self.setError(__name__)

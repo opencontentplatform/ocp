@@ -1,12 +1,13 @@
 {
-	"jobName" : "ssh_OS_create_config_group",
+	"jobName" : "shell_OS_create_config_group",
 	"realm" : "default",
 	"clientGroup" : "default",
-	"protocolType" : "ProtocolSsh",
+	"protocolType" : ["ProtocolPowerShell", "ProtocolSsh"],
 	"numberOfJobThreads" : 1,
 	"jobScript" : "shell_OS_create_config_group",
-	"endpointQuery" : "single_ssh_with_node_details",
-	"endpointIdColumn" : "ipaddress",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
 	"loadConfigGroups" : true,
 	"updateParameters" : true,
 	"isDisabled" : true,
@@ -16,6 +17,8 @@
 		"maxCommandTime" : 60
 	},
 	"inputParameters" : {
+		"endpointIp" : "192.168.121.240",
+		"inputQuery" : "shell_with_node_details",
 		"printDebug" : true
 	},
 	"triggerType" : "interval",
@@ -24,7 +27,7 @@
 		"days" : null,
 		"hours" : null,
 		"minutes" : null,
-		"seconds" : 59,
+		"seconds" : 15,
 		"start_date" : "",
 		"end_date" : ""
 	},
