@@ -1,4 +1,4 @@
-	"""Dynamic discovery for Base Application Components.
+"""Dynamic discovery for Base Application Components.
 
 Both dynamic discovery jobs for Application Components ('Base' & 'Vocal') use
 a common library with the same functions and code paths - once a process is
