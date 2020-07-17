@@ -21,7 +21,8 @@ Website
  
 Installation
 ------------
-  * https://www.opencontentplatform.org/installation/
+  * Install: https://www.opencontentplatform.org/install/
+  * Getting Started: https://www.opencontentplatform.org/get-started/
 
 Community Forum
 ---------------
