@@ -34,7 +34,7 @@ import requests
 import multiprocessing
 import logging, logging.handlers
 from contextlib import suppress
-from twisted.internet import reactor, task, defer, ssl
+from twisted.internet import reactor, task, defer, ssl, threads
 from twisted.internet.protocol import ServerFactory
 from twisted.protocols.basic import LineReceiver
 from twisted.python.filepath import FilePath
@@ -55,14 +55,26 @@ from database.connectionPool import DatabaseClient
 from database.schema.platformSchema import ServiceContentGatheringHealth
 from database.schema.platformSchema import ServiceResultProcessingHealth
 from database.schema.platformSchema import ServiceUniversalJobHealth
+from database.schema.platformSchema import JobContentGathering, JobUniversal, JobServerSide
 
 ## Global section
 clientToHealthTableMapping = {
-	'ContentGatheringService' : ServiceContentGatheringHealth,
-	'ResultProcessingService' : ServiceResultProcessingHealth,
-	'UniversalJobService' : ServiceUniversalJobHealth
+	'ContentGatheringService' : {
+		'health': ServiceContentGatheringHealth,
+		'jobs' : JobContentGathering
+	},
+	'ResultProcessingService' : {
+		'health': ServiceResultProcessingHealth,
+		'jobs': None
+	},
+	'UniversalJobService' : {
+		'health': ServiceUniversalJobHealth,
+		'jobs' : JobContentGathering
+	}
+	# 'ServerSideService' : {
+	# 	'jobs' : JobServerSide
+	# }
 }
-
 
 ## Overriding max length from 16K to 64M
 LineReceiver.MAX_LENGTH = 1024*1024*64
@@ -253,7 +265,7 @@ class ServiceListener(CustomLineReceiverProtocol):
 		found = False
 		try:
 			self.factory.logger.debug('Attempting to update health entry for client [{clientName!r}]', clientName=self.clientName)
-			ServiceEndpointHealth = clientToHealthTableMapping[self.factory.serviceName]
+			ServiceEndpointHealth = clientToHealthTableMapping[self.factory.serviceName]['health']
 			clients = self.factory.dbClient.session.query(ServiceEndpointHealth).all()
 			self.factory.dbClient.session.commit()
 			for serviceClient in clients:
@@ -293,6 +305,7 @@ class ServiceListener(CustomLineReceiverProtocol):
 				self.factory.logger.debug('Created new health entry for client [{clientName!r}]', clientName=self.clientName)
 			## Return underlying DBAPI connection
 			self.factory.dbClient.session.commit()
+			self.factory.dbClient.session.close()
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -324,13 +337,12 @@ class ServiceFactory(ServerFactory):
 		self.logger.debug('  ====> kafkaCertFile: {kafkaCertFile!r}', kafkaCertFile=self.kafkaCertFile)
 		self.logger.debug('  ====> kafkaKeyFile: {kafkaKeyFile!r}', kafkaKeyFile=self.kafkaKeyFile)
 		self.dbClient = None
+		self.jobId = 0
+		self.activeJobs = {}
+		self.lastJobUpdateTime = time.time()
 		if getDbClient:
 			self.getDbSession()
-			try:
-				self.protocolHandler = externalProtocolHandler.ProtocolHandler(self.dbClient, self.globalSettings, env, self.logger)
-			except PermissionError:
-				self.logger.error('Unable to create protocolHandler. Make sure your license is compliant.')
-				raise
+			self.protocolHandler = externalProtocolHandler.ProtocolHandler(self.dbClient, self.globalSettings, env, self.logger)
 		if hasClients:
 			super().__init__()
 			if self.canceledEvent.is_set():
@@ -341,14 +353,75 @@ class ServiceFactory(ServerFactory):
 			self.activeClients = {}
 			self.cleanClientHealthTable()
 
-			## TODO: Modify looping calls to use threads.deferToThread(); avoid
+			## Changing looping calls to use threads.deferToThread(); avoid
 			## time delays/waits from blocking the main reactor thread
-			self.loopingGetClients = task.LoopingCall(self.getServiceClients)
+			self.loopingGetClients = task.LoopingCall(self.deferServiceClients)
 			self.loopingGetClients.start(int(globalSettings['waitSecondsBetweenGettingNewClients']))
-			self.loopingUpdateClients = task.LoopingCall(self.updateClientTokens)
+			self.loopingUpdateClients = task.LoopingCall(self.deferUpdateClientTokens)
 			self.loopingUpdateClients.start(int(globalSettings['waitSecondsBetweenForcedTokenRefreshes']))
-			self.loopingHealthUpdates = task.LoopingCall(self.sendHealthRequest)
+			self.loopingHealthUpdates = task.LoopingCall(self.deferSendHealthRequest)
 			self.loopingHealthUpdates.start(int(globalSettings['waitSecondsBetweenClientHealthUpdates']))
+			if clientToHealthTableMapping.get(self.serviceName, {}).get('jobs') is not None:
+				self.loopingJobUpdates = task.LoopingCall(self.deferGetJobUpdates)
+				self.loopingJobUpdates.start(int(globalSettings['waitSecondsBetweenJobUpdates']))
+
+
+	def deferServiceClients(self):
+		"""Call getServiceClients in a non-blocking thread."""
+		threadHandle = None
+		try:
+			threadHandle = threads.deferToThread(self.getServiceClients)
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error('Exception in deferServiceClients: {exception!r}', exception=exception)
+			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+			self.logToKafka(str(exceptionOnly))
+
+		## end deferServiceClients
+		return threadHandle
+
+	def deferUpdateClientTokens(self):
+		"""Call updateClientTokens in a non-blocking thread."""
+		threadHandle = None
+		try:
+			threadHandle = threads.deferToThread(self.updateClientTokens)
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error('Exception in deferUpdateClientTokens: {exception!r}', exception=exception)
+			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+			self.logToKafka(str(exceptionOnly))
+
+		## end deferUpdateClientTokens
+		return threadHandle
+	
+	def deferSendHealthRequest(self):
+		"""Call sendHealthRequest in a non-blocking thread."""
+		threadHandle = None
+		try:
+			threadHandle = threads.deferToThread(self.sendHealthRequest)
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error('Exception in deferSendHealthRequest: {exception!r}', exception=exception)
+			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+			self.logToKafka(str(exceptionOnly))
+
+		## end deferSendHealthRequest
+		return threadHandle
+
+	def deferGetJobUpdates(self):
+		"""Call getJobUpdates in a non-blocking thread."""
+		threadHandle = None
+		try:
+			threadHandle = threads.deferToThread(self.getJobUpdates)
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error('Exception in deferGetJobUpdates: {exception!r}', exception=exception)
+			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+			self.logToKafka(str(exceptionOnly))
+
+		## end deferGetJobUpdates
+		return threadHandle
+
 
 	def getDbSession(self):
 		"""Establish a client connection into our database.
@@ -405,75 +478,158 @@ class ServiceFactory(ServerFactory):
 		return thisDbClient
 
 
+	def getJobSchedulerDetails(self, jobContent):
+		try:
+			## Parse "trigger" arguments for ApScheduler and drop invalid values
+			triggerType = jobContent.get('triggerType')
+			triggerArgs = {}
+			if ('triggerArgs' in jobContent.keys() and len(jobContent.get('triggerArgs').keys()) > 0):
+				for thisKey in jobContent.get('triggerArgs').keys():
+					thisValue = jobContent.get('triggerArgs').get(thisKey)
+					if thisValue is not None and len(str(thisValue)) > 0:
+						triggerArgs[thisKey] = thisValue
+
+			## Parse/typecast "scheduler" arguments for ApScheduler
+			schedulerArgs = jobContent.get('schedulerArgs')
+			schedulerMisfireGraceTime = int(schedulerArgs.get('misfire_grace_time'))
+			schedulerCoalesce = bool(schedulerArgs.get('coalesce'))
+			schedulerMaxInstances = int(schedulerArgs.get('max_instances'))
+
+		except:
+			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error(' Exception in setupJobSchedules on job file {jobFile!r}: {stacktrace!r}', jobFile=jobFile, stacktrace=stacktrace)
+		
+		## end getJobSchedulerDetails
+		return (triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances)
+
+
 	def setupJobSchedules(self):
-		"""Setup job schedules by reading the job files.
+		self.logger.info('Creating initial job schedules...')
+		self.lastJobUpdateTime = time.time()
+		## Get job descriptors from the database
+		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
+		jobs = self.dbClient.session.query(jobClass).all()
 
-		Each deployed package will reside in a content/<type>/<packageName>
-		directory, where 'type' is one of several package types based on desired
-		function: contentGathering, universalJob, serverSide, etc.
-
-		All job definitions will reside in a 'job' subdirectory, relative to
-		the corresponding package (content/<type>/<packageName>/job/xyz.json).
-		This function runs through through all job definition files in deployed
-		packages, and pulls out the data necessary to schedule jobs; the current
-		library of choice for scheduling is ApScheduler.
-
-		"""
-		self.logger.info('Loading job schedules...')
-		self.logger.info('Loading job schedules from {path!r}', path=self.pkgPath)
-		jobId = 0
-		for packageName in os.listdir(self.pkgPath):
+		for job in jobs:
 			try:
-				pkgJobDir = os.path.join(self.pkgPath, packageName, 'job')
-				if os.path.isdir(pkgJobDir):
-					for jobFile in os.listdir(pkgJobDir):
-						try:
-							if not re.search('\.json$', jobFile, re.I):
-								continue
+				jobName = getattr(job, 'name')
+				jobContent = getattr(job, 'content')
+				active = getattr(job, 'active', False)
+				packageName = getattr(job, 'package')
+				jobShortName = jobContent.get('jobName')
+				## Do not add disabled jobs into the scheduler
+				if not active:
+					## Nothing to schedule... job is disabled
+					self.logger.info('   skipping disabled job: {jobName!r}', jobName=jobName)
+					continue
+				
+				## Helper function for shared code paths
+				(triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances) = self.getJobSchedulerDetails(jobContent)
+				self.logger.info(' Scheduling job {jobName!r} with trigger {triggerType!r} and args {triggerArgs!r}', jobName=jobName, triggerType=triggerType, triggerArgs=triggerArgs)
+				self.jobId += 1
+				self.activeJobs[jobName] = str(self.jobId)
+				## Now schedule the job
+				self.scheduler.add_job(self.prepareJob,
+									   triggerType,
+									   args=[jobShortName, packageName],
+									   kwargs=None,
+									   id=str(self.jobId),
+									   name=jobName,
+									   misfire_grace_time=schedulerMisfireGraceTime,
+									   coalesce=schedulerCoalesce,
+									   max_instances=schedulerMaxInstances,
+									   **triggerArgs)				
 
-							## Open job configuration file
-							jobSettings = utils.loadSettings(os.path.join(pkgJobDir, jobFile))
-							jobName = jobSettings.get('jobName')
-
-							## Parse "trigger" arguments for ApScheduler
-							triggerType = jobSettings.get('triggerType')
-							triggerArgs = {}
-							if ('triggerArgs' in jobSettings.keys() and len(jobSettings.get('triggerArgs').keys()) > 0):
-								for thisKey in jobSettings.get('triggerArgs').keys():
-									thisValue = jobSettings.get('triggerArgs').get(thisKey)
-									if thisValue is not None and len(str(thisValue)) > 0:
-										triggerArgs[thisKey] = thisValue
-
-							## Parse/typecast "scheduler" arguments for ApScheduler
-							schedulerArgs = jobSettings.get('schedulerArgs')
-							schedulerMisfireGraceTime = int(schedulerArgs.get('misfire_grace_time'))
-							schedulerCoalesce = bool(schedulerArgs.get('coalesce'))
-							schedulerJobName = '{}.{}'.format(packageName, jobName)
-							schedulerMaxInstances = int(schedulerArgs.get('max_instances'))
-
-							## Increment the job identifier
-							jobId += 1
-
-							## Now schedule the job
-							self.scheduler.add_job(self.prepareJob,
-												   triggerType,
-												   args=[jobName, packageName],
-												   kwargs=None,
-												   id=str(jobId),
-												   name=schedulerJobName,
-												   misfire_grace_time=schedulerMisfireGraceTime,
-												   coalesce=schedulerCoalesce,
-												   max_instances=schedulerMaxInstances,
-												   **triggerArgs)
-							self.logger.info('  scheduling job [{jobId!r}] with name [{schedulerJobName!r}] trigger [{triggerType!r}] and args {triggerArgs!r}', jobId=jobId, schedulerJobName=schedulerJobName, triggerType=triggerType, triggerArgs=triggerArgs)
-						except:
-							stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-							self.logger.error(' Exception in setupJobSchedules on job file {jobFile!r}: {stacktrace!r}', jobFile=jobFile, stacktrace=stacktrace)
 			except:
 				stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error(' Exception in setupJobSchedules: {stacktrace!r}', stacktrace=stacktrace)
+				self.logger.error(' Exception with job report loop: {stacktrace!r}', stacktrace=stacktrace)
 
+		## Return underlying DBAPI connection
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
+		
 		## end setupJobSchedules
+		return
+
+
+
+	def getJobUpdates(self):
+		"""Update or load new jobs when the descriptor changes."""
+		thisJobUpdateTime = time.time()
+		## Get job descriptors from the database
+		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
+		jobs = self.dbClient.session.query(jobClass).filter(jobClass.time_updated >= datetime.datetime.fromtimestamp(self.lastJobUpdateTime)).all()
+
+		for job in jobs:
+			try:
+				jobName = getattr(job, 'name')
+				jobContent = getattr(job, 'content')
+				active = getattr(job, 'active', False)
+				packageName = getattr(job, 'package')
+				jobShortName = jobContent.get('jobName')
+				#self.logger.info(' found job [{jobName!r}] with content {jobContent!r}', jobName=jobName, jobContent=jobContent)
+
+				## If job wasn't active or being tracked
+				if jobName not in self.activeJobs:
+					if not active:
+						## nothing to schedule; just an update on meta data
+						continue
+					else:
+						## Helper function for shared code paths
+						(triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances) = self.getJobSchedulerDetails(jobContent)
+						self.jobId += 1
+						self.activeJobs[jobName] = str(self.jobId)
+						## Now schedule the job
+						self.scheduler.add_job(self.prepareJob,
+											   triggerType,
+											   args=[jobShortName, packageName],
+											   kwargs=None,
+											   id=str(self.jobId),
+											   name=jobName,
+											   misfire_grace_time=schedulerMisfireGraceTime,
+											   coalesce=schedulerCoalesce,
+											   max_instances=schedulerMaxInstances,
+											   **triggerArgs)
+						self.logger.info('Scheduled job {jobName!r} id {jobId!r} with trigger {triggerType!r} and args {triggerArgs!r}', jobName=jobName, jobId=self.jobId, triggerType=triggerType, triggerArgs=triggerArgs)
+				
+				else:
+					## Remove and re-add the job into scheduler
+					oldId = self.activeJobs[jobName]
+					self.scheduler.remove_job(self.activeJobs[jobName])
+					del self.activeJobs[jobName]
+					
+					## Re-add the updated job back in, if it's still enabled
+					if not active:
+						self.logger.info('Removed job {jobName!r} id {jobId!r}', jobName=jobName, jobId=oldId)
+					else:
+						## Helper function for shared code paths
+						(triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances) = self.getJobSchedulerDetails(jobContent)
+						self.jobId += 1
+						self.activeJobs[jobName] = str(self.jobId)
+						## Now re-schedule the job
+						self.scheduler.add_job(self.prepareJob,
+											   triggerType,
+											   args=[jobShortName, packageName],
+											   kwargs=None,
+											   id=str(self.jobId),
+											   name=jobName,
+											   misfire_grace_time=schedulerMisfireGraceTime,
+											   coalesce=schedulerCoalesce,
+											   max_instances=schedulerMaxInstances,
+											   **triggerArgs)
+						self.logger.info('Updated job {jobName!r}, id changed from {oldId!r} to {newId!r}, with trigger {triggerType!r} and args {triggerArgs!r}', jobName=jobName, oldId=oldId, newId=self.jobId, triggerType=triggerType, triggerArgs=triggerArgs)
+
+			except:
+				stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+				self.logger.error('Exception with updating job {jobName!r}: {stacktrace!r}', jobName=jobName, stacktrace=stacktrace)
+
+		## Update the last time check
+		self.lastJobUpdateTime = thisJobUpdateTime
+		## Return underlying DBAPI connection
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
+		
+		## end getJobUpdates
 		return
 
 
@@ -486,13 +642,14 @@ class ServiceFactory(ServerFactory):
 		"""
 		## call DB and update the authorized client list for the service
 		clients = self.dbClient.session.query(self.clientEndpointTable)
-		## Return underlying DBAPI connection
-		self.dbClient.session.commit()
 		self.authorizedEndpoints = {}
 		for serviceClient in clients:
 			endpointName = getattr(serviceClient, 'name')
 			endpointToken = getattr(serviceClient, 'object_id').strip()
 			self.authorizedEndpoints[endpointName] = endpointToken
+		## Return underlying DBAPI connection
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
 		self.logger.debug('Authorized client endpoints: {authorizedEndpoints!r}', authorizedEndpoints=list(self.authorizedEndpoints.keys()))
 
 
@@ -521,6 +678,7 @@ class ServiceFactory(ServerFactory):
 		  endpointToken : Authorization token for the client.
 		  action        : requested action from client
 		"""
+		value = False
 		## If this is a newly connected content gathering client, then it will
 		## need to check/download files before the official client validation.
 		if action in ['checkModules', 'sendModule', 'receivedFile']:
@@ -531,8 +689,6 @@ class ServiceFactory(ServerFactory):
 			## Not found previously, check for new values
 			## Call DB and get the client list for the service
 			clients = self.dbClient.session.query(self.clientEndpointTable)
-			## Return underlying DBAPI connection
-			self.dbClient.session.commit()
 			self.connectedEndpoints = {}
 			for serviceClient in clients:
 				thisEndpoint = getattr(serviceClient, 'name')
@@ -540,8 +696,12 @@ class ServiceFactory(ServerFactory):
 				if thisEndpoint == endpointName and thisToken == endpointToken:
 					self.logger.debug('Found just connected client: {endpointName!r}', endpointName=endpointName)
 					self.connectedEndpoints[endpointName] = endpointToken
-					return True
-		return False
+					value = True
+					break
+			## Return underlying DBAPI connection
+			self.dbClient.session.commit()
+			self.dbClient.session.close()
+		return value
 
 
 	def validateAction(self, action):
@@ -559,7 +719,7 @@ class ServiceFactory(ServerFactory):
 	def cleanClientHealthTable(self):
 		"""Remove any stale clients before establishing new connections."""
 		try:
-			ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]
+			ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
 			clients = self.dbClient.session.query(ServiceEndpointHealth).all()
 			for serviceClient in clients:
 				self.logger.debug('Removing stale client health entry for {serviceClient_name!r}, last updated {serviceClient_last_sys_stat!r}.',
@@ -568,6 +728,7 @@ class ServiceFactory(ServerFactory):
 				self.dbClient.session.commit()
 			## Return underlying DBAPI connection
 			self.dbClient.session.commit()
+			self.dbClient.session.close()
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -605,15 +766,17 @@ class ServiceFactory(ServerFactory):
 			self.logger.error('Exception in removeClient: {exception!r}', exception=exception)
 
 		## Remove client health entry out of the DB table
-		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]
+		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
 		clients = self.dbClient.session.query(ServiceEndpointHealth).all()
 		for serviceClient in clients:
 			thisName = serviceClient.name
 			if thisName == clientName:
 				self.dbClient.session.delete(serviceClient)
 				self.dbClient.session.commit()
+		
 		## Return underlying DBAPI connection
 		self.dbClient.session.commit()
+		self.dbClient.session.close()
 
 
 	def updateClientTokens(self):
@@ -658,6 +821,7 @@ class ServiceFactory(ServerFactory):
 
 		## Return underlying DBAPI connection
 		self.dbClient.session.commit()
+		self.dbClient.session.close()
 
 
 	def sendHealthRequest(self):

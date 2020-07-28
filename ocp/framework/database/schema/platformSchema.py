@@ -425,32 +425,29 @@ class JobContentGathering(UniqueMixin, Base):
 	Columns :
 	  |  object_id [CHAR(32)]
 	  |  name [String(256)] PK
-	  |  module [String(256)] FK(content_module.name)
+	  |  package [String(256)] FK(content_package.name)
 	  |  realm  [String(256)] FK(realm.name)
 	  |  active [Boolean]
-	  |  input_parameters [JSON]
-	  |  trigger_type [String(256)] FK(trigger_type.name)
-	  |  schedule_content [JSON]
+	  |  content [JSON]
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
 	"""
 
 	__tablename__ = 'job_content_gathering'
 	__table_args__ = {"schema":"platform"}
-	#object_id = Column(Integer, Sequence('seq_jd_id', start=1, increment=1), autoincrement=True)
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
-	module = Column(None, ForeignKey(ContentPackage.name), nullable=False)
+	package = Column(None, ForeignKey(ContentPackage.name), nullable=False)
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
 	active = Column(Boolean, default=False)
-	input_parameters = Column(JSON, nullable=True)
-	#trigger_type = Column(None, ForeignKey(TriggerType.name), nullable=False)
-	trigger_type = Column(String(256), nullable=False)
-	trigger_args = Column(JSON, nullable=False)
-	scheduler_args = Column(JSON, nullable=False)
+	content = Column(JSON, nullable=False)
+	time_created = Column(DateTime(timezone=True), default=func.now())
+	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod
-	def unique_hash(cls, name, module, realm, active, input_parameters, trigger_type, schedule_content=None):
+	def unique_hash(cls, name, module, realm, active, content):
 		return name
 	@classmethod
-	def unique_filter(cls, query, name, module, realm, active, input_parameters, trigger_type, schedule_content=None):
+	def unique_filter(cls, query, name, module, realm, active, content):
 		return query.filter(JobContentGathering.name == name)
 
 
@@ -462,32 +459,29 @@ class JobUniversal(UniqueMixin, Base):
 	Columns :
 	  |  object_id [CHAR(32)]
 	  |  name [String(256)] PK
-	  |  module [String(256)] FK(content_module.name)
+	  |  package [String(256)] FK(content_package.name)
 	  |  realm  [String(256)] FK(realm.name)
 	  |  active [Boolean]
-	  |  input_parameters [JSON]
-	  |  trigger_type [String(256)] FK(trigger_type.name)
-	  |  schedule_content [JSON]
+	  |  content [JSON]
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
 	"""
 
 	__tablename__ = 'job_universal'
 	__table_args__ = {"schema":"platform"}
-	#object_id = Column(Integer, Sequence('seq_jd_id', start=1, increment=1), autoincrement=True)
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
-	module = Column(None, ForeignKey(ContentPackage.name), nullable=False)
+	package = Column(None, ForeignKey(ContentPackage.name), nullable=False)
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
 	active = Column(Boolean, default=False)
-	input_parameters = Column(JSON, nullable=True)
-	#trigger_type = Column(None, ForeignKey(TriggerType.name), nullable=False)
-	trigger_type = Column(String(256), nullable=False)
-	trigger_args = Column(JSON, nullable=False)
-	scheduler_args =  Column(JSON, nullable=False)
+	content = Column(JSON, nullable=False)
+	time_created = Column(DateTime(timezone=True), default=func.now())
+	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod
-	def unique_hash(cls, name, module, realm, active, input_parameters, trigger_type, schedule_content=None):
+	def unique_hash(cls, name, module, realm, active, content):
 		return name
 	@classmethod
-	def unique_filter(cls, query, name, module, realm, active, input_parameters, trigger_type, schedule_content=None):
+	def unique_filter(cls, query, name, module, realm, active, content):
 		return query.filter(JobUniversal.name == name)
 
 
@@ -499,32 +493,29 @@ class JobServerSide(UniqueMixin, Base):
 	Columns :
 	  |  object_id [CHAR(32)]
 	  |  name [String(256)] PK
-	  |  module [String(256)] FK(content_module.name)
+	  |  package [String(256)] FK(content_package.name)
 	  |  realm  [String(256)] FK(realm.name)
 	  |  active [Boolean]
-	  |  input_parameters [JSON]
-	  |  trigger_type [String(256)] FK(trigger_type.name)
-	  |  schedule_content [JSON]
+	  |  content [JSON]
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
 	"""
 
 	__tablename__ = 'job_server_side'
 	__table_args__ = {"schema":"platform"}
-	#object_id = Column(Integer, Sequence('seq_js_id', start=1, increment=1), autoincrement=True)
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
-	module = Column(None, ForeignKey(ContentPackage.name), nullable=False)
+	package = Column(None, ForeignKey(ContentPackage.name), nullable=False)
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
 	active = Column(Boolean, nullable=True, default=False)
-	input_parameters = Column(JSON, nullable=True)
-	#trigger_type = Column(None, ForeignKey(TriggerType.name), nullable=False)
-	trigger_type = Column(String(256), nullable=False)
-	trigger_args = Column(JSON, nullable=False)
-	scheduler_args =  Column(JSON, nullable=True)
+	content = Column(JSON, nullable=False)
+	time_created = Column(DateTime(timezone=True), default=func.now())
+	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod
-	def unique_hash(cls, name, module, realm, active, input_parameters, trigger_type, schedule_content=None):
+	def unique_hash(cls, name, module, realm, active, content):
 		return name
 	@classmethod
-	def unique_filter(cls, query, name, module, realm, active, input_parameters, trigger_type, schedule_content=None):
+	def unique_filter(cls, query, name, module, realm, active, content):
 		return query.filter(JobServerSide.name == name)
 
 
@@ -535,8 +526,19 @@ class ApiConsumerAccess(Base):
 	  |  job_server
 	Columns :
 	  |  object_id [Integer] PK
-	  |  token [String(32)]
+	  |  key [String(32)]
 	  |  name [CHAR(256)]
+	  |  password [CHAR(256)]
+	  |  owner [CHAR(256)]
+	  |  active [Boolean]
+	  |  access_read [Boolean]
+	  |  access_write [Boolean]
+	  |  access_delete [Boolean]
+	  |  access_admin [Boolean]
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
+	  |  object_created_by [CHAR(128)]
+	  |  object_updated_by [CHAR(128)]
 	"""
 
 	__tablename__ = 'api_access_consumer'
@@ -565,6 +567,8 @@ class ConsumerEndpoint(Base):
 	Columns :
 	  |  object_id [CHAR(32)]
 	  |  name [String(256)] PK
+	  |  remote_addr [CHAR(128)]
+	  |  access_route [CHAR(128)]
 	"""
 
 	__tablename__ = 'consumer_endpoint'
@@ -582,7 +586,7 @@ class ApiAccess(Base):
 	  |  job_server
 	Columns :
 	  |  object_id [Integer] PK
-	  |  token [String(32)]
+	  |  key [String(32)]
 	  |  name [CHAR(256)]
 	"""
 

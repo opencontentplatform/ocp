@@ -50,6 +50,7 @@
 	"waitSecondsBetweenForcedTokenRefreshes" : 43200,
 	"waitSecondsBeforeExiting" : 5,
 	"waitSecondsBetweenClientHealthUpdates" : 120,
+	"waitSecondsBetweenJobUpdates" : 10,
 	"waitSecondsBetweenGettingNewClients" : 60,
 	"waitSecondsBetweenHealthChecks" : 30,
 	"waitSecondsBetweenClientAuthorizationAttempts" : 31,

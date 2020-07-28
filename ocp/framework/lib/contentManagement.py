@@ -45,15 +45,18 @@ from database.connectionPool import DatabaseClient
 validPackageSystems = {
 	'contentgathering':
 		{ 'name' : 'contentGathering',
-		  'path' : env.contentGatheringPkgPath
+		  'path' : env.contentGatheringPkgPath,
+		  'dbClass' : platformSchema.JobContentGathering
 		},
 	'universaljob':
 		{ 'name' : 'universalJob',
-		  'path' : env.universalJobPkgPath
+		  'path' : env.universalJobPkgPath,
+		  'dbClass' : platformSchema.JobUniversal
 		},
 	'serverside':
 		{ 'name' : 'serverSide',
-		  'path' : env.serverSidePkgPath
+		  'path' : env.serverSidePkgPath,
+		  'dbClass' : platformSchema.JobServerSide
 		}
 	}
 
@@ -77,6 +80,7 @@ def listPackages():
 	## And finally report
 	strReport = json.dumps(jsonReport, default=utils.customJsonDumpsConverter, indent=4)
 	logger.debug('Valid packages: \n{}'.format(str(strReport)))
+	print('Valid packages: \n{}'.format(str(strReport)))
 
 	## end listPackages
 	return
@@ -229,6 +233,47 @@ def getDbConnection(logger):
 	return dbClient
 
 
+def insertJob(logger, dbClient, entry, packageSystemName, packageName, jobFile):
+	try:
+		jobSettings = None
+		with open(jobFile, 'r') as json_data:
+			jobSettings = json.load(json_data)
+
+		try:
+			jobShortName = jobSettings.get('jobName')
+			jobName = '{}.{}'.format(packageName, jobShortName)
+			attributes = {}
+			attributes['name'] = jobName
+			attributes['package'] = packageName
+			attributes['realm'] = jobSettings.get('realm', 'default')
+			attributes['active'] = not jobSettings.get('isDisabled', True)
+			attributes['content'] = jobSettings
+			
+			logger.debug('  Inserting job: {}.{}'.format(packageName, jobName))
+			dbClass = validPackageSystems[packageSystemName.lower()]['dbClass']
+			job = dbClient.session.query(dbClass).filter(dbClass.name == jobName).first()
+			## Insert the file if it doesn't exist
+			if job is None:
+				logger.debug('  {} is new; inserting...'.format(attributes['name']))
+				job = dbClass(**attributes)
+				job = dbClient.session.add(job)
+				dbClient.session.commit()
+			## The file has been tracked before
+			else:
+				logger.debug('  {} already exists; overwriting...'.format(attributes['name']))
+				job = dbClass(**attributes)
+				job = dbClient.session.merge(job)
+				dbClient.session.commit()
+		except:
+			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			logger.error('Exception in insertJob on job {}:  {}'.format(jobShortName, stacktrace))
+	except:
+		logger.error('Error loading job file {}: {}'.format(jobFile, str(sys.exc_info()[1])))
+
+	## end insertJob
+	return
+
+
 def insertFile(logger, dbClient, attributes):
 	try:
 		logger.debug('  {} --> Path: {}  Hash: {}  Size: {}'.format(attributes['name'], attributes['path'], attributes['file_hash'], attributes['size']))
@@ -287,7 +332,7 @@ def getFileDataAndHash(targetFile):
 	return (fileHash, allChunks)
 
 
-def recursePathsAndInsertFiles(thisPath, relativePath, fileIndex, dbClient, packageName, logger):
+def recursePathsAndInsertFiles(thisPath, relativePath, packageSystemName, fileIndex, dbClient, packageName, logger, isJobPath=False):
 	"""Go through all files/directories in the package, and load into the DB."""
 	for entry in os.listdir(thisPath):
 		if entry == '__pycache__':
@@ -296,7 +341,10 @@ def recursePathsAndInsertFiles(thisPath, relativePath, fileIndex, dbClient, pack
 		thisIndex = {}
 		if os.path.isdir(target):
 			newPath = '{},{}'.format(relativePath, entry)
-			recursePathsAndInsertFiles(target, newPath, thisIndex, dbClient, packageName, logger)
+			isJobPath = False
+			if entry == 'job':
+				isJobPath = True
+			recursePathsAndInsertFiles(target, newPath, packageSystemName, thisIndex, dbClient, packageName, logger, isJobPath)
 		else:
 			fileSize = int(os.path.getsize(target))
 			(fileHash, data) = getFileDataAndHash(target)
@@ -314,6 +362,10 @@ def recursePathsAndInsertFiles(thisPath, relativePath, fileIndex, dbClient, pack
 
 			## Insert
 			insertFile(logger, dbClient, attributes)
+			
+			## Do something more with job descriptors
+			if isJobPath:
+				insertJob(logger, dbClient, entry, packageSystemName, packageName, target)
 
 		fileIndex[entry] = thisIndex
 
@@ -352,7 +404,7 @@ def loadPackageIntoDB(logger, packageName, packageSystemName, packagePath, dbCli
 
 		## The package has been tracked before
 		else:
-			logger.debug(' package {} exists; check for changes...'.format(packageName))
+			logger.debug(' package {} exists; forcing an update...'.format(packageName))
 
 		## Get package snapshot
 		snapshot = getattr(package, 'snapshot')
@@ -362,7 +414,8 @@ def loadPackageIntoDB(logger, packageName, packageSystemName, packagePath, dbCli
 		fileIndex = {}
 		relativePath = ['content', packageSystemName, packageName]
 		relativePathString = ','.join(relativePath)
-		recursePathsAndInsertFiles(newPackagePath, relativePathString, fileIndex, dbClient, packageName, logger)
+		logger.debug(' --> recursePathsAndInsertFiles')
+		recursePathsAndInsertFiles(newPackagePath, relativePathString, packageSystemName, fileIndex, dbClient, packageName, logger)
 
 		## And finally update the top level package entry with the file list
 		logger.debug('fileIndex: {}'.format(fileIndex))
@@ -499,8 +552,10 @@ def validatePackage(packageName, compressedFile, pkgSystem='contentGathering', f
 				logger.info('Changes found in package {}, with the following files: {}'.format(packageName, str(changes)))
 				if not forceUpdate:
 					logger.info('Leaving package unchanged because the forceUpdate flag was not set.')
+					print('Leaving package unchanged because the forceUpdate flag was not set.')
 				else:
 					logger.info('Overwriting previous version...')
+					print('Overwriting previous version...')
 					loadPackageIntoDB(logger, packageName, packageSystemName, ['content', packageSystemName], dbClient, newPackagePath)
 
 		else:
@@ -573,7 +628,7 @@ Usage:  python {} <option> [parameters]
        filesystem. The <system> parameter should be one of the following values:
        'contentGathering', 'universal', 'serverSide'. The <fullyQualifiedFile>
        parameter must be a valid file on the server, containing the expected
-       format of a ITDM package, with a zip or tar extension. If a package by
+       format of a OCP package, with a zip or tar extension. If a package by
        the same name already exists, it is updated; otherwise it is created new.
 
     -uncompressed <packageName> <system> [<fullyQualifiedPath>]
@@ -584,27 +639,37 @@ Usage:  python {} <option> [parameters]
        if not specified. If a package by the same name already exists, it is
        updated; otherwise it is created new.
 
+    -baseline
+       Re-runs the loading of all packages into the database, from the server's
+       filesystem.
+
 """.format(__file__)
 
 
 def main():
-	"""Main entry point for the CLI."""
+	"""Main entry point for CLI; other functions are called from modules."""
 	try:
 		## Default a package test
 		action = sys.argv[1].lower()
 		if action == '-list':
 			listPackages()
 			return
+		if action == '-baseline':
+			print('Baseline packages in database...')
+			baselinePackagesInDatabase()
+			return
+		
 		packageName = sys.argv[2]
 		if action == '-delete':
 			## Input is a package name without the extension
 			removePackage(packageName)
+			print('Removed package {}'.format(packageName))
 		elif action == '-compressed':
 			forceUpdate = False
 			system = sys.argv[3]
 			## Fully qualified package filename with zip or tar extension
 			compressedFile = sys.argv[4]
-			print('calling with path {} and file {}'.format(compressedFile))
+			print('Calling on compressed file {}'.format(compressedFile))
 			validatePackage(packageName, compressedFile, system, forceUpdate)
 		elif action == '-uncompressed':
 			## Input is a package name without an extension; works off files in
@@ -618,6 +683,7 @@ def main():
 			pkgSystem = 'contentGathering'
 			if len(sys.argv) > 3:
 				pkgSystem = sys.argv[3]
+			print('Calling on uncompressed package {}'.format(packageName))
 			updatePackage(packageName, system, pkgPath=customPath)
 		else:
 			print(usage)

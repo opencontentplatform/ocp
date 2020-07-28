@@ -27,6 +27,7 @@ import twisted.logger
 from contextlib import suppress
 from twisted.internet import defer, task
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.twisted import TwistedScheduler
 from sqlalchemy import and_
 
 ## Add openContentPlatform directories onto the sys path
@@ -107,13 +108,16 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		self.jobStatistics = {}
 		self.clientGroups = {}
 		self.moduleFilesToTransfer = []
-		self.scheduler = BackgroundScheduler({
-			'apscheduler.executors.default': {
-				'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
-				'max_workers': '10'
-			},
+		self.scheduler = TwistedScheduler({
 			'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
 		})
+		# self.scheduler = BackgroundScheduler({
+		# 	'apscheduler.executors.default': {
+		# 		'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
+		# 		'max_workers': '10'
+		# 	},
+		# 	'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
+		# })
 		self.setupJobSchedules()
 		self.scheduler.start()
 		self.loopingCheckSchedules = task.LoopingCall(self.reportJobSchedules)
@@ -175,6 +179,9 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		self.logger.debug('cleanup: stopping loopingHealthUpdates')
 		with suppress(Exception):
 			self.loopingHealthUpdates.stop()
+		self.logger.debug('cleanup: stopping loopingJobUpdates')
+		with suppress(Exception):
+			self.loopingJobUpdates.stop()
 		print('  stopFactory: removing the protocolHandler')
 		with suppress(Exception):
 			del self.protocolHandler
@@ -198,7 +205,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		"""Initialize job meta data on all connected clients.
 
 		Arguments:
-		  jobName (str)     : (args[0]) String containing the module/job name
+		  jobName (str)     : (args[0]) String containing the job name
 		  packageName (str) : (args[1]) Package name, of type content
 
 		"""

@@ -408,6 +408,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		## end getPlatformDetails
 		return content
 
+
 	def enterSystemHealthCheck(self):
 		"""Looping method for health checks; done via non-blocking thread."""
 		threadHandle = None
