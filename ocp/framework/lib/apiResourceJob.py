@@ -5,7 +5,6 @@ This module defines the Application Programming Interface (API) methods for the
 
 	/<root>/job/config
 	/<root>/job/config/{service}
-	/<root>/job/config/{service}/filter
 	/<root>/job/config/{service}/{jobName}
 	/<root>/job/runtime
 	/<root>/job/runtime/{service}
@@ -80,6 +79,7 @@ def getJobConfigResources(request, response):
 	## end getJobConfigResources
 	return staticPayload
 
+
 def getConfigServiceTable(service, request, response):
 	"""Helper for shared code path."""
 	dbTable = None
@@ -106,11 +106,50 @@ def getJobConfigServiceList(service:text, request, response):
 			for item in dataHandle:
 				jobNames.append(item[0])
 			request.context['payload']['Jobs'] = jobNames
-		
+
 	except:
 		errorMessage(request, response)
 
 	## end getJobConfigServiceList
+	return cleanPayload(request)
+
+
+@hugWrapper.post('/config/{service}')
+def createJobConfigServiceList(service:text, content:hugJson, request, response):
+	"""Insert a new job in the specified service."""
+	try:
+		if hasRequiredData(request, response, content, ['source', 'package', 'content']):
+			dbClass = getConfigServiceTable(service, request, response)
+			if dbClass is not None:
+				packageName = content.get('package')
+				jobDescriptor = content.get('content')
+				jobShortName = jobDescriptor.get('jobName')
+				jobName = '{}.{}'.format(packageName, jobShortName)
+
+				dataHandle = request.context['dbSession'].query(dbClass).filter(dbClass.name==jobName).first()
+				if dataHandle is not None:
+					request.context['payload']['errors'].append('Job already exists: {name!r}'.format(name=jobName))
+					response.status = HTTP_404
+				else:
+					attributes = {}
+					attributes['name'] = jobName
+					attributes['package'] = packageName
+					attributes['realm'] = jobDescriptor.get('realm', 'default')
+					attributes['active'] = not jobDescriptor.get('isDisabled', True)
+					attributes['content'] = jobDescriptor
+					## Update the source
+					source = mergeUserAndSource(content, request)
+					attributes['object_created_by'] = source
+
+					thisEntry = dbClass(**attributes)
+					request.context['dbSession'].add(thisEntry)
+					request.context['dbSession'].commit()
+					request.context['payload']['Response'] = 'Inserted job: {name}'.format(name=jobName)
+
+	except:
+		errorMessage(request, response)
+
+	## end createJobConfigServiceList
 	return cleanPayload(request)
 
 
@@ -135,6 +174,8 @@ def getThisJobConfig(service:text, name:text, request, response):
 def updateThisJobConfig(service:text, name:text, content:hugJson, request, response):
 	"""Update job configuration with the provided JSON content."""
 	try:
+		## Don't do this for a PUT operation; the goal here is to keep it simple
+		## for job activation/deactivation and parameter changes.
 		#if hasRequiredData(request, response, content, ['source', 'content']):
 		dbTable = getConfigServiceTable(service, request, response)
 		if dbTable is not None:
@@ -148,16 +189,19 @@ def updateThisJobConfig(service:text, name:text, content:hugJson, request, respo
 				## Override any/all new settings provided
 				contentToMerge = {}
 				contentToMerge['name'] = name
-				for key in content:
-					contentToUpdate[key] = content.get(key)
+				#dataSection = content.get('content', {})
+				dataSection = content
+				for key in dataSection:
+					contentToUpdate[key] = dataSection.get(key)
 					if key == 'realm':
-						contentToMerge['realm'] = content.get(key, 'default')
+						contentToMerge['realm'] = dataSection.get(key, 'default')
 					if key == 'isDisabled':
-						contentToMerge['active'] = not content.get(key, True)
+						contentToMerge['active'] = not dataSection.get(key, True)
+				## Update the source
+				source = mergeUserAndSource(content, request)
+				contentToMerge['object_updated_by'] = source
 				## Get it back to JSON (not string or Python formats)
 				contentToMerge['content'] = json.loads(json.dumps(contentToUpdate))
-				## Source isn't currently tracked on job changes
-				#source = mergeUserAndSource(content, request)
 				request.context['logger'].debug('previousContent: {}'.format(contentToUpdate))
 				request.context['logger'].debug('newContent: {}'.format(content))
 				request.context['logger'].debug('mergedContent: {}'.format(contentToMerge))
@@ -171,6 +215,28 @@ def updateThisJobConfig(service:text, name:text, content:hugJson, request, respo
 		errorMessage(request, response)
 
 	## end updateThisJobConfig
+	return cleanPayload(request)
+
+
+@hugWrapper.delete('/config/{service}/{name}')
+def deleteThisJobConfig(service:text, name:text, request, response):
+	"""Delete the config group for the named realm."""
+	try:
+		dbTable = getConfigServiceTable(service, request, response)
+		if dbTable is not None:
+			dataHandle = request.context['dbSession'].query(dbTable).filter(dbTable.name==name).first()
+			if dataHandle is None:
+				request.context['payload']['errors'].append('Job not found: {}'.format(name))
+				response.status = HTTP_404
+			else:
+				request.context['dbSession'].delete(dataHandle)
+				request.context['dbSession'].commit()
+				request.context['payload']['Success'] = 'Removed job: {}'.format(name)
+
+	except:
+		errorMessage(request, response)
+
+	## end deleteThisJobConfig
 	return cleanPayload(request)
 
 

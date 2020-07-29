@@ -116,10 +116,6 @@ class VariableAndLoggerMiddleware:
 
 	def process_resource(self, request, response, resource, parameters):
 		errors = []
-		authenticated = False
-		requireWritePerm = False
-		requireDeletePerm = False
-		requireAdminPerm = False
 		try:
 			## Expose falcon variables for Hug
 			request.context['logger'] = self.logger

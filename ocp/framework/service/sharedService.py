@@ -393,7 +393,7 @@ class ServiceFactory(ServerFactory):
 
 		## end deferUpdateClientTokens
 		return threadHandle
-	
+
 	def deferSendHealthRequest(self):
 		"""Call sendHealthRequest in a non-blocking thread."""
 		threadHandle = None
@@ -498,7 +498,7 @@ class ServiceFactory(ServerFactory):
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error(' Exception in setupJobSchedules on job file {jobFile!r}: {stacktrace!r}', jobFile=jobFile, stacktrace=stacktrace)
-		
+
 		## end getJobSchedulerDetails
 		return (triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances)
 
@@ -520,9 +520,9 @@ class ServiceFactory(ServerFactory):
 				## Do not add disabled jobs into the scheduler
 				if not active:
 					## Nothing to schedule... job is disabled
-					self.logger.info('   skipping disabled job: {jobName!r}', jobName=jobName)
+					self.logger.debug('   skipping disabled job: {jobName!r}', jobName=jobName)
 					continue
-				
+
 				## Helper function for shared code paths
 				(triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances) = self.getJobSchedulerDetails(jobContent)
 				self.logger.info(' Scheduling job {jobName!r} with trigger {triggerType!r} and args {triggerArgs!r}', jobName=jobName, triggerType=triggerType, triggerArgs=triggerArgs)
@@ -538,7 +538,7 @@ class ServiceFactory(ServerFactory):
 									   misfire_grace_time=schedulerMisfireGraceTime,
 									   coalesce=schedulerCoalesce,
 									   max_instances=schedulerMaxInstances,
-									   **triggerArgs)				
+									   **triggerArgs)
 
 			except:
 				stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -547,7 +547,7 @@ class ServiceFactory(ServerFactory):
 		## Return underlying DBAPI connection
 		self.dbClient.session.commit()
 		self.dbClient.session.close()
-		
+
 		## end setupJobSchedules
 		return
 
@@ -591,13 +591,13 @@ class ServiceFactory(ServerFactory):
 											   max_instances=schedulerMaxInstances,
 											   **triggerArgs)
 						self.logger.info('Scheduled job {jobName!r} id {jobId!r} with trigger {triggerType!r} and args {triggerArgs!r}', jobName=jobName, jobId=self.jobId, triggerType=triggerType, triggerArgs=triggerArgs)
-				
+
 				else:
 					## Remove and re-add the job into scheduler
 					oldId = self.activeJobs[jobName]
 					self.scheduler.remove_job(self.activeJobs[jobName])
 					del self.activeJobs[jobName]
-					
+
 					## Re-add the updated job back in, if it's still enabled
 					if not active:
 						self.logger.info('Removed job {jobName!r} id {jobId!r}', jobName=jobName, jobId=oldId)
@@ -628,7 +628,7 @@ class ServiceFactory(ServerFactory):
 		## Return underlying DBAPI connection
 		self.dbClient.session.commit()
 		self.dbClient.session.close()
-		
+
 		## end getJobUpdates
 		return
 
@@ -773,7 +773,7 @@ class ServiceFactory(ServerFactory):
 			if thisName == clientName:
 				self.dbClient.session.delete(serviceClient)
 				self.dbClient.session.commit()
-		
+
 		## Return underlying DBAPI connection
 		self.dbClient.session.commit()
 		self.dbClient.session.close()

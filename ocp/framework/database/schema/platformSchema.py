@@ -441,6 +441,8 @@ class JobContentGathering(UniqueMixin, Base):
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
 	active = Column(Boolean, default=False)
 	content = Column(JSON, nullable=False)
+	object_created_by = Column(String(128), nullable=True)
+	object_updated_by = Column(String(128), nullable=True)
 	time_created = Column(DateTime(timezone=True), default=func.now())
 	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod
@@ -475,6 +477,8 @@ class JobUniversal(UniqueMixin, Base):
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
 	active = Column(Boolean, default=False)
 	content = Column(JSON, nullable=False)
+	object_created_by = Column(String(128), nullable=True)
+	object_updated_by = Column(String(128), nullable=True)
 	time_created = Column(DateTime(timezone=True), default=func.now())
 	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod
@@ -509,6 +513,8 @@ class JobServerSide(UniqueMixin, Base):
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
 	active = Column(Boolean, nullable=True, default=False)
 	content = Column(JSON, nullable=False)
+	object_created_by = Column(String(128), nullable=True)
+	object_updated_by = Column(String(128), nullable=True)
 	time_created = Column(DateTime(timezone=True), default=func.now())
 	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod

@@ -59,9 +59,9 @@ def mergeUserAndSource(content, request):
 	"""Helper function. Merge user and source context; account for null values."""
 	source = content.pop('source', None)
 	if source is None or len(source) <= 0:
-		source = request.context['apiUser']
+		source = request.context['apiUser'][:128]
 	else:
-		source = '{}: {}'.format(request.context['apiUser'], source)
+		source = '{}: {}'.format(request.context['apiUser'], source)[:128]
 	return source
 
 

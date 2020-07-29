@@ -248,18 +248,20 @@ def insertJob(logger, dbClient, entry, packageSystemName, packageName, jobFile):
 			attributes['realm'] = jobSettings.get('realm', 'default')
 			attributes['active'] = not jobSettings.get('isDisabled', True)
 			attributes['content'] = jobSettings
-			
+
 			logger.debug('  Inserting job: {}.{}'.format(packageName, jobName))
 			dbClass = validPackageSystems[packageSystemName.lower()]['dbClass']
 			job = dbClient.session.query(dbClass).filter(dbClass.name == jobName).first()
 			## Insert the file if it doesn't exist
 			if job is None:
+				attributes['object_created_by'] = 'contentManagement module'
 				logger.debug('  {} is new; inserting...'.format(attributes['name']))
 				job = dbClass(**attributes)
 				job = dbClient.session.add(job)
 				dbClient.session.commit()
 			## The file has been tracked before
 			else:
+				attributes['object_updated_by'] = 'contentManagement module'
 				logger.debug('  {} already exists; overwriting...'.format(attributes['name']))
 				job = dbClass(**attributes)
 				job = dbClient.session.merge(job)
@@ -362,7 +364,7 @@ def recursePathsAndInsertFiles(thisPath, relativePath, packageSystemName, fileIn
 
 			## Insert
 			insertFile(logger, dbClient, attributes)
-			
+
 			## Do something more with job descriptors
 			if isJobPath:
 				insertJob(logger, dbClient, entry, packageSystemName, packageName, target)
@@ -658,7 +660,7 @@ def main():
 			print('Baseline packages in database...')
 			baselinePackagesInDatabase()
 			return
-		
+
 		packageName = sys.argv[2]
 		if action == '-delete':
 			## Input is a package name without the extension
