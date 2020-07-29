@@ -371,15 +371,13 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 
 	def loadJobData(self, jobName, jobShortName, packageName, content):
 		"""Load at runtime to pick up user changes to job configurations."""
-		#self.logger.info('inside loadJobData for job {jobName!r}', jobName=jobName)
 		try:
 			content['jobName'] = jobName
 			content['jobShortName'] = jobShortName
 			content['packageName'] = packageName
 
 			## Open defined job configurations
-			jobSettingsFile = os.path.join(self.pkgPath, packageName, 'job', '{}.json'.format(jobShortName))
-			jobSettings = utils.loadSettings(jobSettingsFile)
+			jobSettings = self.getSpecificJob(jobName)
 
 			## Set parameter defaults when not defined in the JSON file
 			content['isDisabled'] = jobSettings.get('isDisabled', False)

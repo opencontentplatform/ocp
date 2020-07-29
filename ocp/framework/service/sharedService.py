@@ -28,6 +28,7 @@ import uuid
 import time
 import datetime
 import json
+import copy
 import platform
 import psutil
 import requests
@@ -476,6 +477,25 @@ class ServiceFactory(ServerFactory):
 				break
 			count += 1
 		return thisDbClient
+
+
+	def getSpecificJob(self, jobName):
+		jobSettings = None
+		## Get job descriptors from the database
+		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
+		jobData = self.dbClient.session.query(jobClass).filter(jobClass.name==jobName).first()
+		if jobData is not None:
+			jobSettings = copy.deepcopy(jobData.content)
+
+		## Return underlying DBAPI connection
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
+
+		if jobSettings is None:
+			raise EnvironmentError('Job settings not found: {}'.format(jobName))
+
+		## end getSpecificJob
+		return jobSettings
 
 
 	def getJobSchedulerDetails(self, jobContent):
