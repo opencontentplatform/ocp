@@ -771,6 +771,10 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 				thisEntry = self.dbClient.session.query(self.clientResultsTable).filter(and_(self.clientResultsTable.endpoint == endpoint, self.clientResultsTable.job == jobName)).first()
 				self.dbClient.session.commit()
 				if thisEntry:
+					prevStatus = thisEntry.status
+					prevConJobPass = thisEntry.consecutive_jobs_passed
+					prevConJobFail = thisEntry.consecutive_jobs_failed
+
 					## Job entry exists; pull current record and update
 					setattr(thisEntry, 'status', jobStatus)
 					setattr(thisEntry, 'messages', jobMessages)
@@ -780,13 +784,14 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 					setattr(thisEntry, 'time_elapsed', jobRuntime)
 					setattr(thisEntry, 'result_count', jobResultCount)
 					setattr(thisEntry, 'date_last_invocation', jobStart)
+
 					## If this execution didn't outright fail (success/warning)
 					if jobStatus != 'FAILURE':
 						setattr(thisEntry, 'date_last_success', jobStart)
 						setattr(thisEntry, 'total_jobs_passed', thisEntry.total_jobs_passed + 1)
 						## If last execution failed, this is the first consecutive pass
-						prevConJobPass = thisEntry.consecutive_jobs_passed
-						if thisEntry.status == 'FAILURE':
+						if prevStatus == 'FAILURE':
+							self.logger.debug('     --> overriding consecutive_jobs_passed')
 							prevConJobPass = 0
 						setattr(thisEntry, 'consecutive_jobs_passed', prevConJobPass + 1)
 					## If this execution failed
@@ -794,8 +799,8 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 						setattr(thisEntry, 'date_last_failure', jobStart)
 						setattr(thisEntry, 'total_jobs_failed', thisEntry.total_jobs_failed + 1)
 						## If last execution didn't fail, this is the first consecutive fail
-						prevConJobFail = thisEntry.consecutive_jobs_failed
-						if thisEntry.status != 'FAILURE':
+						if prevStatus != 'FAILURE':
+							self.logger.debug('     --> overriding consecutive_jobs_failed')
 							prevConJobFail = 0
 						setattr(thisEntry, 'consecutive_jobs_failed', prevConJobFail + 1)
 
