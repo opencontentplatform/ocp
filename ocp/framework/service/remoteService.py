@@ -780,22 +780,24 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 					setattr(thisEntry, 'time_elapsed', jobRuntime)
 					setattr(thisEntry, 'result_count', jobResultCount)
 					setattr(thisEntry, 'date_last_invocation', jobStart)
-					## If last execution didn't outright fail (success/warning)
+					## If this execution didn't outright fail (success/warning)
 					if jobStatus != 'FAILURE':
 						setattr(thisEntry, 'date_last_success', jobStart)
 						setattr(thisEntry, 'total_jobs_passed', thisEntry.total_jobs_passed + 1)
-						## This will be the first consecutive passing run
+						## If last execution failed, this is the first consecutive pass
+						prevConJobPass = thisEntry.consecutive_jobs_passed
 						if thisEntry.status == 'FAILURE':
-							setattr(thisEntry, 'consecutive_jobs_passed', 0)
-						setattr(thisEntry, 'consecutive_jobs_passed', thisEntry.consecutive_jobs_passed + 1)
-					## If the last execution failed
+							prevConJobPass = 0
+						setattr(thisEntry, 'consecutive_jobs_passed', prevConJobPass + 1)
+					## If this execution failed
 					else:
 						setattr(thisEntry, 'date_last_failure', jobStart)
 						setattr(thisEntry, 'total_jobs_failed', thisEntry.total_jobs_failed + 1)
-						## This will be the first consecutive failure
+						## If last execution didn't fail, this is the first consecutive fail
+						prevConJobFail = thisEntry.consecutive_jobs_failed
 						if thisEntry.status != 'FAILURE':
-							setattr(thisEntry, 'consecutive_jobs_failed', 0)
-						setattr(thisEntry, 'consecutive_jobs_failed', thisEntry.consecutive_jobs_failed + 1)
+							prevConJobFail = 0
+						setattr(thisEntry, 'consecutive_jobs_failed', prevConJobFail + 1)
 
 					setattr(thisEntry, 'total_job_invocations', thisEntry.total_job_invocations + 1)
 					self.dbClient.session.add(thisEntry)
