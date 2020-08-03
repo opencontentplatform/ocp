@@ -65,6 +65,7 @@ class ContentGatheringService(sharedService.ServiceProcess):
 		self.globalSettings = globalSettings
 		self.clientEndpointTable = platformSchema.ServiceContentGatheringEndpoint
 		self.clientResultsTable = platformSchema.ContentGatheringResults
+		self.serviceResultsTable = platformSchema.ContentGatheringServiceResults
 		self.pkgPath = env.contentGatheringPkgPath
 		self.serviceSettings = globalSettings['fileContainingContentGatheringSettings']
 		self.serviceLogSetup = globalSettings['fileContainingServiceLogSettings']

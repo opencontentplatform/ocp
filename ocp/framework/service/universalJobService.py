@@ -70,6 +70,7 @@ class UniversalJobService(sharedService.ServiceProcess):
 		self.globalSettings = globalSettings
 		self.clientEndpointTable = platformSchema.ServiceUniversalJobEndpoint
 		self.clientResultsTable = platformSchema.UniversalJobResults
+		self.serviceResultsTable = platformSchema.UniversalJobServiceResults
 		self.pkgPath = env.universalJobPkgPath
 		self.serviceSettings = globalSettings['fileContainingUniversalJobSettings']
 		self.serviceLogSetup = globalSettings['fileContainingServiceLogSettings']

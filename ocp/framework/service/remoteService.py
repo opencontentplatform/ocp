@@ -84,7 +84,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 
 	protocol = RemoteServiceListener
 
-	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent, moduleType, clientEndpointTable, clientResultsTable, pkgPath, serviceSettings, serviceLogSetup):
+	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent, moduleType, clientEndpointTable, clientResultsTable, serviceResultsTable, pkgPath, serviceSettings, serviceLogSetup):
 		"""Constructor for the RemoteServiceFactory."""
 		self.canceledEvent = canceledEvent
 		self.shutdownEvent = shutdownEvent
@@ -94,6 +94,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		self.localSettings = utils.loadSettings(os.path.join(env.configPath, serviceSettings))
 		self.clientEndpointTable = clientEndpointTable
 		self.clientResultsTable = clientResultsTable
+		self.serviceResultsTable = serviceResultsTable
 		self.moduleType = moduleType
 		self.pkgPath = pkgPath
 		self.validActions = ['connectionRequest', 'healthResponse', 'reAuthorization', 'jobStatistics', 'jobFinishedOnClient', 'jobIdle', 'clientGroups', 'checkModules', 'sendModule', 'receivedFile']
@@ -457,6 +458,63 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		return
 
 
+	def initializeJobStats(self, jobName, resultCount, clientEndpoints):
+		## Track jobs to know when they have reported back, and enable a level
+		## of statistical analysis over time:
+		jobStats = {}
+		jobStats['job'] = jobName
+		jobStats['endpoint_count'] = resultCount
+		jobStats['time_started'] = datetime.datetime.now()
+		jobStats['active_client_list'] = clientEndpoints[:]
+		jobStats['active_client_count'] = len(jobStats['active_client_list'])
+		jobStats['completed_count'] = 0
+		jobStats['job_completed'] = False
+		jobStats['count_per_client'] = {}
+		for clientEndpoint in clientEndpoints:
+			jobStats['count_per_client'][clientEndpoint] = 0
+		jobStats['count_per_status'] = {}
+
+		## Create initial result stat in database, to be updated as job runs
+		thisEntry = self.serviceResultsTable(**jobStats)
+		self.dbClient.session.add(thisEntry)
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
+
+		## Store the stats for final processing
+		self.jobStatistics[jobName] = jobStats
+
+		## end initializeJobStats
+		return
+
+
+	def finalizeJobStats(self, jobName):
+		jobStats = self.jobStatistics[jobName]
+		jobStats['time_finished'] = datetime.datetime.now()
+		jobStats['time_elapsed'] = (jobStats['time_finished'] - jobStats['time_started']).total_seconds()
+		if jobStats['endpoint_count'] == jobStats['completed_count']:
+			jobStats['job_completed'] = True
+
+		## Update result entry in database
+		thisEntry = self.dbClient.session.query(self.serviceResultsTable).filter(and_(self.serviceResultsTable.job == jobName, self.serviceResultsTable.time_started == jobStats['time_started'])).first()
+		if thisEntry:
+			setattr(thisEntry, 'time_finished', jobStats['time_finished'])
+			setattr(thisEntry, 'time_elapsed', jobStats['time_elapsed'])
+			setattr(thisEntry, 'job_completed', jobStats['job_completed'])
+			setattr(thisEntry, 'completed_count', jobStats['completed_count'])
+			self.dbClient.session.add(thisEntry)
+		else:
+			## This should never happen; the entry should have been created
+			## when the job started, and updated regularly during runtime
+			self.logger.error('Service results entry does not exist for job {jobName!r} with start time {startTime!r}', jobName=jobName, startTime=jobStats['time_started'])
+
+		## Return underlying DBAPI connection
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
+
+		## end finalizeJobStats
+		return
+
+
 	def invokeJobOnClient(self, jobName, packageName, clientEndpoints, metaData):
 		"""Sends jobs to specified client endpoint(s).
 
@@ -467,11 +525,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		"""
 		try:
 			resultCount = len(clientEndpoints)
-			## Track total number of jobs to know when they have reported back
-			jobStats = {}
-			jobStats['totalCount'] = resultCount
-			jobStats['completedCount'] = 0
-			self.jobStatistics[jobName] = jobStats
+			self.initializeJobStats(jobName, resultCount, clientEndpoints)
 			self.jobActiveClients[jobName] = []
 
 			for clientEndpoint in clientEndpoints:
@@ -547,11 +601,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 				endpointList = newList
 				resultCount = 1
 
-			## Track total number of jobs to know when they have reported back
-			jobStats = {}
-			jobStats['totalCount'] = resultCount
-			jobStats['completedCount'] = 0
-			self.jobStatistics[jobName] = jobStats
+			self.initializeJobStats(jobName, resultCount, clientEndpoints)
 			self.jobActiveClients[jobName] = []
 
 			endpointPipeline = metaData.get('endpointPipeline', 'service').lower()
@@ -696,17 +746,21 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 			resultLines = content['statistics']
 			## Get a handle on the stats for this job
 			jobStats = self.jobStatistics[jobName]
-			totalCount = jobStats['totalCount']
-			completedCount = jobStats['completedCount']
+			totalCount = jobStats['endpoint_count']
+			completedCount = jobStats['completed_count']
 			completedCount += len(resultLines)
-			jobStats['completedCount'] = completedCount
-			self.jobStatistics[jobName] = jobStats
+			jobStats['completed_count'] = completedCount
+
+			## Process CLIENT-SIDE status results
 			self.logger.info('=== totalCount: {totalCount!r}, completedCount: {completedCount!r}', totalCount=totalCount, completedCount=completedCount)
-			## Run through the results and send to the database
+			## Run through the results and update client-side stats
 			for result in resultLines:
 				endpoint = result['endpoint']
 				jobStatus = result['status']
 				jobMessages = result['messages']
+				## Updating count_per_status for the service-side stats
+				jobStats['count_per_status'][jobStatus] = jobStats['count_per_status'].get(jobStatus, 0) + 1
+
 				## Pull the datetime fields out of the JSON and explicitely
 				## typecast back to datetime fields so we can send to the DB
 				jobStart = datetime.datetime.strptime(result['start'], '%Y-%m-%d %H:%M:%S.%f')
@@ -725,16 +779,24 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 					setattr(thisEntry, 'time_finished', jobEnd)
 					setattr(thisEntry, 'time_elapsed', jobRuntime)
 					setattr(thisEntry, 'result_count', jobResultCount)
-					## Update current attribute values
 					setattr(thisEntry, 'date_last_invocation', jobStart)
+					## If last execution didn't outright fail (success/warning)
 					if jobStatus != 'FAILURE':
 						setattr(thisEntry, 'date_last_success', jobStart)
-						setattr(thisEntry, 'consecutive_jobs_passed', thisEntry.consecutive_jobs_passed + 1)
 						setattr(thisEntry, 'total_jobs_passed', thisEntry.total_jobs_passed + 1)
+						## This will be the first consecutive passing run
+						if thisEntry.status == 'FAILURE':
+							setattr(thisEntry, 'consecutive_jobs_passed', 0)
+						setattr(thisEntry, 'consecutive_jobs_passed', thisEntry.consecutive_jobs_passed + 1)
+					## If the last execution failed
 					else:
 						setattr(thisEntry, 'date_last_failure', jobStart)
-						setattr(thisEntry, 'consecutive_jobs_failed', thisEntry.consecutive_jobs_failed + 1)
 						setattr(thisEntry, 'total_jobs_failed', thisEntry.total_jobs_failed + 1)
+						## This will be the first consecutive failure
+						if thisEntry.status != 'FAILURE':
+							setattr(thisEntry, 'consecutive_jobs_failed', 0)
+						setattr(thisEntry, 'consecutive_jobs_failed', thisEntry.consecutive_jobs_failed + 1)
+
 					setattr(thisEntry, 'total_job_invocations', thisEntry.total_job_invocations + 1)
 					self.dbClient.session.add(thisEntry)
 					self.dbClient.session.commit()
@@ -751,6 +813,23 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 					self.logger.debug('Created new job statistics entry for job {jobName!r} endpoint {endpoint!r}', jobName=jobName, endpoint=endpoint)
 				## Return underlying DBAPI connection
 				self.dbClient.session.close()
+
+			## Process SERVICE-SIDE status results
+			countPerClient = jobStats['count_per_client']
+			countPerClient[clientName] = countPerClient.get(clientName, 0) + len(resultLines)
+			self.jobStatistics[jobName] = jobStats
+			## Update service-side stats
+			thisEntry = self.dbClient.session.query(self.serviceResultsTable).filter(and_(self.serviceResultsTable.job == jobName, self.serviceResultsTable.time_started == jobStats['time_started'])).first()
+			if thisEntry:
+				setattr(thisEntry, 'completed_count', jobStats['completed_count'])
+				setattr(thisEntry, 'count_per_client', jobStats['count_per_client'])
+				setattr(thisEntry, 'count_per_status', jobStats['count_per_status'])
+				self.dbClient.session.add(thisEntry)
+				self.dbClient.session.commit()
+			else:
+				## This should never happen; the entry should have been created
+				## when the job started, and updated regularly during runtime
+				self.logger.error('Cannot update stats. Service results entry does not exist for job {jobName!r} with start time {startTime!r}', jobName=jobName, startTime=jobStats['time_started'])
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -810,8 +889,8 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 
 		if jobName in self.jobStatistics:
 			jobStats = self.jobStatistics[jobName]
-			totalCount = jobStats['totalCount']
-			completedCount = jobStats['completedCount']
+			totalCount = jobStats['endpoint_count']
+			completedCount = jobStats['completed_count']
 			self.logger.info('totalCount: {totalCount!r}, completedCount: {completedCount!r}', totalCount=totalCount, completedCount=completedCount)
 
 		## end doJobIdle
@@ -1121,10 +1200,12 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 					client.constructAndSendData('removeJob', { 'jobName' : jobName })
 			clientEndpoints = None
 			self.jobActiveClients.pop(jobName, None)
+			self.finalizeJobStats(jobName)
 			self.jobStatistics.pop(jobName, None)
 			## TODO: call aggregate functions to get statistics on the jobs:
 			## shortest successful runtime, longest runtime, avg runtime,
 			## standard deviations, and pass/fail counts
+
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error('Exception in doJobComplete: {exception!r}', exception=exception)

@@ -243,15 +243,12 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 
 	def startProcessing(self):
 		"""Starts kafka processessing."""
-		print('Inside startProcessing...')
 		threadHandle = None
 		try:
 			## Prepare for our maintenance work (no-op on first run)...
 			self.maintenanceMode = True
-			print('startProcessing: while not canceled loop')
 			## Initialize the Kafka connection
 			while not self.connectedToKafkaConsumer and not self.canceled:
-				print('startProcessing: calling createKafkaConsumer')
 				self.logger.debug('startProcessing: calling createKafkaConsumer')
 				self.kafkaConsumer = self.createKafkaConsumer(self.kafkaTopic)
 				## You hit an exception if this is the first time the topic is
@@ -262,13 +259,11 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 			## Wait for the previous processKafkaResults to break out of the
 			## while loop and finish, before starting routine maintenance.
 			while not self.pauseKafkaProcessing and not self.canceled:
-				print('startProcessing: inside maintenance wait loop for pauseKafkaProcessing')
 				self.logger.info('startProcessing: inside maintenance wait loop for pauseKafkaProcessing')
 				time.sleep(2)
 
 			## Maintenance work...
 			## Build objectCache from scratch instead of updating from timestamp
-			print('startProcessing: build objectCache from scratch')
 			self.logger.debug('startProcessing: build objectCache from scratch')
 			self.objectCache.build()
 			## Initialize the resultProcessingUtility
@@ -304,7 +299,6 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 
 	def processKafkaResults(self):
 		"""Wait for kafka results, and send into the resultProcessingUtility."""
-		print('Inside processKafkaResults')
 		self.logger.info('Inside {name!r}.processKafkaResults', name=__name__)
 		while self.connectedToKafkaConsumer and not self.maintenanceMode and not self.canceled:
 			try:
@@ -338,7 +332,6 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 				print('Interrrupt received...')
 				self.canceled = True
 			except:
-				print('Exception in processKafkaResults...')
 				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 				self.logger.error('processKafkaResults: exception in kafka wait loop: {exception}', exception=exception)
 				self.logToKafka('processKafkaResults: aborted kafka wait loop')
@@ -353,13 +346,11 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 				self.kafkaErrorCount += 1
 				try:
 					if self.kafkaErrorCount < self.kafkaErrorLimit:
-						print('processKafkaResults kafkaErrorCount {}'.format(self.kafkaErrorCount))
 						with suppress(Exception):
 							self.logger.error('processKafkaResults kafkaErrorCount {kafkaErrorCount}', kafkaErrorCount=self.kafkaErrorCount)
 						time.sleep(2)
 					else:
 						self.canceled = True
-						print('processKafkaResults kafkaErrorCount {}... exiting.'.format(self.kafkaErrorCount))
 						with suppress(Exception):
 							self.logger.error('processKafkaResults kafkaErrorCount {kafkaErrorCount}', kafkaErrorCount=self.kafkaErrorCount)
 						reactor.stop()
@@ -369,11 +360,8 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 					reactor.stop()
 
 		self.resultProcessingUtility = None
-		print('Leaving processKafkaResults...')
 		self.logger.debug('Leaving processKafkaResults...')
-		print('  --> connectedToKafkaConsumer {}'.format(self.connectedToKafkaConsumer))
 		self.logger.debug('  --> connectedToKafkaConsumer {connectedToKafkaConsumer!r}', connectedToKafkaConsumer=self.connectedToKafkaConsumer)
-		print('  --> maintenanceMode  {}'.format(self.maintenanceMode))
 		self.logger.debug('  --> maintenanceMode  {maintenanceMode!r}', maintenanceMode=self.maintenanceMode)
 
 		## Indicate we are ready for cache full sync

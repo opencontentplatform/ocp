@@ -979,7 +979,7 @@ class ServiceProcess(multiprocessing.Process):
 			## directed by additional input parameters; set args accordingly:
 			factoryArgs = None
 			if (self.serviceName == 'ContentGatheringService' or self.serviceName == 'UniversalJobService'):
-				factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent, self.moduleType, self.clientEndpointTable, self.clientResultsTable, self.pkgPath, self.serviceSettings, self.serviceLogSetup)
+				factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent, self.moduleType, self.clientEndpointTable, self.clientResultsTable, self.serviceResultsTable, self.pkgPath, self.serviceSettings, self.serviceLogSetup)
 			else:
 				factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent)
 
