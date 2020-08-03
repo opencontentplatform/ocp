@@ -328,7 +328,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		headersAsDict = {}
 		headersAsDict['Content-Type'] = 'application/json'
 		headersAsDict['endpointKey'] = self.endpointKey
-		
+
 		while True:
 			try:
 				## Issue a GET call to URL for token generation

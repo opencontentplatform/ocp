@@ -818,6 +818,74 @@ class ServiceUniversalJobHealth(EndpointHealthAttributes, Base):
 	name = Column(String(256), primary_key=True)
 
 
+class ContentGatheringServiceResults(Base):
+	"""Defines a service_results_content_gathering object for the database.
+
+	Table :
+	  |  service_results_content_gathering
+	Columns :
+	  |  job [String(256)] PK
+	  |  time_started [DateTime] PK
+	  |  active_client_list [ARRAY]
+	  |  active_client_count [Integer]
+	  |  endpoint_count [Integer]
+	  |  completed_count [Integer]
+	  |  time_finished [DateTime]
+	  |  time_elapsed [Float]
+	  |  job_completed [Boolean]
+	  |  count_per_client [JSON]
+	"""
+
+	__tablename__ = 'service_results_content_gathering'
+	__table_args__ = {"schema":"platform"}
+	job = Column(String(256), primary_key=True)
+	#active_clients = Column(String(512), nullable=False)
+	active_client_list = Column(ARRAY(String, dimensions=1), nullable=False)
+	active_client_count = Column(Integer, default=0)
+	endpoint_count = Column(Integer, default=0)
+	completed_count = Column(Integer, default=0)
+	time_started = Column(DateTime(timezone=True), primary_key=True)
+	time_finished = Column(DateTime(timezone=True), nullable=True)
+	time_elapsed = Column(Float, nullable=True)
+	job_completed = Column(Boolean, default=False)
+	count_per_client = Column(JSON, nullable=False)
+	count_per_status = Column(JSON, nullable=False)
+
+
+class UniversalJobServiceResults(Base):
+	"""Defines a service_results_content_gathering object for the database.
+
+	Table :
+	  |  service_results_universal_job
+	Columns :
+	  |  job [String(256)] PK
+	  |  time_started [DateTime] PK
+	  |  active_client_list [ARRAY]
+	  |  active_client_count [Integer]
+	  |  endpoint_count [Integer]
+	  |  completed_count [Integer]
+	  |  time_finished [DateTime]
+	  |  time_elapsed [Float]
+	  |  job_completed [Boolean]
+	  |  count_per_client [JSON]
+	"""
+
+	__tablename__ = 'service_results_universal_job'
+	__table_args__ = {"schema":"platform"}
+	job = Column(String(256), primary_key=True)
+	#active_clients = Column(String(512), nullable=False)
+	active_client_list = Column(ARRAY(String, dimensions=1), nullable=False)
+	active_client_count = Column(Integer, default=0)
+	endpoint_count = Column(Integer, default=0)
+	completed_count = Column(Integer, default=0)
+	time_started = Column(DateTime(timezone=True), primary_key=True)
+	time_finished = Column(DateTime(timezone=True), nullable=True)
+	time_elapsed = Column(Float, nullable=True)
+	job_completed = Column(Boolean, default=False)
+	count_per_client = Column(JSON, nullable=False)
+	count_per_status = Column(JSON, nullable=False)
+
+
 class ContentGatheringResults(Base):
 	"""Defines a content_gathering_results object for the database.
 
