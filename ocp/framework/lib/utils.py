@@ -1530,6 +1530,7 @@ def attemptKafkaProducerConnection(logger, kafkaEndpoint, useCertsWithKafka, kaf
 	kafkaProperties['message.send.max.retries'] = 10000000
 	kafkaProperties['enable.idempotence'] = True
 	kafkaProperties['message.max.bytes'] = 15728640
+	## available compression.type values: gzip, snappy, lz4, zstd
 	kafkaProperties['compression.type'] = 'gzip'
 	if useCertsWithKafka:
 		logger.debug('Attempting secure connection for Kafka producer to {}'.format(kafkaEndpoint))
@@ -1597,6 +1598,70 @@ def loadExternalLibrary(libraryAlias, env=None, globalSettings=None):
 	externalDatabaseLibrary = globalSettings.get(libraryAlias)
 	## Add the external directory onto sys.path before calling the library
 	env.addExternalPath()
-	
+
 	## end loadExternalLibrary
 	return importlib.import_module(externalDatabaseLibrary)
+
+
+def getGigOrMeg(value):
+	"""Helper function for memory sizing and human readability."""
+	k, b = divmod(value, 1000)
+	m, k = divmod(k, 1024)
+	g, m = divmod(m, 1024)
+
+	## Just the general amount is fine for reporting status
+	total = '{} MB'.format(m)
+	if g > 1:
+		total = '{} GB'.format(g)
+
+	## end getGigOrMeg
+	return total
+
+
+def logExceptionWithSelfLogger(skipTraceback=False, reRaiseException=False):
+	"""Decorator to wrap any function with try/except logging.
+
+	This version uses self.logger from the class method being called."""
+	def decorator(function):
+		def wrapper(self, *args, **kwargs):
+			logger = self.logger
+			try:
+				return function(self, *args, **kwargs)
+			except:
+				if skipTraceback:
+					message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+					logger.error('Exception in {}: {}'.format(function.__name__, message))
+				else:
+					## Don't use logger.exception because we don't know the type
+					## of logger we have: python, twisted, multiprocess, etc:
+					#logger.exception('Exception: ')
+					exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+					logger.error('Exception:  {}'.format(exception))
+				if reRaiseException:
+					raise
+		return wrapper
+	return decorator
+
+
+def logException(skipTraceback=False, reRaiseException=False):
+	"""Decorator to wrap any function with try/except logging.
+
+	This version assumes 'logger' is a globally accessible variable."""
+	def decorator(function):
+		def wrapper(*args, **kwargs):
+			try:
+				return function(*args, **kwargs)
+			except:
+				if skipTraceback:
+					message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+					logger.error('Exception in {}: {}'.format(function.__name__, message))
+				else:
+					## Don't use logger.exception because we don't know the type
+					## of logger we have: python, twisted, multiprocess, etc:
+					#logger.exception('Exception: ')
+					exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+					logger.error('Exception:  {}'.format(exception))
+				if reRaiseException:
+					raise
+		return wrapper
+	return decorator

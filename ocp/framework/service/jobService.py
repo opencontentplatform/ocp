@@ -1,13 +1,13 @@
 """Shared code for services that invoke remote jobs.
 
 This provides common code used by :class:`ContentGatheringService` and
-:class:`UniversalJobService` services, which invoke and manage remote jobs.
+:class:`UniversalJobService` services, which invoke and manage jobs.
 
 Classes:
 
-  * :class:`.RemoteServiceFactory` : Twisted factory managing all connections
-    for remote-enabled services
-  * :class:`.RemoteServiceListener` : Twisted protocol for the remote factory
+  * :class:`.JobServiceFactory` : Twisted factory managing connections for
+    job-enabled services
+  * :class:`.JobServiceListener` : Twisted protocol for the job factory
 
 .. hidden::
 
@@ -25,7 +25,7 @@ import time
 import datetime
 import twisted.logger
 from contextlib import suppress
-from twisted.internet import defer, task
+from twisted.internet import reactor, threads, defer, task
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.twisted import TwistedScheduler
 from sqlalchemy import and_
@@ -35,32 +35,33 @@ import env
 env.addLibPath()
 
 ## From openContentPlatform
-import sharedService
+import networkService
 import utils
+from utils import logExceptionWithSelfLogger
 import database.schema.platformSchema as platformSchema
 from utilities import loadConfigGroupFile
 
 
-class RemoteServiceListener(sharedService.ServiceListener):
+class JobServiceListener(networkService.ServiceListener):
 	"""Receives and sends data through protocol of choice."""
 
 	def doJobStatistics(self, content):
-		"""Calls the doJobStatistics method in RemoteServiceFactory class."""
+		"""Calls the doJobStatistics method in JobServiceFactory class."""
 		self.factory.logger.info('Received a doJobStatistics')
 		self.factory.doJobStatistics(self.clientName, content)
 
 	def doJobFinishedOnClient(self, content):
-		"""Calls the doJobFinishedOnClient method in RemoteServiceFactory class."""
+		"""Calls the doJobFinishedOnClient method in JobServiceFactory class."""
 		self.factory.logger.info('Received a doJobFinishedOnClient')
 		self.factory.doJobFinishedOnClient(self.clientName, content)
 
 	def doJobIdle(self, content):
-		"""Calls the doJobIdle method in RemoteServiceFactory class."""
+		"""Calls the doJobIdle method in JobServiceFactory class."""
 		self.factory.logger.info('Received a doJobIdle')
 		self.factory.doJobIdle(self.clientName, content)
 
 	def doClientGroups(self, content):
-		"""Calls the doClientGroups method in RemoteServiceFactory class."""
+		"""Calls the doClientGroups method in JobServiceFactory class."""
 		self.factory.logger.info('Received a doClientGroups')
 		self.factory.doClientGroups(self.clientName, content)
 
@@ -69,23 +70,23 @@ class RemoteServiceListener(sharedService.ServiceListener):
 		self.factory.doCheckModules(self, content)
 
 	def doSendModule(self, content):
-		"""Calls the doSendModule method in RemoteServiceFactory class."""
+		"""Calls the doSendModule method in JobServiceFactory class."""
 		self.factory.logger.info('Received a doSendModule')
 		self.factory.doSendModule(self, content)
 
 	def doReceivedFile(self, content):
-		"""Calls the doReceivedFile method in RemoteServiceFactory class."""
+		"""Calls the doReceivedFile method in JobServiceFactory class."""
 		self.factory.logger.info('Received a doReceivedFile')
 		self.factory.doReceivedFile(self, content)
 
 
-class RemoteServiceFactory(sharedService.ServiceFactory):
-	"""Contains custom tailored parts specific to RemoteService."""
+class JobServiceFactory(networkService.ServiceFactory):
+	"""Contains custom tailored parts specific to JobService."""
 
-	protocol = RemoteServiceListener
+	protocol = JobServiceListener
 
 	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent, moduleType, clientEndpointTable, clientResultsTable, serviceResultsTable, pkgPath, serviceSettings, serviceLogSetup):
-		"""Constructor for the RemoteServiceFactory."""
+		"""Constructor for the JobServiceFactory."""
 		self.canceledEvent = canceledEvent
 		self.shutdownEvent = shutdownEvent
 		self.logFiles = utils.setupLogFile(serviceName, env, serviceLogSetup, directoryName='service')
@@ -103,8 +104,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		if self.canceledEvent.is_set() or self.shutdownEvent.is_set():
 			self.logger.error('Cancelling startup of {serviceName!r}', serviceName=serviceName)
 			return
-		self.kafkaProducer = None
-		self.createKafkaProducer()
+		self.kafkaProducer = self.createKafkaProducer()
 		self.jobActiveClients = {}
 		self.jobStatistics = {}
 		self.clientGroups = {}
@@ -112,17 +112,52 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		self.scheduler = TwistedScheduler({
 			'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
 		})
-		# self.scheduler = BackgroundScheduler({
-		# 	'apscheduler.executors.default': {
-		# 		'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
-		# 		'max_workers': '10'
-		# 	},
-		# 	'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
-		# })
+
+		## Block on setting schedules; nothing to do without this
 		self.setupJobSchedules()
-		self.scheduler.start()
-		self.loopingCheckSchedules = task.LoopingCall(self.reportJobSchedules)
+		## Call the scheduler in a different thread, so we can stop it later
+		reactor.callInThread(self.scheduler.start)
+
+		## Invoke LoopingCalls to return deferred, because according to the
+		## documentation on LoopingCall, "rescheduling will not take place
+		## until the deferred has fired." That's important for short cycles
+		## or when the main thread is blocking progress.
+		self.loopingCheckSchedules = task.LoopingCall(self.deferReportJobSchedules)
 		self.loopingCheckSchedules.start(self.localSettings['waitSecondsBetweenReportingJobSchedules'])
+		## Watch for events on the same loop schedule as coreService.healthCheck
+		self.loopingMainService = task.LoopingCall(self.deferCallMainLoop)
+		self.loopingMainService.start(self.globalSettings['waitSecondsBetweenHealthChecks'])
+
+
+	@logExceptionWithSelfLogger()
+	def deferCallMainLoop(self):
+		"""Call the main loop in a non-blocking thread."""
+		return threads.deferToThread(self.callMainLoop)
+
+	# def deferCallMainLoop(self):
+	# 	"""Call the main loop in a non-blocking thread."""
+	# 	threadHandle = None
+	# 	try:
+	# 		threadHandle = threads.deferToThread(self.callMainLoop)
+	# 	except:
+	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+	# 		self.logger.error('Exception: {exception!r}', exception=exception)
+	#
+	# 	## end deferCallMainLoop
+	# 	return threadHandle
+
+	@logExceptionWithSelfLogger()
+	def callMainLoop(self):
+		## coreService.healthCheck uses coreService.checkEvents; we need to
+		## do something similar here since the scheduler needs notified
+		self.logger.info('mainServiceLoop...')
+		#self.checkEvents()
+		if self.shutdownEvent.is_set() or self.canceledEvent.is_set():
+			self.logger.info('mainServiceLoop: shutting down scheduler.')
+			# shutdownArgs = { 'shutdown_threadpool': False }
+			# reactor.callFromThread(self.scheduler.shutdown, **shutdownArgs)
+			self.scheduler.shutdown(shutdown_threadpool=False)
+			self.logger.info('mainServiceLoop: finished.')
 
 
 	def stopFactory(self):
@@ -141,53 +176,53 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 		reactor starts, does not work... and of course 'self' (the instantiated
 		Service) does not exist until after the reactor starts.
 		"""
-		print(' {} cleaning up... inside stopFactory'.format(self.serviceName))
-		with suppress(Exception):
-			self.logger.debug(' stopFactory: starting...')
-		self.cleanup()
-		with suppress(Exception):
-			self.logger.info(' stopFactory: complete.')
+		try:
+			self.logger.info('stopFactory called in jobService')
+			if self.loopingMainService is not None:
+				self.logger.debug(' stopFactory: stopping loopingMainService')
+				self.loopingMainService.stop()
+				self.loopingMainService = None
+			if self.scheduler is not None:
+				self.logger.debug(' stopFactory: stopping scheduler')
+				#self.scheduler.shutdown(wait=False)
+				self.scheduler.shutdown(shutdown_threadpool=False)
+				self.scheduler = None
+			if self.loopingCheckSchedules is not None:
+				self.logger.debug(' stopFactory: stopping loopingCheckSchedules')
+				self.loopingCheckSchedules.stop()
+				self.loopingCheckSchedules = None
+			if self.kafkaProducer is not None:
+				self.logger.debug(' stopFactory: stopping kafka producer')
+				self.kafkaProducer.flush()
+				self.kafkaProducer = None
+			super().stopFactory()
+			self.logger.info(' jobService stopFactory: complete.')
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			print('Exception in jobService stopFactory: {}'.format(exception))
+			with suppress(Exception):
+				self.logger.debug('Exception: {exception!r}', exception=exception)
+
+		## end stopFactory
 		return
 
 
-	def cleanup(self):
-		print('{} cleaning up... inside cleanup'.format(self.serviceName))
-		self.logger.debug('cleanup: stopping loopingCheckSchedules')
-		with suppress(Exception):
-			self.loopingCheckSchedules.stop()
-		self.logger.debug('cleanup: stopping scheduler')
-		with suppress(Exception):
-			self.scheduler.shutdown(wait=False)
-		with suppress(Exception):
-			if self.dbClient is not None:
-				self.logger.debug('cleanup: closing database connection')
-				self.dbClient.session.close()
-				self.dbClient.close()
-		if self.kafkaProducer is not None:
-			self.logger.debug('cleanup: stopping kafka producer')
-			self.kafkaProducer.flush()
-			self.kafkaProducer = None
-		## These are from the sharedService
-		self.logger.debug('cleanup: stopping loopingLicenseCompliance')
-		with suppress(Exception):
-			self.loopingLicenseCompliance.stop()
-		self.logger.debug('cleanup: stopping loopingGetClients')
-		with suppress(Exception):
-			self.loopingGetClients.stop()
-		self.logger.debug('cleanup: stopping loopingUpdateClients')
-		with suppress(Exception):
-			self.loopingUpdateClients.stop()
-		self.logger.debug('cleanup: stopping loopingHealthUpdates')
-		with suppress(Exception):
-			self.loopingHealthUpdates.stop()
-		self.logger.debug('cleanup: stopping loopingJobUpdates')
-		with suppress(Exception):
-			self.loopingJobUpdates.stop()
-		print('  stopFactory: removing the protocolHandler')
-		with suppress(Exception):
-			del self.protocolHandler
-		self.logger.debug('cleanup: complete.')
-		return
+	@logExceptionWithSelfLogger()
+	def deferReportJobSchedules(self):
+		"""Call reportJobSchedules in a non-blocking thread."""
+		return threads.deferToThread(self.reportJobSchedules)
+
+	# def deferReportJobSchedules(self):
+	# 	"""Call reportJobSchedules in a non-blocking thread."""
+	# 	threadHandle = None
+	# 	try:
+	# 		threadHandle = threads.deferToThread(self.reportJobSchedules)
+	# 	except:
+	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+	# 		self.logger.error('Exception: {exception!r}', exception=exception)
+	#
+	# 	## end deferReportJobSchedules
+	# 	return threadHandle
 
 
 	def reportJobSchedules(self):
@@ -196,7 +231,6 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 			self.logger.info("Number of jobs {activeJobs!r}:", activeJobs=len(scheduledJobs))
 			for job in scheduledJobs:
 				self.logger.info("  job {job_id!r:4}: {job_name!r}", job_id=job.id, job_name=job.name)
-			self.getServiceHealth()
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error(' Exception with job report loop: {stacktrace!r}', stacktrace=stacktrace)
@@ -752,7 +786,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 			jobStats['completed_count'] = completedCount
 
 			## Process CLIENT-SIDE status results
-			self.logger.info('=== totalCount: {totalCount!r}, completedCount: {completedCount!r}', totalCount=totalCount, completedCount=completedCount)
+			self.logger.info('  totalCount: {totalCount!r}, completedCount: {completedCount!r}', totalCount=totalCount, completedCount=completedCount)
 			## Run through the results and update client-side stats
 			for result in resultLines:
 				endpoint = result['endpoint']
@@ -1130,7 +1164,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 
 	def getEndpointsFromKafka(self, kafkaConsumer, targetEndpoints, jobName, kafkaPollTimeout):
 		"""Flush data from Kafka."""
-		self.logger.info('Inside remoteService.getEndpointsFromKafka')
+		self.logger.info('Inside jobService.getEndpointsFromKafka')
 		msgs = kafkaConsumer.consume(num_messages=1, timeout=kafkaPollTimeout)
 		if msgs is None or len(msgs) <= 0:
 			return True
@@ -1199,7 +1233,7 @@ class RemoteServiceFactory(sharedService.ServiceFactory):
 
 	def doJobComplete(self, jobName):
 		try:
-			## Tell the RemoteServiceClients to deactivate the job
+			## Tell the JobServiceClients to deactivate the job
 			clientEndpoints = self.jobActiveClients.get(jobName, [])
 			if len(clientEndpoints) > 0:
 				for clientEndpoint in clientEndpoints:

@@ -3,15 +3,15 @@
 This module manages interaction with connected clients of type
 :mod:`ResultProcessingClient`. The entry class is
 :class:`ResultProcessingService`, which inherits from the shared class
-:class:`.sharedService.ServiceProcess` that handles process creation and tear
+:class:`.networkService.ServiceProcess` that handles process creation and tear
 down for all services.
 
 Classes:
 
-  * :class:`.ResultProcessingService` : entry class for this service
+  * :class:`.ResultProcessingService` : entry class for multiprocessing
   * :class:`.ResultProcessingFactory` : Twisted factory that provides the custom
     functionality for this service
-  * :class:`.ResultProcessingListener` : Twisted protocol for this service
+  * :class:`.ResultProcessingListener` : Twisted protocol used by the factory
 
 .. hidden::
 
@@ -33,7 +33,7 @@ import env
 env.addLibPath()
 
 ## From openContentPlatform
-import sharedService
+import networkService
 import utils
 import database.schema.platformSchema as platformSchema
 
@@ -41,7 +41,7 @@ import database.schema.platformSchema as platformSchema
 globalSettings = utils.loadSettings(os.path.join(env.configPath, 'globalSettings.json'))
 
 
-class ResultProcessingListener(sharedService.ServiceListener):
+class ResultProcessingListener(networkService.ServiceListener):
 	"""Receives and sends data through protocol of choice."""
 
 	def doKafkaHealth(self, content):
@@ -54,7 +54,7 @@ class ResultProcessingListener(sharedService.ServiceListener):
 			self.factory.logger.info('Kafka has a healthy partition count {cCount!r} for the number of previous clients {pCount!r}', pCount=content['KafkaPartitionCount'], cCount=len(self.factory.activeClients.keys()))
 
 
-class ResultProcessingFactory(sharedService.ServiceFactory):
+class ResultProcessingFactory(networkService.ServiceFactory):
 	"""Contains custom tailored parts specific to ResultProcessing."""
 
 	protocol = ResultProcessingListener
@@ -80,31 +80,22 @@ class ResultProcessingFactory(sharedService.ServiceFactory):
 
 
 	def stopFactory(self):
-		"""Manual destructor to cleanup when catching signals."""
-		with suppress(Exception):
-			self.logger.info('Stopping service factory.')
-		print(' ResultProcessingService cleaning up...')
-		print('  stopFactory: stopping loopingGetKafkaPartitionCount')
-		with suppress(Exception):
-			self.loopingGetKafkaPartitionCount.stop()
-		with suppress(Exception):
-			if self.dbClient is not None:
-				print('  stopFactory: closing database connection')
-				self.dbClient.close()
-		## These are from the sharedService
-		print('  stopFactory: stopping loopingLicenseCompliance')
-		with suppress(Exception):
-			self.loopingLicenseCompliance.stop()
-		print('  stopFactory: stopping loopingGetClients')
-		with suppress(Exception):
-			self.loopingGetClients.stop()
-		print('  stopFactory: stopping loopingUpdateClients')
-		with suppress(Exception):
-			self.loopingUpdateClients.stop()
-		print('  stopFactory: stopping loopingHealthUpdates')
-		with suppress(Exception):
-			self.loopingHealthUpdates.stop()
-		print(' ResultProcessingService cleanup complete; stopping service.')
+		try:
+			self.logger.info('stopFactory called in resultProcessingService')
+			if self.loopingGetKafkaPartitionCount is not None:
+				self.logger.debug(' stopFactory: stopping loopingGetKafkaPartitionCount')
+				self.loopingGetKafkaPartitionCount.stop()
+				self.loopingGetKafkaPartitionCount = None
+			super().stopFactory()
+			self.logger.info(' resultProcessingService stopFactory: complete.')
+
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			print('Exception in networkService stopFactory: {}'.format(exception))
+			with suppress(Exception):
+				self.logger.debug('Exception: {exception!r}', exception=exception)
+
+		## end stopFactory
 		return
 
 
@@ -120,29 +111,29 @@ class ResultProcessingFactory(sharedService.ServiceFactory):
 				self.logger.error('Exception in getKafkaPartitionCount: {exception!r}', exception = exception)
 
 
-class ResultProcessingService(sharedService.ServiceProcess):
+class ResultProcessingService(networkService.ServiceProcess):
 	"""Entry class for the resultProcessingService.
 
 	This class leverages a common wrapper for the run method, which comes from
-	the serviceProcess module. The constructor below directs the shared run
-	function to use settings specific to this manager, including setting the
-	factory class (self.serviceFactory) to the one above, which is customized
-	for this manager.
+	the networkService module. The constructor below directs multiprocessing
+	to use settings specific to this manager, including setting the expected
+	class (self.serviceFactory) to the one customized for this manager.
 
 	"""
 
-	def __init__(self, shutdownEvent, globalSettings):
-		"""Modified constructor to accept custom arguments.
+	def __init__(self, shutdownEvent, canceledEvent, globalSettings):
+		"""Modified multiprocessing.Process constructor to accept custom arguments.
 
 		Arguments:
-		  shutdownEvent  - event used to control graceful shutdown
+		  shutdownEvent  - event used by main process to shutdown this one
+		  canceledEvent  - event that notifies main process to restart this one
 		  globalSettings - global settings; used to direct this manager
 
 		"""
 		self.serviceName = 'ResultProcessingService'
-		self.multiProcessingLogContext = 'ResultProcessingServiceDebug'
 		self.serviceFactory = ResultProcessingFactory
 		self.shutdownEvent = shutdownEvent
+		self.canceledEvent = canceledEvent
 		self.globalSettings = globalSettings
 		self.listeningPort = int(globalSettings['resultProcessingServicePort'])
 		super().__init__()

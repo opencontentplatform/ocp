@@ -3,20 +3,20 @@
 This module manages interaction with connected clients of type
 :mod:`client.contentGatheringClient`. The entry class is
 :class:`.ContentGatheringService`, which inherits from the remote class
-:class:`.remoteService.RemoteServiceFactory`.
+:class:`.jobService.JobServiceFactory`.
 
-This module uses the remoteService/remoteClient framework to run regularly
+This module uses the jobService/jobClient framework to run regularly
 scheduled jobs on a horizontally scalable framework. The jobs can be more
 "integration" based (i.e. connecting to a central management console/repository
 that has information on multiple endpoints), or the jobs can be more "discovery"
 based (i.e. connecting to individual endpoints to gather data).
 
-The majority of code resides in :mod:`.remoteService`, which is a shared module
+The majority of code resides in :mod:`.jobService`, which is a shared module
 used by contentGathering, universalJob, and future factories using remote jobs.
 
 Classes:
 
-  * :class:`.ContentGatheringService` : entry class for this manager
+  * :class:`.ContentGatheringService` : entry class for multiprocessing
 
 .. hidden::
 
@@ -24,7 +24,7 @@ Classes:
 	Contributors:
 	Version info:
 	  1.0 : (CS) Created Aug 24, 2017
-	  1.1 : (CS) added remoteService to allow shared code paths for the factory's
+	  1.1 : (CS) added jobService to allow shared code paths for the factory's
 	        Service and Listener on remote job management. This was when the
 	        dataTransformation service became the universalJob service, to allow
 	        for a more generalized execution flow.  Aug 26, 2019.
@@ -36,32 +36,34 @@ import env
 env.addContentGatheringPkgPath()
 env.addContentGatheringSharedScriptPath()
 ## From openContentPlatform
-import sharedService
-import remoteService
+import networkService
+import jobService
 import database.schema.platformSchema as platformSchema
 
 
-class ContentGatheringService(sharedService.ServiceProcess):
+class ContentGatheringService(networkService.ServiceProcess):
 	"""Entry class for the contentGatheringService.
 
 	This class leverages a common wrapper for the run method, which comes from
-	the serviceProcess module. The constructor below directs the shared run
-	function to use settings specific to this manager, which includes using a
-	shared remoteService module that is used by contentGathering, universalJob,
-	and future factories using remote job execution.
+	the networkService module. The constructor below directs multiprocessing
+	to use settings specific to this manager, including setting the expected
+	class (self.serviceFactory) to the one customized for this manager.
+
 	"""
 
-	def __init__(self, shutdownEvent, globalSettings):
-		"""Modified constructor to accept custom arguments.
+	def __init__(self, shutdownEvent, canceledEvent, globalSettings):
+		"""Modified multiprocessing.Process constructor to accept custom arguments.
 
 		Arguments:
-		  shutdownEvent  - event used to control graceful shutdown
+		  shutdownEvent  - event used by main process to shutdown this one
+		  canceledEvent  - event that notifies main process to restart this one
 		  globalSettings - global settings; used to direct this manager
+
 		"""
 		self.serviceName = 'ContentGatheringService'
-		self.multiProcessingLogContext = 'ContentGatheringServiceDebug'
-		self.serviceFactory = remoteService.RemoteServiceFactory
+		self.serviceFactory = jobService.JobServiceFactory
 		self.shutdownEvent = shutdownEvent
+		self.canceledEvent = canceledEvent
 		self.globalSettings = globalSettings
 		self.clientEndpointTable = platformSchema.ServiceContentGatheringEndpoint
 		self.clientResultsTable = platformSchema.ContentGatheringResults
