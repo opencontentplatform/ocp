@@ -1,7 +1,4 @@
-"""Multiprocessing wrapper for services.
-
-The main class for this module is called :class:`.ServiceFactory`, and is
-inherited by all service managers.
+"""Networked service wrapper; used by all services requiring clients.
 
 Classes:
 
@@ -9,7 +6,9 @@ Classes:
   * :class:`.ServiceFactory` : Twisted factory enabling common code paths for
     constructor, destructor, database initialization, kafka communication, and
     other shared functions.
-  * :class:`.ServiceListener` : Twisted protocol for the shared factory
+  * :class:`.ServiceListener` : Twisted protocol for this shared factory
+  * :class:`.CustomLineReceiverProtocol` : Override default delimiter
+
 
 .. hidden::
 
@@ -49,6 +48,8 @@ env.addExternalPath()
 
 ## From openContentPlatform
 import utils
+from utils import logExceptionWithSelfLogger
+from coreService import CoreService
 ## Using an externally provided library defined in globalSettings and located
 ## in '<install_path>/external'.
 externalProtocolHandler = utils.loadExternalLibrary('externalProtocolHandler')
@@ -72,9 +73,6 @@ clientToHealthTableMapping = {
 		'health': ServiceUniversalJobHealth,
 		'jobs' : JobContentGathering
 	}
-	# 'ServerSideService' : {
-	# 	'jobs' : JobServerSide
-	# }
 }
 
 ## Overriding max length from 16K to 64M
@@ -145,7 +143,7 @@ class ServiceListener(CustomLineReceiverProtocol):
 						eval('self.{}'.format(thisMethod))(content)
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.factory.logger.error('Exception in processData: {exception!r}', exception=exception)
+			self.factory.logger.error('Exception: {exception!r}', exception=exception)
 
 		## end processData
 		return
@@ -316,167 +314,156 @@ class ServiceListener(CustomLineReceiverProtocol):
 		return
 
 
-class ServiceFactory(ServerFactory):
-	"""Shared service factory wrapper.
+class ServiceFactory(CoreService, ServerFactory):
+	"""Networked service wrapper, used by all services requiring clients.
 
-	Shared by all service managers. This factory provides common constructor
-	and destructor code, as well as setting up additional context needed.
-	"""
+	Uses twisted.internet.interfaces.IReactorTCP for client/server connections."""
 
 	protocol = ServiceListener
 
 	def __init__(self, serviceName, globalSettings, hasClients=True, getDbClient=True):
 		"""Constructor for the ServiceFactory."""
-		self.serviceName = serviceName
-		self.globalSettings = globalSettings
-		self.kafkaEndpoint = globalSettings['kafkaEndpoint']
-		self.useCertsWithKafka = globalSettings.get('useCertificatesWithKafka')
-		self.kafkaCaRootFile = os.path.join(env.configPath, globalSettings.get('kafkaCaRootFile'))
-		self.kafkaCertFile = os.path.join(env.configPath, globalSettings.get('kafkaCertificateFile'))
-		self.kafkaKeyFile = os.path.join(env.configPath, globalSettings.get('kafkaKeyFile'))
-		self.logger.debug('  ====> kafkaCaRootFile: {kafkaCaRootFile!r}', kafkaCaRootFile=self.kafkaCaRootFile)
-		self.logger.debug('  ====> kafkaCertFile: {kafkaCertFile!r}', kafkaCertFile=self.kafkaCertFile)
-		self.logger.debug('  ====> kafkaKeyFile: {kafkaKeyFile!r}', kafkaKeyFile=self.kafkaKeyFile)
-		self.dbClient = None
+		## Need to call both inherented constructors with different args, which
+		## means using 'super' won't work unless *args and **kwargs are handled:
+		##   super().__init__(serviceName, globalSettings, getDbClient)
+		## instead, use __init__ methods directly and pass 'self' explicitely:
+		CoreService.__init__(self, serviceName, globalSettings, getDbClient)
+		ServerFactory.__init__(self)
+
 		self.jobId = 0
 		self.activeJobs = {}
 		self.lastJobUpdateTime = time.time()
+
 		if getDbClient:
-			self.getDbSession()
 			self.protocolHandler = externalProtocolHandler.ProtocolHandler(self.dbClient, self.globalSettings, env, self.logger)
 		if hasClients:
-			super().__init__()
 			if self.canceledEvent.is_set():
-				self.logger.error('Cancelling startup of SharedService')
+				self.logger.error('Cancelling startup of networkService')
 				return
 			self.connectedEndpoints = {}
 			self.authorizedEndpoints = {}
 			self.activeClients = {}
 			self.cleanClientHealthTable()
 
-			## Changing looping calls to use threads.deferToThread(); avoid
-			## time delays/waits from blocking the main reactor thread
+			## Looping calls use threads.deferToThread() to avoid time delays
+			## with blocking the main reactor thread
 			self.loopingGetClients = task.LoopingCall(self.deferServiceClients)
 			self.loopingGetClients.start(int(globalSettings['waitSecondsBetweenGettingNewClients']))
 			self.loopingUpdateClients = task.LoopingCall(self.deferUpdateClientTokens)
 			self.loopingUpdateClients.start(int(globalSettings['waitSecondsBetweenForcedTokenRefreshes']))
 			self.loopingHealthUpdates = task.LoopingCall(self.deferSendHealthRequest)
 			self.loopingHealthUpdates.start(int(globalSettings['waitSecondsBetweenClientHealthUpdates']))
+			self.loopingJobUpdates = None
 			if clientToHealthTableMapping.get(self.serviceName, {}).get('jobs') is not None:
 				self.loopingJobUpdates = task.LoopingCall(self.deferGetJobUpdates)
 				self.loopingJobUpdates.start(int(globalSettings['waitSecondsBetweenJobUpdates']))
 
 
+	def stopFactory(self):
+		try:
+			self.logger.info('stopFactory called in networkService')
+			if self.loopingGetClients is not None:
+				self.logger.debug(' stopFactory: stopping loopingGetClients')
+				self.loopingGetClients.stop()
+				self.loopingGetClients = None
+			if self.loopingUpdateClients is not None:
+				self.logger.debug(' stopFactory: stopping loopingUpdateClients')
+				self.loopingUpdateClients.stop()
+				self.loopingUpdateClients = None
+			if self.loopingHealthUpdates is not None:
+				self.logger.debug(' stopFactory: stopping loopingHealthUpdates')
+				self.loopingHealthUpdates.stop()
+				self.loopingHealthUpdates = None
+			if self.loopingJobUpdates is not None:
+				self.logger.debug(' stopFactory: stopping loopingJobUpdates')
+				self.loopingJobUpdates.stop()
+				self.loopingJobUpdates = None
+			if self.protocolHandler is not None:
+				self.logger.debug(' stopFactory: removing the protocolHandler')
+				del self.protocolHandler
+				self.protocolHandler = None
+			super().stopFactory()
+			self.logger.info(' networkService stopFactory: complete.')
+
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			print('Exception in networkService stopFactory: {}'.format(exception))
+			with suppress(Exception):
+				self.logger.debug('Exception: {exception!r}', exception=exception)
+
+		## end stopFactory
+		return
+
+
+	## Note: attempted a general deferFunction(self, functionToCall) below, but
+	## the task.LoopingCall didn't like it, hence 4 separate defer functions:
+	@logExceptionWithSelfLogger()
 	def deferServiceClients(self):
 		"""Call getServiceClients in a non-blocking thread."""
-		threadHandle = None
-		try:
-			threadHandle = threads.deferToThread(self.getServiceClients)
-		except:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in deferServiceClients: {exception!r}', exception=exception)
-			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
-			self.logToKafka(str(exceptionOnly))
+		return threads.deferToThread(self.getServiceClients)
 
-		## end deferServiceClients
-		return threadHandle
-
+	@logExceptionWithSelfLogger()
 	def deferUpdateClientTokens(self):
 		"""Call updateClientTokens in a non-blocking thread."""
-		threadHandle = None
-		try:
-			threadHandle = threads.deferToThread(self.updateClientTokens)
-		except:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in deferUpdateClientTokens: {exception!r}', exception=exception)
-			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
-			self.logToKafka(str(exceptionOnly))
+		return threads.deferToThread(self.updateClientTokens)
 
-		## end deferUpdateClientTokens
-		return threadHandle
-
+	@logExceptionWithSelfLogger()
 	def deferSendHealthRequest(self):
 		"""Call sendHealthRequest in a non-blocking thread."""
-		threadHandle = None
-		try:
-			threadHandle = threads.deferToThread(self.sendHealthRequest)
-		except:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in deferSendHealthRequest: {exception!r}', exception=exception)
-			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
-			self.logToKafka(str(exceptionOnly))
+		return threads.deferToThread(self.sendHealthRequest)
 
-		## end deferSendHealthRequest
-		return threadHandle
-
+	@logExceptionWithSelfLogger()
 	def deferGetJobUpdates(self):
 		"""Call getJobUpdates in a non-blocking thread."""
-		threadHandle = None
-		try:
-			threadHandle = threads.deferToThread(self.getJobUpdates)
-		except:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in deferGetJobUpdates: {exception!r}', exception=exception)
-			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
-			self.logToKafka(str(exceptionOnly))
+		return threads.deferToThread(self.getJobUpdates)
 
-		## end deferGetJobUpdates
-		return threadHandle
-
-
-	def getDbSession(self):
-		"""Establish a client connection into our database.
-
-		This function puts the client into a stateful class variable."""
-		self.dbClient = self.getThreadedDbSession()
-
-
-	def getThreadedDbSession(self, maxAttempts=2, waitSeconds=2):
-		"""Get database connection; wait number of times or abort.
-
-		waitForThreadedDbSession loops until a connection is made, which is
-		necessary when needing to wait until bringing everything back online
-		after something like DB maintenance. This function only attempts to
-		connect a specified number of times, for actions that may be sensitive
-		to timeframes... like jobs running throuh universalJob on schedules.
-
-		This function returns the connection instead of sticking it in a class
-		variable. The reason is that some services/clients need multiple DB
-		connections and cannot share a single session.
-
-		TODO: when this "threaded" version was initially created, it was based
-		on using single DB connections instead of a connection pool. After the
-		Sept 2019 release - all services are using connection pools, which have
-		their own threading once the connection is established at the start.
-		Since the idea of returning a single instance is no longer valid, this
-		should be folded back into just setting the internal self.dbClient.
-		"""
-		## If the database isn't up when the client is starting... wait on it.
-		self.logger.debug('Attempting to connect to database')
-		thisDbClient = None
-		count = 0
-		while (thisDbClient is None and
-			   not self.shutdownEvent.is_set() and
-			   not self.canceledEvent.is_set() and
-			   count < maxAttempts):
-			try:
-				## Hard coding the connection pool settings for now; may want to
-				## pull into a localSetting if they need to be independently set
-				thisDbClient = DatabaseClient(self.logger, globalSettings=self.globalSettings, env=env, poolSize=2, maxOverflow=1, poolRecycle=900)
-				if thisDbClient is None:
-					self.canceledEvent.set()
-					raise EnvironmentError('Failed to connect to database')
-				self.logger.debug('Database connection successful')
-			except exc.OperationalError:
-				self.logger.debug('DB is not available; waiting {waitCycle!r} seconds before next retry.', waitCycle=waitSeconds)
-				time.sleep(int(waitSeconds))
-			except:
-				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('Exception in getThreadedDbSession: {exception!r}', exception=exception)
-				self.canceledEvent.set()
-				break
-			count += 1
-		return thisDbClient
+	# def deferServiceClients(self):
+	# 	"""Call getServiceClients in a non-blocking thread."""
+	# 	threadHandle = None
+	# 	try:
+	# 		threadHandle = threads.deferToThread(self.getServiceClients)
+	# 	except:
+	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+	# 		self.logger.error('Exception: {exception!r}', exception=exception)
+	#
+	# 	## end deferServiceClients
+	# 	return threadHandle
+	#
+	# def deferUpdateClientTokens(self):
+	# 	"""Call updateClientTokens in a non-blocking thread."""
+	# 	threadHandle = None
+	# 	try:
+	# 		threadHandle = threads.deferToThread(self.updateClientTokens)
+	# 	except:
+	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+	# 		self.logger.error('Exception: {exception!r}', exception=exception)
+	#
+	# 	## end deferUpdateClientTokens
+	# 	return threadHandle
+	#
+	# def deferSendHealthRequest(self):
+	# 	"""Call sendHealthRequest in a non-blocking thread."""
+	# 	threadHandle = None
+	# 	try:
+	# 		threadHandle = threads.deferToThread(self.sendHealthRequest)
+	# 	except:
+	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+	# 		self.logger.error('Exception: {exception!r}', exception=exception)
+	#
+	# 	## end deferSendHealthRequest
+	# 	return threadHandle
+	#
+	# def deferGetJobUpdates(self):
+	# 	"""Call getJobUpdates in a non-blocking thread."""
+	# 	threadHandle = None
+	# 	try:
+	# 		threadHandle = threads.deferToThread(self.getJobUpdates)
+	# 	except:
+	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+	# 		self.logger.error('Exception: {exception!r}', exception=exception)
+	#
+	# 	## end deferGetJobUpdates
+	# 	return threadHandle
 
 
 	def getSpecificJob(self, jobName):
@@ -498,26 +485,27 @@ class ServiceFactory(ServerFactory):
 		return jobSettings
 
 
+	@logExceptionWithSelfLogger()
 	def getJobSchedulerDetails(self, jobContent):
-		try:
-			## Parse "trigger" arguments for ApScheduler and drop invalid values
-			triggerType = jobContent.get('triggerType')
-			triggerArgs = {}
-			if ('triggerArgs' in jobContent.keys() and len(jobContent.get('triggerArgs').keys()) > 0):
-				for thisKey in jobContent.get('triggerArgs').keys():
-					thisValue = jobContent.get('triggerArgs').get(thisKey)
-					if thisValue is not None and len(str(thisValue)) > 0:
-						triggerArgs[thisKey] = thisValue
+		#try:
+		## Parse "trigger" arguments for ApScheduler and drop invalid values
+		triggerType = jobContent.get('triggerType')
+		triggerArgs = {}
+		if ('triggerArgs' in jobContent.keys() and len(jobContent.get('triggerArgs').keys()) > 0):
+			for thisKey in jobContent.get('triggerArgs').keys():
+				thisValue = jobContent.get('triggerArgs').get(thisKey)
+				if thisValue is not None and len(str(thisValue)) > 0:
+					triggerArgs[thisKey] = thisValue
 
-			## Parse/typecast "scheduler" arguments for ApScheduler
-			schedulerArgs = jobContent.get('schedulerArgs')
-			schedulerMisfireGraceTime = int(schedulerArgs.get('misfire_grace_time'))
-			schedulerCoalesce = bool(schedulerArgs.get('coalesce'))
-			schedulerMaxInstances = int(schedulerArgs.get('max_instances'))
+		## Parse/typecast "scheduler" arguments for ApScheduler
+		schedulerArgs = jobContent.get('schedulerArgs')
+		schedulerMisfireGraceTime = int(schedulerArgs.get('misfire_grace_time'))
+		schedulerCoalesce = bool(schedulerArgs.get('coalesce'))
+		schedulerMaxInstances = int(schedulerArgs.get('max_instances'))
 
-		except:
-			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error(' Exception in setupJobSchedules on job file {jobFile!r}: {stacktrace!r}', jobFile=jobFile, stacktrace=stacktrace)
+		# except:
+		# 	stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+		# 	self.logger.error(' Exception in setupJobSchedules on job file {jobFile!r}: {stacktrace!r}', jobFile=jobFile, stacktrace=stacktrace)
 
 		## end getJobSchedulerDetails
 		return (triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances)
@@ -570,7 +558,6 @@ class ServiceFactory(ServerFactory):
 
 		## end setupJobSchedules
 		return
-
 
 
 	def getJobUpdates(self):
@@ -736,23 +723,24 @@ class ServiceFactory(ServerFactory):
 		return False
 
 
+	@logExceptionWithSelfLogger()
 	def cleanClientHealthTable(self):
 		"""Remove any stale clients before establishing new connections."""
-		try:
-			ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
-			clients = self.dbClient.session.query(ServiceEndpointHealth).all()
-			for serviceClient in clients:
-				self.logger.debug('Removing stale client health entry for {serviceClient_name!r}, last updated {serviceClient_last_sys_stat!r}.',
-								  serviceClient_name=serviceClient.name, serviceClient_last_sys_stat=serviceClient.last_system_status)
-				self.dbClient.session.delete(serviceClient)
-				self.dbClient.session.commit()
-			## Return underlying DBAPI connection
+		# try:
+		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
+		clients = self.dbClient.session.query(ServiceEndpointHealth).all()
+		for serviceClient in clients:
+			self.logger.debug('Removing stale client health entry for {serviceClient_name!r}, last updated {serviceClient_last_sys_stat!r}.',
+							  serviceClient_name=serviceClient.name, serviceClient_last_sys_stat=serviceClient.last_system_status)
+			self.dbClient.session.delete(serviceClient)
 			self.dbClient.session.commit()
-			self.dbClient.session.close()
+		## Return underlying DBAPI connection
+		self.dbClient.session.commit()
+		self.dbClient.session.close()
 
-		except:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in cleanClientHealthTable: {exception!r}', exception=exception)
+		# except:
+		# 	exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+		# 	self.logger.error('Exception in cleanClientHealthTable: {exception!r}', exception=exception)
 
 
 	def removeClient(self, client, clientName):
@@ -856,105 +844,13 @@ class ServiceFactory(ServerFactory):
 				self.logger.error('Exception in updateClientTokens: {exception!r}', exception=exception)
 
 
-	def getServiceHealth(self):
-		"""Get regular system health checks for this service."""
-		content = {}
-		try:
-			content['endpointName'] = platform.node()
-			currentTime = time.time()
-			content['lastSystemStatus'] = datetime.datetime.fromtimestamp(currentTime).strftime('%Y-%m-%d %H:%M:%S')
-			# ## Server wide CPU average (across all cores, threads, virtuals)
-			# content['cpuAvgUtilization'] = psutil.cpu_percent()
-			# ## Server wide memory
-			# memory = psutil.virtual_memory()
-			# content['memoryAproxTotal'] = self.getGigOrMeg(memory.total)
-			# content['memoryAproxAvailable'] = self.getGigOrMeg(memory.available)
-			# content['memoryPercentUsed'] = memory.percent
-			## Info on this process
-			content['pid'] = os.getpid()
-			process = psutil.Process(content['pid'])
-			content['processCpuPercent'] = process.cpu_percent()
-			content['processMemory'] = process.memory_full_info().uss
-			## Create time in epoc
-			startTime = process.create_time()
-			content['processStartTime'] = datetime.datetime.fromtimestamp(startTime).strftime('%Y-%m-%d %H:%M:%S')
-			content['processRunTime'] = utils.prettyRunTime(startTime, currentTime)
-
-		except psutil.AccessDenied:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in getServiceHealth: {exception!r}', exception=exception)
-			self.logger.error('AccessDenied errors on Windows usually mean the main process was not started as Administrator.')
-
-		except:
-			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in getServiceHealth: {exception!r}', exception=exception)
-
-		self.logger.info('Health of Service:  {content!r}', content=content)
-
-		## end getServiceHealth
-		return
-
-
-	def createKafkaConsumer(self, kafkaTopic, maxRetries=5, sleepBetweenRetries=0.5, useGroup=True):
-		"""Connect to Kafka and initialize a consumer."""
-		kafkaConsumer = None
-		while kafkaConsumer is None and not self.canceledEvent.is_set() and not self.shutdownEvent.is_set():
-			try:
-				kafkaConsumer = utils.attemptKafkaConsumerConnection(self.logger, self.kafkaEndpoint, kafkaTopic, self.useCertsWithKafka, self.kafkaCaRootFile, self.kafkaCertFile, self.kafkaKeyFile, useGroup)
-
-			except KafkaError:
-				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('Exception in createKafkaConsumer: Kafka error: {exception!r}', exception=exception)
-				if errorCount >= maxRetries:
-					self.logger.error('Too many connect attempts to kafka; aborting.')
-					break
-				errorCount += 1
-				time.sleep(sleepBetweenRetries)
-
-			except:
-				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('Exception in createKafkaConsumer: {exception!r}', exception=exception)
-				break
-
-		## end createKafkaConsumer
-		return kafkaConsumer
-
-
-	def createKafkaProducer(self, maxRetries=5, sleepBetweenRetries=0.5):
-		"""Connect to Kafka and initialize a producer."""
-		count = 0
-		while self.kafkaProducer is None and not self.canceledEvent.is_set() and not self.shutdownEvent.is_set():
-			try:
-				self.kafkaProducer = utils.attemptKafkaProducerConnection(self.logger, self.kafkaEndpoint, self.useCertsWithKafka, self.kafkaCaRootFile, self.kafkaCertFile, self.kafkaKeyFile)
-
-			except KafkaError:
-				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('Exception in createKafkaProducer: Kafka error: {exception!r}', exception=exception)
-				if errorCount >= maxRetries:
-					self.logger.error('Too many connect attempts to kafka; aborting.')
-					break
-				errorCount += 1
-				time.sleep(sleepBetweenRetries)
-
-			except:
-				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('Exception in createKafkaProducer: {exception!r}', exception=exception)
-				break
-
-		## end createKafkaProducer
-		return
-
-	def cleanup(self):
-		self.logger.debug('Cleanup called in sharedService')
-
-
 class ServiceProcess(multiprocessing.Process):
 	"""Separate process per service manager."""
 
 	def run(self):
 		"""Override Process run method to provide a custom wrapper for service.
 
-		Shared by all service managers. This provides a continuous loop for
+		Shared by all networked services. This provides a continuous loop for
 		watching the child process while keeping an ear open to the main process
 		from openContentPlatform, listening for any interrupt requests.
 
@@ -965,10 +861,7 @@ class ServiceProcess(multiprocessing.Process):
 			## There are two types of event handlers being used here:
 			##   self.shutdownEvent : main process tells this one to shutdown
 			##                        (e.g. on a Ctrl+C type event)
-			##   self.canceledEvent : this process tells twisted reactor to stop
-			##                        blocking our main thread (Kafka/DB loops)
-			self.canceledEvent = multiprocessing.Event()
-			reactor.addSystemEventTrigger('before', 'shutdown', self.canceledEvent.set)
+			##   self.canceledEvent : this process needs to cleanup and restart
 			serviceEndpoint = self.globalSettings.get('serviceIpAddress')
 			useCertificates = self.globalSettings.get('useCertificates', True)
 
@@ -994,13 +887,31 @@ class ServiceProcess(multiprocessing.Process):
 				print('Starting plain text service: {}'.format(self.serviceName))
 				reactor.listenTCP(self.listeningPort, self.serviceFactory(*factoryArgs), interface=serviceEndpoint)
 
-			#reactor.callWhenRunning(self.serviceName.initialize)
-			## Normally we'd just call reactor.run() here and let twisted handle
-			## the wait loop while watching for signals. The problem is that we
-			## need the parent process (Windows service) to manage this process.
-			## So this is a bit hacky in that I am using the reactor code, but
-			## am manually calling what would be called if I just called run(),
-			## in order to stop the loop when a shutdownEvent is received:
+			## The following loop may look hacky at first glance, but solves a
+			## challenge with a mix of Python multi-processing, multi-threading,
+			## then Twisted multi-threading inside it's reactor.
+
+			## The OCP main process spins up services in sub-processes, and
+			## then the sub-processes may also be multi-threaded and/or use a
+			## Twisted reactor (which has it's own thread management). Actually,
+			## most of the services are wrapped by a Twisted reactor, which
+			## further complicates our mix of process and thread management -
+			## specifically with managing restarts.
+
+			## Python threads that are not daemon types, cannot be forced closed
+			## when the controlling thread closes. So it's important to pass
+			## events all the way through, and have looping code catch/cleanup.
+
+			## Whenever the main process is being shut down, it must stop all
+			## sub-processes along with their work streams, which also includes
+			## Twisted reactors. We do that by passing shutdownEvent into the
+			## sub-processes. And whenever a service (sub-process) needs to
+			## restart, it notifies the other direction so the main process can
+			## verify it stopped and restart it. We do that by a canceledEvent.
+
+			## Now to the point of this verbose comment, so the reason we cannot
+			## call reactor.run() here, and instead cut/paste the code here, was
+			## to enhance 'while reactor._started' to watch for our events.
 			reactor.startRunning()
 			## Start event wait loop
 			while reactor._started and not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():

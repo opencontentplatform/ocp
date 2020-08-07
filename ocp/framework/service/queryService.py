@@ -2,13 +2,12 @@
 
 This module is responsible for storing and managing query results. Initially
 created for chunking/paging results, but positioned for maintaining and
-routinely updating required cached queries (like a view table).
+routinely updating required cached queries (like a database view table).
 
 Classes:
 
-  * :class:`.QueryService` : entry class for this service
-  * :class:`.QueryFactory` : Twisted factory that provides the custom
-    functionality for this service
+  * :class:`.QueryService` : entry class for multiprocessing
+  * :class:`.Query` : specific functionality for this service
 
 .. hidden::
 
@@ -16,6 +15,8 @@ Classes:
 	Contributors:
 	Version info:
 	  1.0 : (CS) Created Oct 17, 2018
+	  1.1 : (CS) Changed inheritence from sharedService to localService, as
+	        services were categorized into local vs networked, Aug 4, 2020
 
 """
 import os
@@ -26,7 +27,6 @@ import datetime
 import time
 from contextlib import suppress
 import twisted.logger
-from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, task, defer, threads
 
 ## Add openContentPlatform directories onto the sys path
@@ -34,79 +34,86 @@ import env
 env.addLibPath()
 
 ## From openContentPlatform
-import sharedService
+import localService
 import utils
+from utils import logExceptionWithSelfLogger
 from queryProcessing import QueryProcessing
 import database.schema.platformSchema as platformSchema
 
-
-## TODO: consider breaking from sharedService, which currently uses a TCP-based
-## Twisted factory, and use a Thread-based factory without the socket overhead.
 
 ## TODO: force a specified max thread limit, instead of the default setting for
 ## our reactor. We want to chunk through the queries instead of all at once; so
 ## if we get 5000 simultaneously - only process a certain number at a time.
 
-class QueryListener(LineReceiver):
-	def doNothing(self, content):
-		pass
-
-
-class QueryFactory(sharedService.ServiceFactory):
+class Query(localService.LocalService):
 	"""Contains custom tailored parts specific to Query result processing."""
 
-	protocol = QueryListener
-
 	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent):
-		"""Constructor for the QueryFactory."""
+		"""Constructor for the Query service."""
 		self.canceledEvent = canceledEvent
 		self.shutdownEvent = shutdownEvent
 		self.logFiles = utils.setupLogFile(serviceName, env, globalSettings['fileContainingServiceLogSettings'], directoryName='service')
 		self.logObserver  = utils.setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingServiceLogSettings'])
 		self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
-		self.validActions = ['connectionRequest', 'healthResponse', 'nothing']
-		self.actionMethods = ['doConnectionRequest', 'doHealthResponse', 'doNothing']
-		self.dbClient = None
+
 		## Allow the dbClient to get created in the main thread, to reuse pool
-		super().__init__(serviceName, globalSettings, False, True)
+		self.dbClient = None
+		super().__init__(serviceName, globalSettings, getDbClient=True)
 		self.dbClient.session.close()
+
 		self.localSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingQuerySettings']))
-		## Initialize the Kafka consumer
-		self.kafkaConsumer = self.createKafkaConsumer(globalSettings['kafkaQueryTopic'])
 		self.logger.info('waitSecondsBetweenCacheCleanupJobs: {secs!r}', secs=self.localSettings['waitSecondsBetweenCacheCleanupJobs'])
+
 		## TODO: modify looping calls to use threads.deferToThread(); avoid
 		## time delays/waits from being blocking to the main reactor thread
 		self.loopingCleanUpCache = task.LoopingCall(self.cleanUpCache)
 		self.loopingCleanUpCache.start(self.localSettings['waitSecondsBetweenCacheCleanupJobs'])
-		## If we call the main thread function from our constructor directly,
-		## it becomes blocking. Same results if we use callWhenRunning or
-		## deferToThread or deferToThread in a separate deferred function. But
-		## it gracefully exists with callFromThread on the main function:
-		reactor.callFromThread(self.processKafkaResults)
-		self.logger.debug('QueryFactory: leaving constructor')
+
+		## Make checking kafka and processing results a looping call, to give a
+		## break to the main reactor thread; otherwise it blocks other looping
+		## calls, like those in coreService for health and environment details:
+		self.kafkaConsumer = self.createKafkaConsumer(globalSettings['kafkaQueryTopic'])
+		self.loopingGetKafkaResults = task.LoopingCall(self.getKafkaResults, self.kafkaConsumer)
+		## Give a second break before starting the main LoopingCall
+		self.loopingGetKafkaResults.start(1, now=False)
+		self.logger.debug('Leaving Query constructor')
 
 
 	def stopFactory(self):
-		"""Manual destructor to cleanup when catching signals."""
-		print(' queryService cleaning up... inside stopFactory')
-		with suppress(Exception):
-			self.logger.debug(' stopFactory: starting...')
-		self.cleanup()
-		with suppress(Exception):
-			self.logger.info(' stopFactory: complete.')
+		try:
+			#print('query stopFactory start: {}'.format(str(self.__dict__)))
+			self.logger.info('stopFactory called in query')
+			if self.loopingGetKafkaResults is not None:
+				self.logger.debug(' stopFactory: stopping loopingGetKafkaResults')
+				self.loopingGetKafkaResults.stop()
+				self.loopingGetKafkaResults = None
+			if self.loopingCleanUpCache is not None:
+				self.logger.debug(' stopFactory: stopping loopingCleanUpCache')
+				self.loopingCleanUpCache.stop()
+				self.loopingCleanUpCache = None
+			if self.kafkaConsumer is not None:
+				self.logger.debug(' stopFactory closing kafkaConsumer')
+				self.kafkaConsumer.close()
+				self.kafkaConsumer = None
+			super().stopFactory()
+			self.globalSettings = None
+			self.localSettings = None
+			self.logger.info(' query stopFactory: complete.')
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			print('Exception in query stopFactory: {}'.format(exception))
+			with suppress(Exception):
+				self.logger.debug('Exception: {exception!r}', exception=exception)
+		#print('query stopFactory complete: {}'.format(str(self.__dict__)))
+
+		## end stopFactory
 		return
 
 
-	def cleanup(self):
-		self.logger.debug(' cleanup called in queryService')
-		with suppress(Exception):
-			self.loopingCleanUpCache.stop()
-			self.logger.debug(' cleanup: Looping calls stopped.')
-		with suppress(Exception):
-			if self.kafkaConsumer is not None:
-				self.kafkaConsumer.close()
-				self.logger.debug(' cleanup: kafkaConsumer closed.')
-		self.logger.info(' cleanup complete.')
+	@logExceptionWithSelfLogger()
+	def deferCleanUpCache(self):
+		"""Call cleanUpCache in a non-blocking thread."""
+		return threads.deferToThread(self.cleanUpCache)
 
 
 	def cleanUpCache(self):
@@ -145,46 +152,12 @@ class QueryFactory(sharedService.ServiceFactory):
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in cleanUpCache: {exception!r}', exception=exception)
+			self.logger.error('Exception: {exception!r}', exception=exception)
 
 		if self.dbClient is not None:
 			self.dbClient.session.close()
 
 		## end cleanUpCache
-		return
-
-
-	def processKafkaResults(self):
-		"""Wait for kafka messages and start processing when they arrive."""
-		exitMessage = 'Leaving processKafkaResults'
-		while not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():
-			try:
-				msgs = self.kafkaConsumer.consume(num_messages=int(self.localSettings['kafkaPollMaxRecords']), timeout=int(self.localSettings['kafkaPollTimeOut']))
-				## Manual commit prevents message from being re-processed
-				## more than once by either this consumer or another one.
-				self.kafkaConsumer.commit()
-				if msgs is None or len(msgs) <= 0:
-					continue
-				else:
-					for message in msgs:
-						if message is None:
-							continue
-						elif message.error():
-							self.logger.debug('processKafkaResults: Kafka error: {error!r}', error=message.error())
-							continue
-						thisMsg = json.loads(message.value().decode('utf-8'))
-						self.logger.debug('Data received for processing: {thisMsg!r}', thisMsg=thisMsg)
-						self.workOnMessage(thisMsg)
-
-			except:
-				self.exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('{exception}', exception=self.exception)
-				exitMessage = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-				self.logger.debug('Aborting processKafkaResults')
-
-		self.logger.debug('Ready to exit processKafkaResults... shutdownEvent: {}, canceledEvent: {}'.format(self.shutdownEvent.is_set(), self.canceledEvent.is_set()))
-
-		## end processKafkaResults
 		return
 
 
@@ -307,35 +280,34 @@ class QueryFactory(sharedService.ServiceFactory):
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in chunkResult: {exception!r}', exception=exception)
+			self.logger.error('Exception: {exception!r}', exception=exception)
 
 		## end chunkResult
 		return chunkId
 
 
-class QueryService(sharedService.ServiceProcess):
+class QueryService(localService.ServiceProcess):
 	"""Entry class for the queryService.
 
 	This class leverages a common wrapper for the run method, which comes from
-	the serviceProcess module. The constructor below directs the shared run
-	function to use settings specific to this manager, including setting the
-	factory class (self.serviceFactory) to the one above, which is customized
-	for this manager.
+	the localService module. The constructor below directs multiprocessing
+	to use settings specific to this manager, including setting the expected
+	class (self.serviceClass) to the one customized for this manager.
 
 	"""
 
-	def __init__(self, shutdownEvent, globalSettings):
-		"""Modified constructor to accept custom arguments.
+	def __init__(self, shutdownEvent, canceledEvent, globalSettings):
+		"""Modified multiprocessing.Process constructor to accept custom arguments.
 
 		Arguments:
-		  shutdownEvent : event used to control graceful shutdown
-		  settings      : global settings; used to direct this manager
+		  shutdownEvent  - event used by main process to shutdown this one
+		  canceledEvent  - event that notifies main process to restart this one
+		  globalSettings - global settings; used to direct this manager
 
 		"""
 		self.serviceName = 'QueryService'
-		self.multiProcessingLogContext = 'QueryServiceDebug'
-		self.serviceFactory = QueryFactory
+		self.serviceClass = Query
 		self.shutdownEvent = shutdownEvent
+		self.canceledEvent = canceledEvent
 		self.globalSettings = globalSettings
-		self.listeningPort = int(globalSettings['queryServicePort'])
 		super().__init__()

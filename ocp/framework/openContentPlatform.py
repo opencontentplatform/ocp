@@ -42,7 +42,9 @@ from queryService import QueryService
 from universalJobService import UniversalJobService
 from logCollectionService import LogCollectionService
 from apiService import ApiService
-from serverSideService import ServerSideService
+from logCollectionForJobsService import LogCollectionForJobsService
+## Deprecating server side service
+#from serverSideService import ServerSideService
 from utils import loadSettings, setupLogFile, setupObservers, prettyRunTime
 
 ## Global section
@@ -95,6 +97,17 @@ def registerSignals():
 		signal.signal(validSignal, signalHandler)
 
 
+def startService(content, shutdownEvent, settings):
+	thisClass = content['class']
+	thisEvent = content['canceledEvent']
+	if thisEvent is not None:
+		thisService = thisClass(shutdownEvent, thisEvent, copy.deepcopy(settings))
+	else:
+		thisService = thisClass(shutdownEvent, copy.deepcopy(settings))
+	content['instance'] = thisService
+	thisService.start()
+
+
 def serviceLoop(logger, settings):
 	"""Monitor service managers.
 
@@ -104,52 +117,69 @@ def serviceLoop(logger, settings):
 	  settings (json) : global settings
 
 	"""
-	activeServices = []
 	watcherWaitCycle = int(settings['statusReportingInterval'])
 	serviceWaitCycle = int(settings['waitSecondsBeforeStartingNextService'])
 	exitWaitCycle = int(settings['waitSecondsBeforeExiting'])
 	shutdownEvent = multiprocessing.Event()
 
-	transportService = TransportService(shutdownEvent, copy.deepcopy(settings))
-	apiService = ApiService(shutdownEvent, copy.deepcopy(settings))
-	contentGatheringService = ContentGatheringService(shutdownEvent, copy.deepcopy(settings))
-	resultProcessingService = ResultProcessingService(shutdownEvent, copy.deepcopy(settings))
-	queryService = QueryService(shutdownEvent, copy.deepcopy(settings))
-	universalJobService = UniversalJobService(shutdownEvent, copy.deepcopy(settings))
-	logCollectionService = LogCollectionService(shutdownEvent, copy.deepcopy(settings))
-
-	## Add to the list of services
-	activeServices.append(transportService)
-	activeServices.append(apiService)
-	activeServices.append(contentGatheringService)
-	activeServices.append(resultProcessingService)
-	activeServices.append(queryService)
-	activeServices.append(universalJobService)
-	activeServices.append(logCollectionService)
-
+	## As of Python 3.7, dict remembers insertion order; so, we no longer need a
+	## list or OrderedDict to ensure that transport and api services start first
+	activeServices = {}
+	activeServices['transport'] = { 'class': TransportService, 'canceledEvent': None, 'instance': None }
+	activeServices['api'] = { 'class': ApiService, 'canceledEvent': None, 'instance': None }
+	activeServices['contentGathering'] = { 'class': ContentGatheringService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
+	activeServices['resultProcessing'] = { 'class': ResultProcessingService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
+	activeServices['queryService'] = { 'class': QueryService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
+	activeServices['universalJob'] = { 'class': UniversalJobService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
+	activeServices['logCollection'] = { 'class': LogCollectionService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
+	activeServices['logCollectionForJobs'] = { 'class': LogCollectionForJobsService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
 	## Conditionally start/add the local service (ServerSideService)
-	if settings['startServerSideService']:
-		serverSideService = ServerSideService(shutdownEvent, copy.deepcopy(settings))
-		activeServices.append(serverSideService)
+	# if settings['startServerSideService']:
+	# 	activeServices['serverSide'] = { 'class': ServerSideService, 'canceledEvent': None, 'instance': None }
 
 	## Start the services as separate processes
-	for thisService in activeServices:
-		thisService.start()
+	for alias,content in activeServices.items():
+		startService(content, shutdownEvent, settings)
+		thisService = content['instance']
 		logger.info('  Started {} with PID {}'.format(thisService.name, thisService.pid))
 		## Default 2 second sleep between service starts
 		time.sleep(serviceWaitCycle)
 
 	## Wait loop
 	logger.info('Starting main loop - {}'.format(time.strftime('%X %x')))
+	logger.info('Interval for checking services: {} seconds'.format(watcherWaitCycle))
 	while True:
 		try:
-			logger.info('Status of services:')
+			logger.debug('Checking services:')
 			## Evaluate the running services
-			for thisService in activeServices:
-				if not thisService.is_alive():
-					logger.error('   {}: stopped with exit code [{}]'.format(thisService.name, thisService.exitcode))
+			for alias,content in activeServices.items():
+				thisService = content['instance']
+				thisClass = content['class']
+				thisEvent = content['canceledEvent']
+
+				if thisService.is_alive() and thisEvent is not None and thisEvent.is_set():
+					## The service is telling us it needs restarted
+					logger.error('  {}: still alive, but requested a restart'.format(thisService.name, thisService.exitcode))
+					thisService.terminate()
+					thisEvent.clear()
+					del thisService
+					startService(content, shutdownEvent, settings)
+					thisService = content['instance']
+					logger.info('    Started {} with PID {}'.format(thisService.name, thisService.pid))
+
+				elif not thisService.is_alive():
+					logger.error('  {}: stopped with exit code [{}]'.format(thisService.name, thisService.exitcode))
+					if thisEvent is not None and thisEvent.is_set():
+						## The service is telling us it needs restarted
+						logger.info('    Service {} requested a restart'.format(thisService.name))
+						thisEvent.clear()
+						del thisService
+						startService(content, shutdownEvent, settings)
+						thisService = content['instance']
+						logger.info('    Started {} with PID {}'.format(thisService.name, thisService.pid))
+
 				else:
-					logger.info('   {}: running'.format(thisService.name))
+					logger.debug('   {}: running'.format(thisService.name))
 
 			## Avoiding join() with the processes (from the multiprocessing
 			## internals), since we're not waiting for them to finish. They
@@ -164,18 +194,20 @@ def serviceLoop(logger, settings):
 			shutdownEvent.set()
 			## Wait for threads to finish graceful shutdown
 			time.sleep(exitWaitCycle)
+			print('Wait cycle complete for threads to finish; commencing cleanup.')
 			## Kill any process that is still running
-			for thisService in activeServices:
+			for alias,content in activeServices.items():
 				try:
-					logger.debug('Evaluating {} with PID {}'.format(thisService.name, thisService.pid))
+					thisService = content['instance']
+					logger.debug('Evaluating {}'.format(thisService.name))
 					if thisService.is_alive():
-						logger.debug('Attempting to kill {} with PID {}'.format(thisService.name, thisService.pid))
+						logger.debug('  process still running; attempting to kill {} with PID {}'.format(thisService.name, thisService.pid))
 						thisService.terminate()
 				except:
 					exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
 					print('Exception in killing process in serviceLoop: {}'.format(str(exceptionOnly)))
 					with suppress(Exception):
-						logger.debug('Exception in killing process in clientLoop: {}'.format(str(exceptionOnly)))
+						logger.debug('Exception in killing process in serviceLoop: {}'.format(str(exceptionOnly)))
 			break
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])

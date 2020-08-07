@@ -1,28 +1,24 @@
-"""Log Collection Service.
+"""Log Collection For Jobs Service.
 
-This module is responsible for taking client messages from Kafka and writing
-them to a common server-side log. This is used for providing visibility to
-important events occuring on the horizontally scalable client infrastructure.
+This module is responsible for pulling job logs on clients, back to server side.
 
 Classes:
 
-  * :class:`.LogCollectionService` : entry class for multiprocessing
-  * :class:`.LogCollection` : specific functionality for this service
+  * :class:`.LogCollectionForJobsService` : entry class for multiprocessing
+  * :class:`.LogCollectionForJobs` : specific functionality for this service
 
 .. hidden::
 
 	Author: Chris Satterthwaite (CS)
 	Contributors:
 	Version info:
-	  0.1 : (CS) Created Jan, 2018
-	  1.0 : (CS) Wired together and brought online, Oct 25, 2018
-	  1.1 : (CS) Changed inheritence from sharedService to localService, as
-	        services were categorized into local vs networked, Aug 4, 2020
+	  1.0 : (CS) Created Aug 4, 2020
 
 """
 import os
 import sys
 import traceback
+import json
 from contextlib import suppress
 import twisted.logger
 from twisted.internet import reactor, task, defer, threads
@@ -37,33 +33,33 @@ from utils import setupLogFile, setupObservers, loadSettings
 from utils import logExceptionWithSelfLogger
 
 
-class LogCollection(localService.LocalService):
-	"""Contains custom tailored parts specific to LogCollection."""
+class LogCollectionForJobs(localService.LocalService):
+	"""Contains custom tailored parts specific to LogCollectionForJobs."""
 
 	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent):
-		"""Constructor for the LogCollection service."""
+		"""Constructor for the LogCollectionForJobs service."""
 		self.canceledEvent = canceledEvent
 		self.shutdownEvent = shutdownEvent
 		self.logFiles = setupLogFile(serviceName, env, globalSettings['fileContainingServiceLogSettings'], directoryName='service')
-		self.logObserver  = setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingServiceLogSettings'])
+		self.logObserver = setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingServiceLogSettings'])
 		self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
 		super().__init__(serviceName, globalSettings)
-		self.localSettings = loadSettings(os.path.join(env.configPath, globalSettings['fileContainingLogCollectionSettings']))
+		self.localSettings = loadSettings(os.path.join(env.configPath, globalSettings['fileContainingLogCollectionForJobsSettings']))
 
 		## Make checking kafka and processing results a looping call, to give a
 		## break to the main reactor thread; otherwise it blocks other looping
 		## calls, like those in coreService for health and environment details:
-		self.kafkaConsumer = self.createKafkaConsumer(globalSettings['kafkaLogTopic'])
+		self.kafkaConsumer = self.createKafkaConsumer(globalSettings['kafkaLogForJobsTopic'])
 		self.loopingGetKafkaResults = task.LoopingCall(self.getKafkaResults, self.kafkaConsumer)
 		## Give a second break before starting the main LoopingCall
 		self.loopingGetKafkaResults.start(1, now=False)
-		self.logger.debug('Leaving LogCollection constructor')
+		self.logger.debug('Leaving LogCollectionForJobs constructor')
 
 
 	def stopFactory(self):
 		try:
-			#print('logCollection stopFactory start: {}'.format(str(self.__dict__)))
-			self.logger.info('stopFactory called in logCollection')
+			#print('logCollectionForJobs stopFactory start: {}'.format(str(self.__dict__)))
+			self.logger.info('stopFactory called in logCollectionForJobs')
 			if self.loopingGetKafkaResults is not None:
 				self.logger.debug(' stopFactory: stopping loopingGetKafkaResults')
 				self.loopingGetKafkaResults.stop()
@@ -75,13 +71,14 @@ class LogCollection(localService.LocalService):
 			super().stopFactory()
 			self.globalSettings = None
 			self.localSettings = None
-			self.logger.info(' logCollection stopFactory: complete.')
+			self.logger.info(' logCollectionForJobs stopFactory: complete.')
+
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			print('Exception in logCollection stopFactory: {}'.format(exception))
+			print('Exception in logCollectionForJobs stopFactory: {}'.format(exception))
 			with suppress(Exception):
 				self.logger.debug('Exception: {exception!r}', exception=exception)
-		#print('logCollection stopFactory complete: {}'.format(str(self.__dict__)))
+		print('logCollectionForJobs stopFactory complete: {}'.format(str(self.__dict__)))
 
 		## end stopFactory
 		return
@@ -89,23 +86,25 @@ class LogCollection(localService.LocalService):
 
 	@logExceptionWithSelfLogger()
 	def workOnMessage(self, message):
-		"""Transcribe the message from kafka over to a server-side log.
+		"""Process data pulled from kafka.
 
 		Arguments:
 		  message (str) : value part of message sent through kafka
 		"""
 		## Get a handle on the different sections of the message
-		serviceName = message['serviceName']
-		endpointName = message['endpointName']
+		packageName = message['package']
+		jobName = message['job']
+		endpoint = message['endpoint']
 		content = message['content']
-		self.logger.info('Service: {serviceName!r}  Endpoint: {endpointName!r}  Message: {content!r}', serviceName=serviceName, endpointName=endpointName, content=content)
+		self.logger.info('Received message from: {packageName!r}.{jobName!r}.{endpointName!r}',
+						 packageName=packageName, jobName=jobName, endpointName=endpointName)
 
 		## end workOnMessage
 		return
 
 
-class LogCollectionService(localService.ServiceProcess):
-	"""Entry class for the logCollectionService.
+class LogCollectionForJobsService(localService.ServiceProcess):
+	"""Entry class for the logCollectionForJobsService.
 
 	This class leverages a common wrapper for the run method, which comes from
 	the localService module. The constructor below directs multiprocessing
@@ -123,8 +122,8 @@ class LogCollectionService(localService.ServiceProcess):
 		  globalSettings - global settings; used to direct this manager
 
 		"""
-		self.serviceName = 'LogCollectionService'
-		self.serviceClass = LogCollection
+		self.serviceName = 'LogCollectionForJobsService'
+		self.serviceClass = LogCollectionForJobs
 		self.shutdownEvent = shutdownEvent
 		self.canceledEvent = canceledEvent
 		self.globalSettings = globalSettings
