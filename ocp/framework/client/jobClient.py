@@ -1,20 +1,22 @@
-"""Shared code for clients that invoke remote jobs.
+"""Shared code for clients that invoke jobs.
 
 This provides common code used by contentGathering and universalJob services,
-which invoke and manage remote jobs.
+which invoke and manage jobs.
 
 Classes:
-  * :class:`.RemoteClientListener` : Twisted protocol to talk to remote services
-  * :class:`.RemoteClientFactory` : Twisted factory class for this client
+  * :class:`.JobClientListener` : Twisted protocol to talk to job services
+  * :class:`.JobClientFactory` : Twisted factory class for this client
 
 .. hidden::
 
-  Author: Chris Satterthwaite (CS)
-  Contributors: Madhusudan Sridharan (MS)
-  Version info:
-    1.0 : (CS) Created Dec, 2017
-    1.1 : (CS) Improved capability for clients to reconnect when the server side
-          is unavailable. Mar 25, 2019.
+	Author: Chris Satterthwaite (CS)
+	Contributors: Madhusudan Sridharan (MS)
+	Version info:
+	  1.0 : (CS) Created Dec, 2017
+	  1.1 : (CS) Improved capability for clients to reconnect when the server
+	        side is unavailable. Mar 25, 2019.
+	  1.2 : (CS) Migrated remoteClient to jobClient, and sharedClient to
+	        coreClient, to match service naming convention, Aug 7, 2020.
 
 """
 import os, sys
@@ -48,11 +50,11 @@ import utils
 ## Using an externally provided library defined in globalSettings and located
 ## in '<install_path>/external'.
 externalProtocolHandler = utils.loadExternalLibrary('externalProtocolHandler')
-import sharedClient
+import coreClient
 from remoteThread import RemoteThread
 
 
-class RemoteClientListener(sharedClient.ServiceClientProtocol):
+class JobClientListener(coreClient.ServiceClientProtocol):
 	"""Receives and sends data through protocol of choice"""
 
 	def doPrepareJob(self, content):
@@ -66,9 +68,8 @@ class RemoteClientListener(sharedClient.ServiceClientProtocol):
 		self.factory.doRemoveJob(content)
 
 	def doHealthRequest(self, content):
-		""" """
 		self.factory.logger.info('Responding to health request')
-		self.constructAndSendData('healthResponse', self.factory.health)
+		self.constructAndSendData('healthResponse', self.factory.executionEnvironment['runtime'])
 
 	def doModuleSnapshots(self, content):
 		self.factory.logger.info('Received a doModuleSnapshots')
@@ -93,7 +94,7 @@ class RemoteClientListener(sharedClient.ServiceClientProtocol):
 	def requestAuthorization2(self):
 		"""Once check modules is finished, this does the connection request."""
 		self.factory.logger.debug('Requesting connection authorization')
-		content = self.factory.platformDetails
+		content = self.factory.executionEnvironment
 		content['endpointName'] = self.factory.endpointName
 		content['endpointToken'] = self.factory.endpointToken
 		self.constructAndSendData('connectionRequest', content)
@@ -189,7 +190,7 @@ class RemoteClientListener(sharedClient.ServiceClientProtocol):
 		## end rawDataReceived
 
 
-class RemoteClientFactory(sharedClient.ServiceClientFactory):
+class JobClientFactory(coreClient.ServiceClientFactory):
 	"""Contains custom tailored parts for this module."""
 	continueTrying = True
 	maxDelay = 300
@@ -197,7 +198,7 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 	factor = 4
 
 	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent, pkgPath, clientSettings, clientLogSetup):
-		"""Constructor for the RemoteClientFactory.
+		"""Constructor for the JobClientFactory.
 
 		Arguments:
 		  serviceName (str)     : class name of the client
@@ -215,13 +216,12 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 
 		"""
 		try:
-			## TODO : instrument these two events since this now is a process
 			self.canceledEvent = canceledEvent
 			self.shutdownEvent = shutdownEvent
-
 			self.pkgPath = pkgPath
 			if self.pkgPath not in sys.path:
 				sys.path.append(self.pkgPath)
+
 			self.logFiles = utils.setupLogFile(serviceName, env, globalSettings['fileContainingClientLogSettings'], directoryName='client')
 			self.logObserver  = utils.setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingClientLogSettings'])
 			self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
@@ -235,10 +235,11 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 			self.validActions = ['connectionResponse', 'healthRequest', 'tokenExpired', 'unauthorized', 'prepareJob', 'jobEndpoints', 'removeJob', 'moduleSnapshots', 'moduleFile', 'moduleComplete']
 			self.actionMethods = ['doConnectionResponse', 'doHealthRequest', 'doTokenExpired', 'doUnauthorized', 'doPrepareJob', 'doJobEndpoints', 'doRemoveJob', 'doModuleSnapshots', 'doModuleFile', 'doModuleComplete']
 			self.localSettings = utils.loadSettings(os.path.join(env.configPath, clientSettings))
-			self.clientSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingRemoteClientConfig']))
+			self.clientSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingJobClientConfig']))
 			self.clientGroups = { 'clientGroups' : self.clientSettings.get('clientGroups', []) }
 			self.kafkaTopic = globalSettings['kafkaTopic']
 			self.kafkaConsumerErrorLimit = self.localSettings['kafkaConsumerErrorLimit']
+			self.requiresRestart = False
 			self.jobThreads = {}
 			self.jobEndpoints = {}
 			self.jobEndpointsCount = {}
@@ -257,9 +258,9 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			print('Exception in RemoteClientFactory constructor: {}'.format(str(exception)))
+			print('Exception in JobClientFactory constructor: {}'.format(str(exception)))
 			with suppress(Exception):
-				self.logger.error('Exception in RemoteClientFactory: {exception!r}', exception=exception)
+				self.logger.error('Exception in JobClientFactory: {exception!r}', exception=exception)
 			self.canceledEvent.set()
 			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
 			self.logToKafka(str(exceptionOnly))
@@ -270,12 +271,12 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 		self.logger.debug('Connected.')
 		## Resetting reconnection delay
 		self.resetDelay()
-		protocol = RemoteClientListener()
+		protocol = JobClientListener()
 		protocol.factory = self
 		return protocol
 
 	def initialize(self):
-		self.logger.debug('called initialize in remoteClient...')
+		self.logger.debug('called initialize in jobClient...')
 		self.logger.debug('initializing : createKafkaProducer')
 		self.createKafkaProducer()
 		super().initialize()
@@ -289,8 +290,8 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 		print('  cleanup: activeClient: {}'.format(self.clientName))
 		self.logger.warn('  cleanup: activeClient: {clientName!r}', clientName=self.clientName)
 		self.clientName = 'Unknown'
-		print('  cleanup: stop remoteClient threads')
-		self.logger.warn('  cleanup: stop remoteClient threads')
+		print('  cleanup: stop jobClient threads')
+		self.logger.warn('  cleanup: stop jobClient threads')
 		self.cleanupThreads()
 		print('  cleanup: waiting for threads to finish')
 		self.logger.warn('  cleanup: waiting for threads to finish')
@@ -330,7 +331,7 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 		print('  stopFactory: activeClient: {}'.format(self.clientName))
 		self.clientName = 'Unknown'
 		self.activeClient = None
-		print('  stopFactory: stop remoteClient threads')
+		print('  stopFactory: stop jobClient threads')
 		self.cleanupThreads()
 		print('  stopFactory: waiting for threads to finish')
 		self.waitForThreadsToFinish()
@@ -346,10 +347,10 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 				self.kafkaProducer = None
 				print('  stopFactory: closed kafkaProducer')
 				self.logger.warn('  cleanup: closed kafkaProducer')
-		## These are from the sharedClient
-		print('  stopFactory: stopping loopingSystemHealth and loopingAuthenticateClient')
+		## These are from the coreClient
+		print('  stopFactory: stopping loopingGetExecutionEnvironment and loopingAuthenticateClient')
 		with suppress(Exception):
-			self.loopingSystemHealth.stop()
+			self.loopingGetExecutionEnvironment.stop()
 		with suppress(Exception):
 			self.loopingAuthenticateClient.stop()
 		print(' Cleanup complete; stopping client.')
@@ -433,7 +434,7 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 		## Resolve protocol entries before starting threads
 		self.protocolHandler.open(jobMetaDataContent)
 
-		## Pull data into variables, before calling RemoteThread
+		## Pull data into variables, before calling JobThread
 		jobMetaData = {}
 		keysToMove = ['protocolType', 'inputParameters', 'protocols', 'shellConfig']
 		for key,value in jobMetaDataContent.items():
@@ -478,9 +479,9 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 		endpointPipeline = jobMetaData.get('endpointPipeline', 'service').lower()
 		## Queue used to transfer endpoints to worker threads; notice we set a
 		## max size, according to the defaults and overriden by the job. This
-		## controls how much is pulled from kafka at once, so that the number of
-		## remote clients and threads per client, can all be set independently.
-		## And this enables a native load-balancing between the clients, so that
+		## controls how much is pulled from kafka at once, so that the number
+		## of clients and threads per client, can all be set independently. And
+		## this enables a native load-balancing between the clients, so that
 		## they only pull down evenly sized chunks at a time, and need to finish
 		## those work items before pulling more.
 		self.jobEndpoints[jobName] = None
@@ -556,7 +557,7 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 		kafka partitions). So this allows us to work in a multi-threaded manner,
 		sharing load off a Kafka Consumer that is not thread safe.
 
-		The remote client pulls a message from kafka, containing a chunk of
+		The job client pulls a message from kafka, containing a chunk of
 		endpoints. It then feeds that chunk into the internal shared Queue used
 		by the worker threads.
 		"""
@@ -1066,8 +1067,17 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 				self.logger.debug('doModuleComplete: finished module {moduleName!r}.', moduleName=moduleName)
 			## See if we finished all module updates
 			if len(self.modulesToTransfer) <= 0:
-				self.logger.debug('doModuleComplete: finished all modules; proceeding to register...')
-				self.connectedClient.requestAuthorization2()
+				if self.requiresRestart:
+					self.requiresRestart = False
+					## Request a client restart, to load dependencies
+					message = 'doModuleComplete: finished all modules; request a service restart...'
+					self.logger.debug(message)
+					self.logToKafka(message)
+					self.canceledEvent.set()
+				else:
+					## Continue to client registration (number two)
+					self.logger.debug('doModuleComplete: finished all modules; proceeding to register...')
+					self.connectedClient.requestAuthorization2()
 			else:
 				self.logger.debug('doModuleComplete: modules remaining: {modulesToTransfer!r}', modulesToTransfer=self.modulesToTransfer)
 				## Remove the next module from those tracked for needing updates
@@ -1105,6 +1115,7 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 					else:
 						self.logger.info(' module requires update: {moduleName!r}', moduleName=moduleName)
 						updateSnapshotsFile = True
+						self.requiresRestart = True
 						self.modulesToTransfer[moduleName] = serverSnapshot
 						## Remove client module directory and recreate
 						self.removeOldModulePath(moduleName)
@@ -1113,6 +1124,7 @@ class RemoteClientFactory(sharedClient.ServiceClientFactory):
 				else:
 					self.logger.info(' module requires update: {moduleName!r}', moduleName=moduleName)
 					updateSnapshotsFile = True
+					self.requiresRestart = True
 					self.modulesToTransfer[moduleName] = serverSnapshot
 
 			## Start the first module transfer

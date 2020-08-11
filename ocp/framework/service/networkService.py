@@ -71,7 +71,7 @@ clientToHealthTableMapping = {
 	},
 	'UniversalJobService' : {
 		'health': ServiceUniversalJobHealth,
-		'jobs' : JobContentGathering
+		'jobs' : JobUniversal
 	}
 }
 
@@ -417,54 +417,6 @@ class ServiceFactory(CoreService, ServerFactory):
 		"""Call getJobUpdates in a non-blocking thread."""
 		return threads.deferToThread(self.getJobUpdates)
 
-	# def deferServiceClients(self):
-	# 	"""Call getServiceClients in a non-blocking thread."""
-	# 	threadHandle = None
-	# 	try:
-	# 		threadHandle = threads.deferToThread(self.getServiceClients)
-	# 	except:
-	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-	# 		self.logger.error('Exception: {exception!r}', exception=exception)
-	#
-	# 	## end deferServiceClients
-	# 	return threadHandle
-	#
-	# def deferUpdateClientTokens(self):
-	# 	"""Call updateClientTokens in a non-blocking thread."""
-	# 	threadHandle = None
-	# 	try:
-	# 		threadHandle = threads.deferToThread(self.updateClientTokens)
-	# 	except:
-	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-	# 		self.logger.error('Exception: {exception!r}', exception=exception)
-	#
-	# 	## end deferUpdateClientTokens
-	# 	return threadHandle
-	#
-	# def deferSendHealthRequest(self):
-	# 	"""Call sendHealthRequest in a non-blocking thread."""
-	# 	threadHandle = None
-	# 	try:
-	# 		threadHandle = threads.deferToThread(self.sendHealthRequest)
-	# 	except:
-	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-	# 		self.logger.error('Exception: {exception!r}', exception=exception)
-	#
-	# 	## end deferSendHealthRequest
-	# 	return threadHandle
-	#
-	# def deferGetJobUpdates(self):
-	# 	"""Call getJobUpdates in a non-blocking thread."""
-	# 	threadHandle = None
-	# 	try:
-	# 		threadHandle = threads.deferToThread(self.getJobUpdates)
-	# 	except:
-	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-	# 		self.logger.error('Exception: {exception!r}', exception=exception)
-	#
-	# 	## end deferGetJobUpdates
-	# 	return threadHandle
-
 
 	def getSpecificJob(self, jobName):
 		jobSettings = None
@@ -487,8 +439,6 @@ class ServiceFactory(CoreService, ServerFactory):
 
 	@logExceptionWithSelfLogger()
 	def getJobSchedulerDetails(self, jobContent):
-		#try:
-		## Parse "trigger" arguments for ApScheduler and drop invalid values
 		triggerType = jobContent.get('triggerType')
 		triggerArgs = {}
 		if ('triggerArgs' in jobContent.keys() and len(jobContent.get('triggerArgs').keys()) > 0):
@@ -502,10 +452,6 @@ class ServiceFactory(CoreService, ServerFactory):
 		schedulerMisfireGraceTime = int(schedulerArgs.get('misfire_grace_time'))
 		schedulerCoalesce = bool(schedulerArgs.get('coalesce'))
 		schedulerMaxInstances = int(schedulerArgs.get('max_instances'))
-
-		# except:
-		# 	stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-		# 	self.logger.error(' Exception in setupJobSchedules on job file {jobFile!r}: {stacktrace!r}', jobFile=jobFile, stacktrace=stacktrace)
 
 		## end getJobSchedulerDetails
 		return (triggerType, triggerArgs, schedulerArgs, schedulerMisfireGraceTime, schedulerCoalesce, schedulerMaxInstances)
@@ -566,7 +512,6 @@ class ServiceFactory(CoreService, ServerFactory):
 		## Get job descriptors from the database
 		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
 		jobs = self.dbClient.session.query(jobClass).filter(jobClass.time_updated >= datetime.datetime.fromtimestamp(self.lastJobUpdateTime)).all()
-
 		for job in jobs:
 			try:
 				jobName = getattr(job, 'name')
@@ -574,7 +519,6 @@ class ServiceFactory(CoreService, ServerFactory):
 				active = getattr(job, 'active', False)
 				packageName = getattr(job, 'package')
 				jobShortName = jobContent.get('jobName')
-				#self.logger.info(' found job [{jobName!r}] with content {jobContent!r}', jobName=jobName, jobContent=jobContent)
 
 				## If job wasn't active or being tracked
 				if jobName not in self.activeJobs:
@@ -647,7 +591,7 @@ class ServiceFactory(CoreService, ServerFactory):
 		  authorizedEndpoints : Dictionary containing all the authorized clients
 
 		"""
-		## call DB and update the authorized client list for the service
+		## Call database and update the authorized client list for the service
 		clients = self.dbClient.session.query(self.clientEndpointTable)
 		self.authorizedEndpoints = {}
 		for serviceClient in clients:
@@ -726,7 +670,6 @@ class ServiceFactory(CoreService, ServerFactory):
 	@logExceptionWithSelfLogger()
 	def cleanClientHealthTable(self):
 		"""Remove any stale clients before establishing new connections."""
-		# try:
 		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
 		clients = self.dbClient.session.query(ServiceEndpointHealth).all()
 		for serviceClient in clients:
@@ -738,9 +681,8 @@ class ServiceFactory(CoreService, ServerFactory):
 		self.dbClient.session.commit()
 		self.dbClient.session.close()
 
-		# except:
-		# 	exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-		# 	self.logger.error('Exception in cleanClientHealthTable: {exception!r}', exception=exception)
+		## end cleanClientHealthTable
+		return
 
 
 	def removeClient(self, client, clientName):
@@ -751,9 +693,6 @@ class ServiceFactory(CoreService, ServerFactory):
 		  clientName : String containing the client name
 
 		"""
-		## If deleting keys from a dictionary while iterating through it, we
-		## would use keys() to create a new list and mutate the previous. But
-		## since I need to delete based on value; need to create a new dict.
 		newActiveClients = {}
 		for thisName in self.activeClients.keys():
 			(thisEndpoint, thisInstanceNumber, thisClient) = self.activeClients[thisName]
@@ -775,16 +714,22 @@ class ServiceFactory(CoreService, ServerFactory):
 
 		## Remove client health entry out of the DB table
 		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
-		clients = self.dbClient.session.query(ServiceEndpointHealth).all()
-		for serviceClient in clients:
-			thisName = serviceClient.name
-			if thisName == clientName:
-				self.dbClient.session.delete(serviceClient)
-				self.dbClient.session.commit()
+		## If this operation is hit during a shutdown or restart operation, and
+		## stopFactory is starting - we may not have a dbClient left around:
+		if self.dbClient is not None:
+			clients = self.dbClient.session.query(ServiceEndpointHealth).all()
+			for serviceClient in clients:
+				thisName = serviceClient.name
+				if thisName == clientName:
+					self.dbClient.session.delete(serviceClient)
+					self.dbClient.session.commit()
 
-		## Return underlying DBAPI connection
-		self.dbClient.session.commit()
-		self.dbClient.session.close()
+			## Return underlying DBAPI connection
+			self.dbClient.session.commit()
+			self.dbClient.session.close()
+
+		## end removeClient
+		return
 
 
 	def updateClientTokens(self):
@@ -831,6 +776,9 @@ class ServiceFactory(CoreService, ServerFactory):
 		self.dbClient.session.commit()
 		self.dbClient.session.close()
 
+		## end updateClientTokens
+		return
+
 
 	def sendHealthRequest(self):
 		"""Requesting active clients to send health information"""
@@ -844,6 +792,7 @@ class ServiceFactory(CoreService, ServerFactory):
 				self.logger.error('Exception in updateClientTokens: {exception!r}', exception=exception)
 
 
+
 class ServiceProcess(multiprocessing.Process):
 	"""Separate process per service manager."""
 
@@ -855,20 +804,18 @@ class ServiceProcess(multiprocessing.Process):
 		from openContentPlatform, listening for any interrupt requests.
 
 		"""
-		logger = None
-		mainHandler = None
 		try:
 			## There are two types of event handlers being used here:
 			##   self.shutdownEvent : main process tells this one to shutdown
 			##                        (e.g. on a Ctrl+C type event)
-			##   self.canceledEvent : this process needs to cleanup and restart
+			##   self.canceledEvent : this process needs to restart
 			serviceEndpoint = self.globalSettings.get('serviceIpAddress')
 			useCertificates = self.globalSettings.get('useCertificates', True)
 
 			## Create a PID file for system administration purposes
 			utils.pidEntryService(self.serviceName, env, self.pid)
 
-			## Remote job services use remoteService, which is a shared library
+			## Network job services use networkService, which is a shared lib
 			## directed by additional input parameters; set args accordingly:
 			factoryArgs = None
 			if (self.serviceName == 'ContentGatheringService' or self.serviceName == 'UniversalJobService'):
@@ -889,29 +836,23 @@ class ServiceProcess(multiprocessing.Process):
 
 			## The following loop may look hacky at first glance, but solves a
 			## challenge with a mix of Python multi-processing, multi-threading,
-			## then Twisted multi-threading inside it's reactor.
-
-			## The OCP main process spins up services in sub-processes, and
-			## then the sub-processes may also be multi-threaded and/or use a
-			## Twisted reactor (which has it's own thread management). Actually,
-			## most of the services are wrapped by a Twisted reactor, which
-			## further complicates our mix of process and thread management -
-			## specifically with managing restarts.
+			## then Twisted's reactor and threading.
 
 			## Python threads that are not daemon types, cannot be forced closed
 			## when the controlling thread closes. So it's important to pass
 			## events all the way through, and have looping code catch/cleanup.
 
 			## Whenever the main process is being shut down, it must stop all
-			## sub-processes along with their work streams, which also includes
+			## sub-processes along with their work streams, which includes any
 			## Twisted reactors. We do that by passing shutdownEvent into the
 			## sub-processes. And whenever a service (sub-process) needs to
 			## restart, it notifies the other direction so the main process can
 			## verify it stopped and restart it. We do that by a canceledEvent.
 
 			## Now to the point of this verbose comment, so the reason we cannot
-			## call reactor.run() here, and instead cut/paste the code here, was
+			## call reactor.run() here, and instead cut/paste the same code, was
 			## to enhance 'while reactor._started' to watch for our events.
+
 			reactor.startRunning()
 			## Start event wait loop
 			while reactor._started and not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():
@@ -950,12 +891,9 @@ class ServiceProcess(multiprocessing.Process):
 
 		## Cleanup
 		utils.pidRemoveService(self.serviceName, env, self.pid)
-		## Remove the handler to avoid duplicate lines the next time it runs
-		with suppress(Exception):
-			logger.removeHandler(mainHandler)
 		with suppress(Exception):
 			reactor.stop()
 		print('Stopped {}'.format(self.serviceName))
 
-		## end run
+		## end ServiceProcess
 		return

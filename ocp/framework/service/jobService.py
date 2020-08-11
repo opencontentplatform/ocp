@@ -134,24 +134,11 @@ class JobServiceFactory(networkService.ServiceFactory):
 		"""Call the main loop in a non-blocking thread."""
 		return threads.deferToThread(self.callMainLoop)
 
-	# def deferCallMainLoop(self):
-	# 	"""Call the main loop in a non-blocking thread."""
-	# 	threadHandle = None
-	# 	try:
-	# 		threadHandle = threads.deferToThread(self.callMainLoop)
-	# 	except:
-	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-	# 		self.logger.error('Exception: {exception!r}', exception=exception)
-	#
-	# 	## end deferCallMainLoop
-	# 	return threadHandle
-
 	@logExceptionWithSelfLogger()
 	def callMainLoop(self):
 		## coreService.healthCheck uses coreService.checkEvents; we need to
 		## do something similar here since the scheduler needs notified
-		self.logger.info('mainServiceLoop...')
-		#self.checkEvents()
+		#self.logger.info('mainServiceLoop...')
 		if self.shutdownEvent.is_set() or self.canceledEvent.is_set():
 			self.logger.info('mainServiceLoop: shutting down scheduler.')
 			# shutdownArgs = { 'shutdown_threadpool': False }
@@ -211,18 +198,6 @@ class JobServiceFactory(networkService.ServiceFactory):
 	def deferReportJobSchedules(self):
 		"""Call reportJobSchedules in a non-blocking thread."""
 		return threads.deferToThread(self.reportJobSchedules)
-
-	# def deferReportJobSchedules(self):
-	# 	"""Call reportJobSchedules in a non-blocking thread."""
-	# 	threadHandle = None
-	# 	try:
-	# 		threadHandle = threads.deferToThread(self.reportJobSchedules)
-	# 	except:
-	# 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-	# 		self.logger.error('Exception: {exception!r}', exception=exception)
-	#
-	# 	## end deferReportJobSchedules
-	# 	return threadHandle
 
 
 	def reportJobSchedules(self):

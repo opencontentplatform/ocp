@@ -33,8 +33,8 @@ from sqlalchemy import inspect
 
 ## From openContentPlatform
 from utils import customJsonDumpsConverter
-from database.schema.platformSchema import ContentGatheringResults, UniversalJobResults, ServerSideResults
-from database.schema.platformSchema import JobContentGathering, JobUniversal, JobServerSide
+from database.schema.platformSchema import JobUniversal, UniversalJobResults, UniversalJobServiceResults
+from database.schema.platformSchema import JobContentGathering, ContentGatheringResults, ContentGatheringServiceResults
 from apiHugWrapper import hugWrapper
 from apiResourceUtils import *
 
@@ -51,6 +51,11 @@ def getJobResources(request, response):
 			'methods' : {
 				'GET' : 'Show available runtime resources.'
 			}
+		},
+		'/job/review' : {
+			'methods' : {
+				'GET' : 'Show available review resources.'
+			}
 		}
 	}
 
@@ -60,7 +65,8 @@ def getJobResources(request, response):
 
 @hugWrapper.get('/config')
 def getJobConfigResources(request, response):
-	staticPayload = {'Services' : ['contentGathering', 'universalJob', 'serverSide'],
+	#staticPayload = {'Services' : ['contentGathering', 'universalJob', 'serverSide'],
+	staticPayload = {'Services' : ['contentGathering', 'universalJob'],
 		'/job/config/{service}' : {
 			'methods' : {
 				'GET' : 'Return a list of job names configured in the specified service.',
@@ -242,7 +248,8 @@ def deleteThisJobConfig(service:text, name:text, request, response):
 
 @hugWrapper.get('/runtime')
 def getJobRuntimeResources(request, response):
-	staticPayload = {'Services' : ['contentGathering', 'universalJob', 'serverSide'],
+	#staticPayload = {'Services' : ['contentGathering', 'universalJob', 'serverSide'],
+	staticPayload = {'Services' : ['contentGathering', 'universalJob'],
 		'/job/runtime/{service}' : {
 			'methods' : {
 				'GET' : 'Return a list of job names based on results tracked by the named service.'
@@ -278,8 +285,8 @@ def getJobRuntimeServiceList(service:text, request, response):
 			getServiceJobResultList(request, response, 'contentGathering', ContentGatheringResults)
 		elif service.lower() == 'universaljob':
 			getServiceJobResultList(request, response, 'universalJob', UniversalJobResults)
-		elif service.lower() == 'serverside':
-			getServiceJobResultList(request, response, 'serverSide', ServerSideResults)
+		# elif service.lower() == 'serverside':
+		# 	getServiceJobResultList(request, response, 'serverSide', ServerSideResults)
 		else:
 			request.context['payload']['errors'].append('Invalid resource: ./job/runtime/{}'.format(service))
 			response.status = HTTP_400
@@ -333,8 +340,8 @@ def executeNamedJobResultList(service:text, name:text, request, response):
 			dbTable = ContentGatheringResults
 		elif service.lower() == 'universaljob':
 			dbTable = UniversalJobResults
-		elif service.lower() == 'serverside':
-			dbTable = ServerSideResults
+		# elif service.lower() == 'serverside':
+		# 	dbTable = ServerSideResults
 		else:
 			request.context['payload']['errors'].append('Invalid resource: ./job/{}'.format(service))
 			response.status = HTTP_400
@@ -473,4 +480,117 @@ def executeNamedJobStatistics(service:text, name:text, request, response):
 		errorMessage(request, response)
 
 	## end executeNamedJobStatistics
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/review')
+def getJobReviewResources(request, response):
+	staticPayload = {'Services' : ['contentGathering', 'universalJob'],
+		'/job/review/{service}' : {
+			'methods' : {
+				'GET' : 'Return a list of job names based on results tracked by the named service.'
+			}
+		},
+		'/job/review/{service}/filter' : {
+			'methods' : {
+				'GET' : 'Return job review results for the service, which match the provided filter.',
+				'DELETE' : 'Delete job review results for the service, which match the provided filter.'
+			}
+		},
+		'/job/review/{service}/{jobName}' : {
+			'methods' : {
+				'GET' : 'Return all results for the specified job.'
+			}
+		}
+	}
+
+	## end getJobReviewResources
+	return staticPayload
+
+
+def getReviewServiceTable(service, request, response):
+	"""Helper for shared code path."""
+	dbTable = None
+	if service.lower() == 'contentgathering':
+		dbTable = ContentGatheringServiceResults
+	elif service.lower() == 'universaljob':
+		dbTable = UniversalJobServiceResults
+	else:
+		request.context['payload']['errors'].append('Invalid resource: ./job/review/{}'.format(service))
+		response.status = HTTP_400
+	return dbTable
+
+
+@hugWrapper.get('/review/{service}')
+def getJobReviewServiceList(service:text, request, response):
+	"""Return a list of job names previously tracked by the specified service."""
+	try:
+		dbTable = getReviewServiceTable(service, request, response)
+		if dbTable is not None:
+			dataHandle = request.context['dbSession'].query(distinct(dbTable.job)).order_by(dbTable.job).all()
+			jobNames = []
+			for item in dataHandle:
+				jobNames.append(item[0])
+			request.context['payload']['Jobs'] = jobNames
+
+	except:
+		errorMessage(request, response)
+
+	## end getJobReviewServiceList
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/review/{service}/{name}')
+def getThisJobReview(service:text, name:text, request, response):
+	"""Return all summary results for the specified job."""
+	try:
+		dbTable = getReviewServiceTable(service, request, response)
+		if dbTable is not None:
+			dataHandle = request.context['dbSession'].query(dbTable).filter(dbTable.job == name).all()
+			results = []
+			for item in dataHandle:
+				results.append({col:getattr(item, col) for col in inspect(item).mapper.c.keys() if col != 'job'})
+			request.context['payload'][name] = results
+
+	except:
+		errorMessage(request, response)
+
+	## end getJobReview
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/review/{service}/filter')
+def executeJobReviewFilter(service:text, content:hugJson, request, response):
+	"""Return requested job summary results, matching the provided filter."""
+	try:
+		dbTable = getReviewServiceTable(service, request, response)
+		if dbTable is not None:
+			if hasRequiredData(request, response, content, ['filter']):
+				filterConditions = content.get('filter')
+				countResult = content.get('count', False)
+				searchThisContentHelper(request, response, filterConditions, dbTable, countResult, False)
+
+	except:
+		errorMessage(request, response)
+
+	## end executeJobReviewFilter
+	return cleanPayload(request)
+
+
+@hugWrapper.delete('/review/{service}/filter')
+def deleteJobReviewFilter(service:text, content:hugJson, request, response):
+	"""Delete job runtime results for service, matching the provided filter.
+
+	Note: this is the runtime meta data for the job, not the CIs.
+	"""
+	try:
+		if hasRequiredData(request, response, content, ['filter']):
+			filterConditions = content.get('filter')
+			countResult = content.get('count', False)
+			searchThisContentHelper(request, response, filterConditions, dbTable, countResult, True)
+
+	except:
+		errorMessage(request, response)
+
+	## end deleteJobReviewFilter
 	return cleanPayload(request)

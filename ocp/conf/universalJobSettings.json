@@ -1,14 +1,17 @@
 {
+	"maxProcessMemoryUsageThreshold" : 150000000,
+	"maxProcessCpuPercentUsageThreshold" : 10,
+	"maxSecondsSinceLastSystemStatus" : 120,
 	"waitSecondsBetweenReportingJobSchedules" : 600,
-	"defaultRealm" :"default",
+	"defaultRealm" : "default",
 	"defaultMaxJobRunTime" : 600,
 	"defaultMaxProtocolTime": 600,
 	"defaultMaxCommandTime": 60,
 	"defaultNumberOfJobThreads" : 30,
 	"waitSecondsOnJobCleanupLoop" : 10,
 	"moduleTransferChunkSize" : 8192,
-	"kafkaPollTimeOut": 20,
+	"kafkaPollTimeOut" : 20,
 	"kafkaPerPollJobEndpointsSize" : 1,
-	"kafkaConsumerErrorLimit": 3,
-	"queuePutTimeoutInSeconds": 0.1
+	"kafkaConsumerErrorLimit" : 3,
+	"queuePutTimeoutInSeconds" : 0.1
 }

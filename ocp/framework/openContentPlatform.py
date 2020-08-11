@@ -43,7 +43,7 @@ from universalJobService import UniversalJobService
 from logCollectionService import LogCollectionService
 from apiService import ApiService
 from logCollectionForJobsService import LogCollectionForJobsService
-## Deprecating server side service
+## Considering deprecation of server side service
 #from serverSideService import ServerSideService
 from utils import loadSettings, setupLogFile, setupObservers, prettyRunTime
 
@@ -133,6 +133,8 @@ def serviceLoop(logger, settings):
 	activeServices['universalJob'] = { 'class': UniversalJobService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
 	activeServices['logCollection'] = { 'class': LogCollectionService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
 	activeServices['logCollectionForJobs'] = { 'class': LogCollectionForJobsService, 'canceledEvent': multiprocessing.Event(), 'instance': None }
+
+	## Considering deprecation of server side service:
 	## Conditionally start/add the local service (ServerSideService)
 	# if settings['startServerSideService']:
 	# 	activeServices['serverSide'] = { 'class': ServerSideService, 'canceledEvent': None, 'instance': None }
@@ -159,7 +161,7 @@ def serviceLoop(logger, settings):
 
 				if thisService.is_alive() and thisEvent is not None and thisEvent.is_set():
 					## The service is telling us it needs restarted
-					logger.error('  {}: still alive, but requested a restart'.format(thisService.name, thisService.exitcode))
+					logger.error('  {}: still alive (PID: {}), but requested a restart'.format(thisService.name, thisService.pid))
 					thisService.terminate()
 					thisEvent.clear()
 					del thisService
@@ -201,7 +203,7 @@ def serviceLoop(logger, settings):
 					thisService = content['instance']
 					logger.debug('Evaluating {}'.format(thisService.name))
 					if thisService.is_alive():
-						logger.debug('  process still running; attempting to kill {} with PID {}'.format(thisService.name, thisService.pid))
+						logger.debug('  process still running; stopping {} with PID {}'.format(thisService.name, thisService.pid))
 						thisService.terminate()
 				except:
 					exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])

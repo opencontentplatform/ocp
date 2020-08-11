@@ -9,8 +9,9 @@
 	"isDisabled" : false,
 	"inputParameters" : {
 		"printDebug" : true,
-		"resultType" : "universalJob",
-		"thresholdInNumberOfDays" : 60
+		"resultType" : "runtime",
+		"serviceType" : "universalJob",
+		"thresholdInNumberOfDays" : 30
 	},
 	"triggerType" : "cron",
 	"triggerArgs" : {
@@ -20,7 +21,7 @@
 		"week" : null,
 		"day_of_week" : null,
 		"hour" : 4,
-		"minute" : 1,
+		"minute" : 22,
 		"second" : null,
 		"start_date" : "",
 		"end_date" : ""

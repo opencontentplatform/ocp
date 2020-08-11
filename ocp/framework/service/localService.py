@@ -20,7 +20,6 @@ import traceback
 import os
 import time
 import datetime
-#import json
 import platform
 import psutil
 import multiprocessing
@@ -64,48 +63,40 @@ class ServiceProcess(multiprocessing.Process):
 		from openContentPlatform, listening for any interrupt requests.
 
 		"""
-		logger = None
-		mainHandler = None
 		try:
 			## There are two types of event handlers being used here:
 			##   self.shutdownEvent : main process tells this one to shutdown
 			##                        (e.g. on a Ctrl+C type event)
 			##   self.canceledEvent : this process needs to restart
-			serviceEndpoint = self.globalSettings.get('serviceIpAddress')
-			useCertificates = self.globalSettings.get('useCertificates', True)
 
 			## Create a PID file for system administration purposes
 			utils.pidEntryService(self.serviceName, env, self.pid)
 
+			factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent)
+			print('Starting local service: {}'.format(self.serviceName))
+
 			## The following loop may look hacky at first glance, but solves a
 			## challenge with a mix of Python multi-processing, multi-threading,
-			## then Twisted multi-threading inside it's reactor.
-
-			## The OCP main process spins up services in sub-processes, and
-			## then the sub-processes may also be multi-threaded and/or use a
-			## Twisted reactor (which has it's own thread management). Actually,
-			## most of the services are wrapped by a Twisted reactor, which
-			## further complicates our mix of process and thread management -
-			## specifically with managing restarts.
+			## then Twisted's reactor and threading.
 
 			## Python threads that are not daemon types, cannot be forced closed
 			## when the controlling thread closes. So it's important to pass
 			## events all the way through, and have looping code catch/cleanup.
 
 			## Whenever the main process is being shut down, it must stop all
-			## sub-processes along with their work streams - which also includes
+			## sub-processes along with their work streams, which includes any
 			## Twisted reactors. We do that by passing shutdownEvent into the
 			## sub-processes. And whenever a service (sub-process) needs to
-			## restart, it needs to notify back the other direction so the main
-			## process can stop and restart it. We do that by a canceledEvent.
+			## restart, it notifies the other direction so the main process can
+			## verify it stopped and restart it. We do that by a canceledEvent.
 
 			## Now to the point of this verbose comment, so the reason we cannot
-			## call reactor.run() here, and instead cut/paste the code here, was
-			## to enhance 'while reactor._started' to also watch for our events.
-			factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent)
-			print('Starting local service: {}'.format(self.serviceName))
+			## call reactor.run() here, and instead cut/paste the same code, was
+			## to enhance 'while reactor._started' to watch for our events.
+
 			reactor.callFromThread(self.serviceClass, *factoryArgs)
 			#reactor.callWhenRunning(self.serviceClass *factoryArgs)
+
 			reactor.startRunning()
 			## Start event wait loop
 			while reactor._started and not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():
@@ -146,10 +137,8 @@ class ServiceProcess(multiprocessing.Process):
 		utils.pidRemoveService(self.serviceName, env, self.pid)
 		## Remove the handler to avoid duplicate lines the next time it runs
 		with suppress(Exception):
-			logger.removeHandler(mainHandler)
-		with suppress(Exception):
 			reactor.stop()
 		print('Stopped {}'.format(self.serviceName))
 
-		## end run
+		## end ServiceProcess
 		return

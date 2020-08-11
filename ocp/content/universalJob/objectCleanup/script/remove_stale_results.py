@@ -30,7 +30,7 @@ def parseResponse(apiResponse):
 	return (responseCode, responseAsJson)
 
 
-def getStaleResultCount(runtime, resultType, thresholdInHours):
+def getStaleResultCount(runtime, resultType, serviceType, thresholdInHours):
 	"""Issue an API call to get the object count."""
 	resultCount = 0
 	content = {
@@ -44,7 +44,7 @@ def getStaleResultCount(runtime, resultType, thresholdInHours):
 			}
 		}]
 	}
-	apiResponse = getApiResult(runtime, 'job/{}/filter'.format(resultType), 'get', customPayload={'content': content})
+	apiResponse = getApiResult(runtime, 'job/{}/{}/filter'.format(resultType, serviceType), 'get', customPayload={'content': content})
 	(responseCode, responseAsJson) = parseResponse(apiResponse)
 	if responseCode is not None and str(responseCode) == '200':
 		queryResults = json.loads(apiResponse.text)
@@ -57,7 +57,7 @@ def getStaleResultCount(runtime, resultType, thresholdInHours):
 	return resultCount
 
 
-def deleteStaleResultCount(runtime, resultType, thresholdInHours):
+def deleteStaleResultCount(runtime, resultType, serviceType, thresholdInHours):
 	"""Issue an API call to delete the matching results."""
 	content = {
 		'filter': [{
@@ -69,7 +69,7 @@ def deleteStaleResultCount(runtime, resultType, thresholdInHours):
 			}
 		}]
 	}
-	apiResponse = getApiResult(runtime, 'job/{}/filter'.format(resultType), 'delete', customPayload={'content': content})
+	apiResponse = getApiResult(runtime, 'job/{}/{}/filter'.format(resultType, serviceType), 'delete', customPayload={'content': content})
 	(responseCode, responseAsJson) = parseResponse(apiResponse)
 	if responseCode is not None and str(responseCode) == '200':
 		queryResults = json.loads(apiResponse.text)
@@ -89,18 +89,19 @@ def startJob(runtime):
 	                     the job thread through the life of its runtime.
 	"""
 	try:
+		serviceType = runtime.parameters.get('serviceType')
 		resultType = runtime.parameters.get('resultType')
 		thresholdDays = runtime.parameters.get('thresholdInNumberOfDays')
 		if not isinstance(thresholdDays, int):
 			raise EnvironmentError('Please change the value of thresholdInNumberOfDays in the job parameters to a valid integer.')
 		thresholdInHours = thresholdDays * 24
 		## Don't have to do a count before delete, but it's nice for logging
-		resultCount = getStaleResultCount(runtime, resultType, thresholdInHours)
+		resultCount = getStaleResultCount(runtime, resultType, serviceType, thresholdInHours)
 		if resultCount > 0:
-			deleteStaleResultCount(runtime, resultType, thresholdInHours)
+			deleteStaleResultCount(runtime, resultType, serviceType, thresholdInHours)
 		else:
 			## Nothing to do
-			runtime.logger.debug('No stale {resultType!r} results found for cleanup.', resultType=resultType)
+			runtime.logger.debug('No stale {resultType!r}/{serviceType!r} results found for cleanup.', resultType=resultType, serviceType=serviceType)
 
 		## Update the runtime status to success
 		if runtime.getStatus() == 'UNKNOWN':

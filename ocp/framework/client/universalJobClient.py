@@ -2,9 +2,9 @@
 
 This module receives direction from the :mod:`service.universalJobService`. The
 entry class is :class:`.UniversalJobClient`, which inherits from the shared
-:mod:`.sharedClient` and :mod:`.remoteClient` modules. It is invoked from the
+:mod:`.coreClient` and :mod:`.jobClient` modules. It is invoked from the
 command line through :mod:`openContentClient`, or wrapped by a corresponding
-service/daemon. The majority of code resides in :mod:`.remoteClient`, which is
+service/daemon. The majority of code resides in :mod:`.jobClient`, which is
 used by contentGathering, universalJob, and future job-enabled clients.
 
 The main purpose of this client is to run jobs as directed by the Service. The
@@ -25,26 +25,26 @@ Classes:
 	Author: Chris Satterthwaite (CS)
 	Version info:
 	  1.0 : (CS) Created Dec, 2017
-	  1.2 : (CS) added remoteClient to allow shared code for job-enabled clients.
+	  1.1 : (CS) added remoteClient to allow shared code for job-enabled clients.
 	        Aug 27, 2019.
+	  1.2 : (CS) Migrated remoteClient to jobClient, to match service naming
+	        convention, Aug 7, 2020.
 
 """
-import os
 import env
-import sharedClient
-import remoteClient
-import database.schema.platformSchema as platformSchema
+import coreClient
+import jobClient
 
 
-class UniversalJobClient(sharedClient.ClientProcess):
+class UniversalJobClient(coreClient.ClientProcess):
 	"""Entry class for this client.
 
 	This class leverages a common wrapper for the multiprocessing code, found
-	in the :mod:`.sharedClient` module. The constructor below directs the
+	in the :mod:`.coreClient` module. The constructor below directs the
 	wrapper function to use settings specific to this manager.
 	"""
 
-	def __init__(self, shutdownEvent, globalSettings):
+	def __init__(self, shutdownEvent, canceledEvent, globalSettings):
 		"""Modified constructor to accept custom arguments.
 
 		Arguments:
@@ -52,9 +52,10 @@ class UniversalJobClient(sharedClient.ClientProcess):
 		  globalSettings - global settings; used to direct this manager
 		"""
 		self.shutdownEvent = shutdownEvent
+		self.canceledEvent = canceledEvent
 		self.globalSettings = globalSettings
 		self.clientName = 'UniversalJobClient'
-		self.clientFactory = remoteClient.RemoteClientFactory
+		self.clientFactory = jobClient.JobClientFactory
 		self.listeningPort = int(globalSettings['universalJobServicePort'])
 		self.pkgPath = env.universalJobPkgPath
 		self.clientSettings = globalSettings['fileContainingUniversalJobSettings']

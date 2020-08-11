@@ -17,6 +17,7 @@ Functions:
 	  1.0 : (CS) Created Mar 6, 2019
 	  1.1 : (CS) Migrated contentGatheringClient and universalJobClient over to
 	        using the generic remoteClient for shared code paths.  Aug 26, 2019
+	  1.2 : (CS) Updated to use the newer naming convention, Aug 7, 2020
 
 """
 import sys
@@ -44,7 +45,7 @@ from twisted.python.filepath import FilePath
 osType = platform.system()
 
 
-def spinUpTheClient(logger, clientType, settings, shutdownEvent, watcherPID):
+def spinUpTheClient(logger, clientType, settings, shutdownEvent, canceledEvent, watcherPID):
 	"""Load the appropriate client library and start the process."""
 	thisClient = None
 	ClientEntryPoint = None
@@ -55,15 +56,15 @@ def spinUpTheClient(logger, clientType, settings, shutdownEvent, watcherPID):
 		from universalJobClient import UniversalJobClient as ClientEntryPoint
 	elif clientType.lower() == 'resultprocessing':
 		from resultProcessingClient import ResultProcessingClient as ClientEntryPoint
-	thisClient = ClientEntryPoint(shutdownEvent, settings)
+	thisClient = ClientEntryPoint(shutdownEvent, canceledEvent, settings)
 	## Start the client as a separate process
 	thisClient.start()
-	clientPID = thisClient.pid
 	logger.info('Starting child process...')
 	logger.info('  Main client watcher process running on PID {}'.format(watcherPID))
 	logger.info('  client {} running on child process with PID {}'.format(thisClient.name, thisClient.pid))
 
-	return (thisClient, clientPID)
+	## end spinUpTheClient
+	return thisClient
 
 
 def clientLoop(clientType, settings):
@@ -81,54 +82,79 @@ def clientLoop(clientType, settings):
 	watcherWaitCycle = int(settings.get('statusReportingInterval'))
 	exitWaitCycle = int(settings.get('waitSecondsBeforeExiting'))
 	shutdownEvent = multiprocessing.Event()
+	canceledEvent = multiprocessing.Event()
 	watcherPID = os.getpid()
 	logger = logging.getLogger('ClientStatus')
 
 	## Construct and start the client
-	(thisClient, clientPID) = spinUpTheClient(logger, clientType, settings, shutdownEvent, watcherPID)
+	thisClient = spinUpTheClient(logger, clientType, settings, shutdownEvent, canceledEvent, watcherPID)
 
 	## Wait loop
 	logger.info('Starting client watcher loop - {}'.format(time.strftime('%X %x')))
 	while True:
 		try:
 			## Evaluate the running client
-			if not thisClient.is_alive():
-				logger.error('Status of {}: client on PID {} stopped with exit code {}.'.format(thisClient.name, clientPID, thisClient.exitcode))
-				thisErrorTime = int(time.time())
-				if firstErrorTime is None or ((thisErrorTime - firstErrorTime) > restartThresholdTimeframe):
-					## Re-initialize if timeframe has passed w/o passing max errors
-					firstErrorTime = thisErrorTime
-					errorCount = 0
-				errorCount += 1
-				if errorCount <= restartThresholdMaxErrors:
+			if thisClient.is_alive() and canceledEvent is not None and canceledEvent.is_set():
+				## If the child process is requesting a restart
+				logger.error('  {}: still alive (PID: {}), but requested a restart'.format(thisClient.name, thisClient.pid))
+				thisClient.terminate()
+				canceledEvent.clear()
+				del thisClient
+				thisClient = spinUpTheClient(logger, clientType, settings, shutdownEvent, canceledEvent, watcherPID)
+				logger.info('    Started {} with PID {}'.format(thisClient.name, thisClient.pid))
+
+			elif not thisClient.is_alive():
+				logger.error('  {}: stopped with exit code {}.'.format(thisClient.name, thisClient.exitcode))
+
+				## If the child process is requesting a restart
+				if canceledEvent is not None and canceledEvent.is_set():
+					logger.info('    Client {} requested a restart'.format(thisClient.name))
+					canceledEvent.clear()
 					del thisClient
-					## Restart the client
-					(thisClient, clientPID) = spinUpTheClient(logger, clientType, settings, shutdownEvent, watcherPID)
-					logger.info('Restarted client. Restart count {}.'.format(errorCount))
+					thisClient = spinUpTheClient(logger, clientType, settings, shutdownEvent, canceledEvent, watcherPID)
+					logger.info('    Started {} with PID {}'.format(thisClient.name, thisClient.pid))
+
+				## If something went wrong, conditionally restart the client
 				else:
-					logger.error('Too many restarts within the client restart threshold timeframe. Exiting...')
-					raise EnvironmentError('Client stopped more than it was allowed to auto-restart in the provided timeframe. Watcher loop shutting down.')
-				time.sleep(.5)
+					thisErrorTime = int(time.time())
+					if firstErrorTime is None or ((thisErrorTime - firstErrorTime) > restartThresholdTimeframe):
+						## Re-initialize if timeframe has passed w/o passing max errors
+						firstErrorTime = thisErrorTime
+						errorCount = 0
+					errorCount += 1
+					if errorCount <= restartThresholdMaxErrors:
+						del thisClient
+						## Restart the client
+						thisClient = spinUpTheClient(logger, clientType, settings, shutdownEvent, canceledEvent, watcherPID)
+						logger.info('Restarted the stopped client. Restart count {}.'.format(errorCount))
+					else:
+						logger.error('Too many restarts within the client restart threshold timeframe. Exiting...')
+						raise EnvironmentError('Client stopped more than it was allowed to auto-restart in the provided timeframe. Watcher loop shutting down.')
 			else:
-				logger.info('Status of {}: running with PID {} and PPID {}'.format(thisClient.name, clientPID, watcherPID))
-				## Avoiding join() with the processes (from the multiprocessing
-				## internals), since we're not waiting for them to finish. They
-				## will always be running, so this loop is just for monitoring
-				## and messaging. Any interrupt signals will be sent to the sub-
-				## processes, and intentional shutdown requests are handled here.
-				time.sleep(watcherWaitCycle)
+				#logger.debug('Status of {}: running with PID {} and PPID {}'.format(thisClient.name, thisClient.pid, watcherPID))
+				logger.debug('  {}: running'.format(thisClient.name))
+
+			## Avoiding join() with the processes (from the multiprocessing
+			## internals), since we're not waiting for them to finish. They
+			## will always be running, so this loop is just for monitoring
+			## and messaging. Any interrupt signals will be sent to the sub-
+			## processes, and intentional shutdown requests are handled here.
+			time.sleep(watcherWaitCycle)
+
 		except (KeyboardInterrupt, SystemExit):
-			logger.info('Status of {}: interrupt received... shutting down PID [{}]'.format(thisClient.name, clientPID))
-			print('Interrrupt received; notifying client process [{}] to stop...'.format(clientPID))
+			logger.info('Status of {}: interrupt received... shutting down PID [{}]'.format(thisClient.name, thisClient.pid))
+			print('Interrrupt received; notifying client process [{}] to stop...'.format(thisClient.pid))
 			logger = logging.getLogger('ClientStartup')
 			logger.error('Interrrupt received; notifying services to stop...')
 			shutdownEvent.set()
 			## Wait for thread to finish graceful shutdown
 			time.sleep(exitWaitCycle)
 			try:
-				print('checking if we need to kill client process')
+				print('Checking if client process is still running')
 				if thisClient.is_alive():
-					print('Attempting to kill client process in clientLoop...')
+					print('Stopping client process in clientLoop...')
+					with suppress(Exception):
+						logger.debug('  process still running; stopping {} with PID {}'.format(thisClient.name, thisClient.pid))
 					thisClient.terminate()
 			except:
 				stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -138,12 +164,13 @@ def clientLoop(clientType, settings):
 			break
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			logger.info('Status of {}: exception hit... shutting down PID [{}]'.format(thisClient.name, clientPID))
+			logger.info('Status of {}: exception hit... shutting down PID [{}]'.format(thisClient.name, thisClient.pid))
 			print('Exception in watcher loop: {}'.format(stacktrace))
-			print('Notifying client process [{}] to stop...'.format(clientPID))
-			logger = logging.getLogger('ClientStartup')
-			logger.error('Exception in watcher loop: {}'.format(stacktrace))
-			logger.debug('Notifying services to stop...')
+			print('Notifying client process [{}] to stop...'.format(thisClient.pid))
+			with suppress(Exception):
+				logger = logging.getLogger('ClientStartup')
+				logger.error('Exception in watcher loop: {}'.format(stacktrace))
+				logger.debug('Notifying services to stop...')
 			shutdownEvent.set()
 			time.sleep(exitWaitCycle)
 			break
