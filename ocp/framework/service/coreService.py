@@ -67,9 +67,6 @@ class CoreService():
 			self.kafkaCaRootFile = os.path.join(env.configPath, self.globalSettings.get('kafkaCaRootFile'))
 			self.kafkaCertFile = os.path.join(env.configPath, self.globalSettings.get('kafkaCertificateFile'))
 			self.kafkaKeyFile = os.path.join(env.configPath, self.globalSettings.get('kafkaKeyFile'))
-			self.logger.debug('  ====> kafkaCaRootFile: {kafkaCaRootFile!r}', kafkaCaRootFile=self.kafkaCaRootFile)
-			self.logger.debug('  ====> kafkaCertFile: {kafkaCertFile!r}', kafkaCertFile=self.kafkaCertFile)
-			self.logger.debug('  ====> kafkaKeyFile: {kafkaKeyFile!r}', kafkaKeyFile=self.kafkaKeyFile)
 			self.dbClient = None
 			if getDbClient:
 				self.getDbSession()
@@ -78,12 +75,11 @@ class CoreService():
 			#self.loopingHealthCheck = task.LoopingCall(self.healthCheck)
 			self.loopingHealthCheck = task.LoopingCall(self.deferHealthCheck)
 			self.loopingHealthCheck.start(self.globalSettings['waitSecondsBetweenHealthChecks'])
-
 			#self.loopingGetExecutionEnvironment = task.LoopingCall(self.getExecutionEnvironment)
 			self.loopingGetExecutionEnvironment = task.LoopingCall(self.deferGetExecutionEnvironment)
 			## The initial environment check needs to wait for the service to
 			## startup, since you will see a false reading if measured right at
-			## process startup time, when it's establishing the service.
+			## process startup time, when it's establishing initial runtime.
 			self.loopingGetExecutionEnvironment.start(self.globalSettings['waitSecondsBetweenExecutionEnvironmentChecks'], now=False)
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -95,21 +91,18 @@ class CoreService():
 		self.logger.debug('cleanup called in {}'.format(self.serviceName))
 		## Probably some operation is out there lingering and needs moved into
 		## the main Twisted thread, because calling reactor.stop the following
-		## recommended way does not call the stopFactory functions. For now I'll
-		## force the call here to ensure DB/Kafka/other connections are shutdown
-		## and rely on the multiprocessing code to ensure its stopped.
+		## recommended way does not always call the stopFactory functions:
 		#reactor.callFromThread(reactor.stop)
-		#reactor.callFromThread(self.stopFactory)
+
+		## For now I'll force a stopFactory call here to ensure shutdown of
+		## resources that may stop the reactor from doing thread cleanup (e.g.
+		## database client, Kafka connections, looping calls updating class
+		## state), and rely on the multiprocessing code to ensure it stops.
 
 		## TODO: figure out why I need to manually call this...
 		self.stopFactory()
 		#reactor.callFromThread(self.stopFactory)
 		self.logger.info(' cleanup complete.')
-		# self.logger = None
-		# self.logObserver = None
-		# self.logFiles = None
-		# self.canceledEvent = None
-		# self.shutdownEvent = None
 		reactor.callFromThread(reactor.stop)
 
 
@@ -172,10 +165,9 @@ class CoreService():
 
 
 	def getExecutionEnvironment(self):
-		"""Get regular system health checks for this service."""
+		"""Get regular execution environment updates for this service."""
 		data = {}
 		try:
-			## Gather the data:
 			currentTime = time.time()
 			data['lastSystemStatus'] = datetime.datetime.fromtimestamp(currentTime).strftime('%Y-%m-%d %H:%M:%S')
 			## Server wide CPU average (across all cores, threads, virtuals)
@@ -222,7 +214,8 @@ class CoreService():
 			self.canceledEvent.set()
 			self.logger.info('Need to shutdown after health check.')
 		else:
-			self.logger.info('Health check is good.')
+			#self.logger.debug('Health check is good.')
+			pass
 		self.checkEvents()
 
 
@@ -275,18 +268,18 @@ class CoreService():
 					needToShutdown = True
 
 			## Test block
-			maxRunTimeBeforeRestart = 7200
-			processStartTime = self.executionEnvironment['runtime'].get('processStartTime')
-			currentTime = datetime.datetime.now()
-			deltaTime = currentTime - datetime.datetime.strptime(processStartTime, '%Y-%m-%d %H:%M:%S')
-			runtimeInSeconds = deltaTime.seconds
-			## If it has been longer than expected, set the canceledEvent. Note:
-			## the local maxSecondsSinceLastSystemStatus setting must be larger
-			## than the global waitSecondsBetweenExecutionEnvironmentChecks, or
-			## this puts the service in an infinite restart cycle. ;)
-			if runtimeInSeconds > maxRunTimeBeforeRestart:
-				self.logger.info('healthCheck: process runtime: {} is longer than max {}; need to request service restart.'.format(runtimeInSeconds, maxRunTimeBeforeRestart))
-				needToShutdown = True
+			# maxRunTimeBeforeRestart = 7200
+			# processStartTime = self.executionEnvironment['runtime'].get('processStartTime')
+			# currentTime = datetime.datetime.now()
+			# deltaTime = currentTime - datetime.datetime.strptime(processStartTime, '%Y-%m-%d %H:%M:%S')
+			# runtimeInSeconds = deltaTime.seconds
+			# ## If it has been longer than expected, set the canceledEvent. Note:
+			# ## the local maxSecondsSinceLastSystemStatus setting must be larger
+			# ## than the global waitSecondsBetweenExecutionEnvironmentChecks, or
+			# ## this puts the service in an infinite restart cycle. ;)
+			# if runtimeInSeconds > maxRunTimeBeforeRestart:
+			# 	self.logger.info('healthCheck: process runtime: {} is longer than max {}; need to request service restart.'.format(runtimeInSeconds, maxRunTimeBeforeRestart))
+			# 	needToShutdown = True
 
 		## end healthCheck
 		return needToShutdown
@@ -465,7 +458,7 @@ class CoreService():
 				## more than once by either this consumer or another one.
 				kafkaConsumer.commit()
 				if msgs is None or len(msgs) <= 0:
-					self.logger.debug('Leaving getKafkaResults. Nothing to process.')
+					#self.logger.debug('Leaving getKafkaResults. Nothing to process.')
 					return
 
 				for message in msgs:

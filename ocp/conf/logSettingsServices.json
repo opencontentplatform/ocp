@@ -68,6 +68,16 @@
 		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
 		"dateFormat" : "%Y-%m-%d %H:%M:%S"
 	},
+	"LogCollectionForJobsService" : {
+		"_fileName" : "logCollectionServiceForJobs.log",
+		"fileNameJson" : "logCollectionServiceForJobsJson.log",
+		"fileNameText" : "logCollectionServiceForJobs.log",
+		"maxSizeInBytes" : "104857600",
+		"maxRollovers" : "10",
+		"logLevel" : "DEBUG",
+		"lineFormat" : "%(asctime)s  %(levelname)-7s %(message)s",
+		"dateFormat" : "%Y-%m-%d %H:%M:%S"
+	},
 	"TransportService" : {
 		"_fileName" : "transportService.log",
 		"fileNameJson" : "transportServiceJson.log",

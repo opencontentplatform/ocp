@@ -1,9 +1,9 @@
 """Result Processing Client.
 
 This module receives direction from the :mod:`service.resultProcessingService`,
-and runtime data (streams of objects to put into the database) from Kafka. The
+and realtime bus (streams of objects to put into the database) from Kafka. The
 entry class is :class:`.ResultProcessingClient`, which inherits from the shared
-:mod:`.sharedClient` module. And it is invoked from the command line through
+:mod:`.coreClient` module. And it is invoked from the command line through
 :mod:`openContentClient`, or wrapped by a corresponding service/daemon.
 
 The main purpose of this client is to process JSON results sitting out on the
@@ -72,18 +72,20 @@ if you want faster processing of results flowing through Kafka, just spin up
 additional instances of this client.
 
 Classes:
-  * :class:`.ResultProcessingClient` :entry class for this client
+  * :class:`.ResultProcessingClient` : entry class for this client
   * :class:`.ResultProcessingClientFactory` : Twisted factory for this client
   * :class:`.ResultProcessingClientListener` : Twisted protocol for this client
 
 .. hidden::
 
-  Author: Chris Satterthwaite (CS)
-  Contributors: Madhusudan Sridharan (MS)
-  Version info:
-    1.0 : (CS) Created Nov 22, 2017
-    1.1 : (CS) Refactored to use the same startup process controls as the service
-          managers. Mar 6, 2019.
+	Author: Chris Satterthwaite (CS)
+	Contributors: Madhusudan Sridharan (MS)
+	Version info:
+	  1.0 : (CS) Created Nov 22, 2017
+	  1.1 : (CS) Refactored to use the same startup process controls as the
+	        service managers. Mar 6, 2019.
+	  1.3 : (CS) Migrated sharedClient to coreClient, to match service naming
+	        convention, Aug 7, 2020.
 
 """
 import os, sys
@@ -108,13 +110,12 @@ env.addLibPath()
 
 ## From openContentPlatform
 import utils
-import sharedClient
-from database.connectionPool import DatabaseClient
+import coreClient
 from resultProcessing import ResultProcessing
 from objectCache import ObjectCache
 
 
-class ResultProcessingClientListener(sharedClient.ServiceClientProtocol):
+class ResultProcessingClientListener(coreClient.ServiceClientProtocol):
 	"""Receives and sends data through protocol of choice"""
 
 	def doPartitionCountResponse(self, content):
@@ -126,7 +127,7 @@ class ResultProcessingClientListener(sharedClient.ServiceClientProtocol):
 		self.constructAndSendData('kafkaHealth', content)
 
 
-class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
+class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 	"""Contains custom tailored parts for this module."""
 	continueTrying = True
 	maxDelay = 300
@@ -140,9 +141,7 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 		  serviceName (str)     : class name of the client ('ResultProcessingClient')
 		  globalSettings (dict) : global globalSettings
 		"""
-		## Add any additional custom setup
 		try:
-			## TODO : instrument these two events since this now is a process
 			self.canceledEvent = canceledEvent
 			self.shutdownEvent = shutdownEvent
 			self.logFiles = utils.setupLogFile(serviceName, env, globalSettings['fileContainingClientLogSettings'], directoryName='client')
@@ -198,44 +197,45 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 
 
 	def stopFactory(self):
-		"""Manual destructor to cleanup when catching signals."""
-		print(' Cleaning up...')
-		self.logToKafka('stopFactory called in {} instance {}'.format(self.serviceName, self.clientName))
-		## Tell ReconnectingClientFactory not to reconnect on future disconnects
-		print('  stopFactory: stop trying to reconnect on future disconnects')
-		self.stopTrying()
-		self.canceled = True
-		print('  stopFactory: stopping loopingStartProcessing and loopingDeltaSync')
-		with suppress(Exception):
-			self.loopingStartProcessing.stop()
-		with suppress(Exception):
-			self.loopingDeltaSync.stop()
-		self.objectCache.remove()
-		self.objectCache = None
-		with suppress(Exception):
-			self.dbClient.close()
-		print('  stopFactory: stopping kafkaConsumer')
-		self.logger.debug('  stopFactory: stopping kafkaConsumer')
-		with suppress(Exception):
-			self.kafkaConsumer.close()
-		print('  stopFactory: flush kafkaProducer')
-		with suppress(Exception):
+		try:
+			self.logger.info('stopFactory called in resultProcessingClient')
+			self.logToKafka(' stopFactory called in {} instance {}'.format(self.serviceName, self.clientName))
+			## Tell ReconnectingClientFactory not to reconnect on future disconnects
+			self.logger.debug(' stopFactory: stop trying to reconnect on future disconnects')
+			self.stopTrying()
+			self.logger.debug(' stopFactory: stopping loopingStartProcessing and loopingDeltaSync')
+			if self.loopingStartProcessing is not None:
+				self.logger.debug(' stopFactory: stopping loopingStartProcessing')
+				self.loopingStartProcessing.stop()
+				self.loopingStartProcessing = None
+			if self.loopingDeltaSync is not None:
+				self.logger.debug(' stopFactory: stopping loopingDeltaSync')
+				self.loopingDeltaSync.stop()
+				self.loopingDeltaSync = None
+			self.logger.debug(' stopFactory: removing objectCache')
+			self.objectCache.remove()
+			self.objectCache = None
 			if self.kafkaProducer is not None:
+				self.logger.debug(' stopFactory: stopping kafka producer')
 				self.kafkaProducer.flush()
-				print('  stopFactory: close kafkaProducer')
 				self.kafkaProducer = None
-		self.connectedToKafkaConsumer = False
-		## These are from the sharedClient
-		print('  stopFactory: stopping loopingSystemHealth and loopingAuthenticateClient')
-		with suppress(Exception):
-			self.loopingSystemHealth.stop()
-		with suppress(Exception):
-			self.loopingAuthenticateClient.stop()
-		self.resultProcessingUtility = None
-		self.logObserver = None
-		self.logger = None
-		self.logFiles = None
-		print(' Cleanup complete; stopping client.')
+			if self.kafkaConsumer is not None:
+				self.logger.debug(' stopFactory: stopping kafka consumer')
+				self.kafkaConsumer.close()
+				self.kafkaConsumer = None
+			self.connectedToKafkaConsumer = False
+			self.resultProcessingUtility = None
+			super().stopFactory()
+			# self.logObserver = None
+			# self.logger = None
+			# self.logFiles = None
+			self.logger.info(' resultProcessingClient stopFactory: complete.')
+
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			print('Exception in resultProcessingClient stopFactory: {}'.format(exception))
+			with suppress(Exception):
+				self.logger.debug('Exception: {exception!r}', exception=exception)
 
 		## end stopFactory
 		return
@@ -380,43 +380,15 @@ class ResultProcessingClientFactory(sharedClient.ServiceClientFactory):
 		self.objectCache.update()
 
 
-	def getDbSession(self):
-		"""Get instance for database client from defined configuration."""
-		## If the database isn't up when the client is starting... wait on it.
-		self.logger.debug('Attempting to connect to database')
-		while self.dbClient is None and not self.canceled:
-			try:
-				## Hard coding the connection pool settings for now; may want to
-				## pull into a localSetting if they need to be independently set
-				self.dbClient = DatabaseClient(self.logger, globalSettings=self.globalSettings, env=env, poolSize=1, maxOverflow=2, poolRecycle=900)
-				if self.dbClient is None:
-					self.canceled = True
-					raise EnvironmentError('Failed to connect to database; unable to initialize tables.')
-				self.logger.debug('Database connection successful')
-			except exc.OperationalError:
-				self.logger.debug('DB is not available; waiting {waitCycle!r} seconds before next retry.', waitCycle=self.globalSettings['waitSecondsBeforeRetryingDatabaseConnection'])
-				self.logToKafka('DB is not available; waiting {waitCycle!r} seconds before next retry.'.format(self.globalSettings['waitSecondsBeforeRetryingDatabaseConnection']))
-				time.sleep(int(self.globalSettings['waitSecondsBeforeRetryingDatabaseConnection']))
-			except:
-				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('Exception in getDbSession: {exception!r}', exception=exception)
-				self.canceled = True
-				self.logToKafka(sys.exc_info()[1])
-				break
-
-		## end getDbSession
-		return
-
-
-class ResultProcessingClient(sharedClient.ClientProcess):
+class ResultProcessingClient(coreClient.ClientProcess):
 	"""Entry class for this client.
 
 	This class leverages a common wrapper for the multiprocessing code, found
-	in the :mod:`.sharedClient` module. The constructor below directs the
+	in the :mod:`.coreClient` module. The constructor below directs the
 	wrapper function to use settings specific to this manager.
 	"""
 
-	def __init__(self, shutdownEvent, globalSettings):
+	def __init__(self, shutdownEvent, canceledEvent, globalSettings):
 		"""Modified constructor to accept custom arguments.
 
 		Arguments:
@@ -424,6 +396,7 @@ class ResultProcessingClient(sharedClient.ClientProcess):
 		  globalSettings - global settings; used to direct this manager
 		"""
 		self.shutdownEvent = shutdownEvent
+		self.canceledEvent = canceledEvent
 		self.globalSettings = globalSettings
 		self.clientName = 'ResultProcessingClient'
 		self.clientFactory = ResultProcessingClientFactory

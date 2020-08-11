@@ -45,6 +45,12 @@ Functions::
   createKafkaConsumer : connect to Kafka and initialize a consumer
   attemptKafkaProducerConnection : helper function for createKafkaConsumer
   createKafkaProducer : connect to Kafka and initialize a producer
+  loadExternalLibrary : load an externally contributed library
+  getGigOrMeg : helper function for memory size readability
+  logException : decorator for try/except logging, via global logger
+  logExceptionWithSelfLogger : decorator for try/except logging, via self.logger
+  logExceptionWithFactoryLogger : decorator for try/except logging, via factory
+
 
 .. hidden::
 
@@ -54,6 +60,7 @@ Functions::
 	  0.1 : (CS) Created Jul 25, 2017
 	  1.0 : (CS and MS) additional functions, Mar 2018
 	  1.1 : (CS) Changed kafka clients & enabled external library path, 2019
+	  1.2 : (CS) Created decorator functions for code reduction, Aug 8, 2020
 
 """
 import json
@@ -1625,6 +1632,31 @@ def logExceptionWithSelfLogger(skipTraceback=False, reRaiseException=False):
 	def decorator(function):
 		def wrapper(self, *args, **kwargs):
 			logger = self.logger
+			try:
+				return function(self, *args, **kwargs)
+			except:
+				if skipTraceback:
+					message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+					logger.error('Exception in {}: {}'.format(function.__name__, message))
+				else:
+					## Don't use logger.exception because we don't know the type
+					## of logger we have: python, twisted, multiprocess, etc:
+					#logger.exception('Exception: ')
+					exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+					logger.error('Exception:  {}'.format(exception))
+				if reRaiseException:
+					raise
+		return wrapper
+	return decorator
+
+
+def logExceptionWithFactoryLogger(skipTraceback=False, reRaiseException=False):
+	"""Decorator to wrap any function with try/except logging.
+
+	This version uses self.logger from the class' factory."""
+	def decorator(function):
+		def wrapper(self, *args, **kwargs):
+			logger = self.factory.logger
 			try:
 				return function(self, *args, **kwargs)
 			except:

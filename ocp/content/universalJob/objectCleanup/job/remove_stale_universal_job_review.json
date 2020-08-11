@@ -1,5 +1,5 @@
 {
-	"jobName" : "remove_stale_content_gathering_results",
+	"jobName" : "remove_stale_universal_job_review",
 	"realm" : "default",
 	"numberOfJobThreads" : 1,
 	"jobScript" : "remove_stale_results",
@@ -9,9 +9,9 @@
 	"isDisabled" : false,
 	"inputParameters" : {
 		"printDebug" : true,
-		"resultType" : "runtime",
-		"serviceType" : "contentGathering",
-		"thresholdInNumberOfDays" : 30
+		"resultType" : "review",
+		"serviceType" : "universalJob",
+		"thresholdInNumberOfDays" : 90
 	},
 	"triggerType" : "cron",
 	"triggerArgs" : {
@@ -20,8 +20,8 @@
 		"day" : null,
 		"week" : null,
 		"day_of_week" : null,
-		"hour" : 3,
-		"minute" : 22,
+		"hour" : 4,
+		"minute" : 20,
 		"second" : null,
 		"start_date" : "",
 		"end_date" : ""
