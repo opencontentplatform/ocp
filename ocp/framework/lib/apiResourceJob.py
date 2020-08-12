@@ -584,10 +584,12 @@ def deleteJobReviewFilter(service:text, content:hugJson, request, response):
 	Note: this is the runtime meta data for the job, not the CIs.
 	"""
 	try:
-		if hasRequiredData(request, response, content, ['filter']):
-			filterConditions = content.get('filter')
-			countResult = content.get('count', False)
-			searchThisContentHelper(request, response, filterConditions, dbTable, countResult, True)
+		dbTable = getReviewServiceTable(service, request, response)
+		if dbTable is not None:
+			if hasRequiredData(request, response, content, ['filter']):
+				filterConditions = content.get('filter')
+				countResult = content.get('count', False)
+				searchThisContentHelper(request, response, filterConditions, dbTable, countResult, True)
 
 	except:
 		errorMessage(request, response)
