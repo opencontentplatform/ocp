@@ -33,6 +33,8 @@ Classes defined for the 'platform' schema::
 	*  ContentGatheringResults - content_gathering_results
 	*  UniversalJobResults - universal_job_results
 	*  ServerSideResults - server_side_results
+	*  ContentGatheringServiceResults - service_results_content_gathering
+	*  UniversalJobServiceResults - service_results_universal_job
 	*  QueryResults - query_results
 	*  QueryDefinition - query_definition
 	*  CachedQuery - cached_query
@@ -926,12 +928,8 @@ class ContentGatheringResults(Base):
 	date_last_invocation = Column(DateTime(timezone=True))
 	date_last_success = Column(DateTime(timezone=True))
 	date_last_failure = Column(DateTime(timezone=True))
-	# consecutive_conn_passed = Column(Integer, default=0)
-	# consecutive_conn_failed = Column(Integer, default=0)
 	consecutive_jobs_passed = Column(Integer, default=0)
 	consecutive_jobs_failed = Column(Integer, default=0)
-	# total_conn_passed = Column(Integer, default=0)
-	# total_conn_failed = Column(Integer, default=0)
 	total_jobs_passed = Column(Integer, default=0)
 	total_jobs_failed = Column(Integer, default=0)
 	total_job_invocations = Column(Integer, default=0)

@@ -76,7 +76,6 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 		self.factory.doModuleSnapshots(content)
 
 	def doModuleFile(self, content):
-		self.factory.logger.info('Received a doModuleFile')
 		self.factory.doModuleFile(content)
 
 	def doModuleComplete(self, content):
@@ -101,8 +100,7 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 
 	def rawDataReceived(self, data):
 		try:
-			self.factory.logger.debug('rawDataReceived size {fileSize!r}', fileSize=len(data))
-			self.factory.logger.debug('rawDataReceived data: {data!r}', data=str(data))
+			#self.factory.logger.debug('rawDataReceived data: {data!r}', data=str(data))
 			fileName = self.factory.moduleFileContext['fileName']
 			fileLength = self.factory.moduleFileContext['contentLength']
 			streamSize = 0
@@ -112,7 +110,8 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 			transferComplete = False
 			if currentSize <= 0:
 				self.factory.moduleFileContext['md5Hash'] = hashlib.md5()
-			self.factory.logger.debug('rawDataReceived: ... ... ...')
+			self.factory.logger.debug('rawDataReceived for file: {fileName!r}  size: {fileSize!r}', fileName=fileName, fileSize=len(data))
+			#self.factory.logger.debug('rawDataReceived: ... ... ...')
 
 			## First check if we received the separator without data first, which
 			## would mean we did not receive and contents for this file.
@@ -129,7 +128,7 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 			## Received a partial chunk of the file; retain in memory
 			elif len(data) <= remainingSize:
 				remainingSize = remainingSize - len(data)
-				self.factory.logger.error('rawDataReceived: fileName part: {data!r}', data=data)
+				#self.factory.logger.debug('rawDataReceived: fileName part: {data!r}', data=data)
 				self.factory.logger.debug('rawDataReceived: File {fileName!r} chunk received. Length of chunk: {dataSize!r}.  Remaining needed: {remainingSize!r}', fileName=fileName, dataSize=len(data), remainingSize=remainingSize)
 				## Store the updated file hash and contents
 				self.factory.moduleFileContext['md5Hash'].update(data)
@@ -139,14 +138,14 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 			## Received the full file
 			elif len(data) > remainingSize:
 				filePart = data[:remainingSize]
-				self.factory.logger.error('rawDataReceived: fileName last part: {filePart!r}', filePart=filePart)
+				#self.factory.logger.debug('rawDataReceived: fileName last part: {filePart!r}', filePart=filePart)
 				## Ensure the delimiter is at the end of the stream; if not, we have
 				## received communication/noise during the file download!
-				self.factory.logger.error('rawDataReceived: blah {blah!r}', blah=data[remainingSize:delimiterSize+remainingSize])
+				#self.factory.logger.debug('rawDataReceived: stream end should be our delimiter: {blah!r}', blah=data[remainingSize:delimiterSize+remainingSize])
 				if data[remainingSize:remainingSize+delimiterSize] != self.delimiter:
 					self.factory.logger.error('rawDataReceived: Problem downloading file {fileName!r}; length of data was NOT followed by the expected delimiter.', fileName=fileName)
 					## Reset the client (pause/re-initialize)
-					self.cleanup()
+					self.disconnectClient()
 
 				else:
 					## Store the updated file hash and contents
@@ -165,7 +164,7 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 					self.factory.logger.debug('  ---> forward the remaining data for line mode processing: {data!r}', data=data)
 				else:
 					self.setLineMode()
-					self.factory.logger.debug('  ---> no remaining data to forward back to line mode')
+					#self.factory.logger.debug('  ---> no remaining data to forward back to line mode')
 				## Write the file
 				filePath = os.path.join(self.factory.moduleFileContext['filePath'], self.factory.moduleFileContext['fileName'])
 				self.factory.logger.debug('rawDataReceived: creating file handle for {filePath!r}', filePath=filePath)
@@ -239,6 +238,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			self.clientGroups = { 'clientGroups' : self.clientSettings.get('clientGroups', []) }
 			self.kafkaTopic = globalSettings['kafkaTopic']
 			self.kafkaConsumerErrorLimit = self.localSettings['kafkaConsumerErrorLimit']
+			self.kafkaProducer = None
 			self.requiresRestart = False
 			self.jobThreads = {}
 			self.jobEndpoints = {}
@@ -253,7 +253,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			super().__init__(serviceName, globalSettings)
 			self.loopingJobCheck = task.LoopingCall(self.enterJobsCheck)
 			self.loopingJobCheck.start(int(self.globalSettings['waitSecondsBetweenReturningJobStatistics']))
-			self.initialize()
+			self.initialize(True)
 			self.protocolHandler = externalProtocolHandler.ProtocolHandler(None, globalSettings, env, self.logger)
 
 		except:
@@ -261,11 +261,12 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			print('Exception in JobClientFactory constructor: {}'.format(str(exception)))
 			with suppress(Exception):
 				self.logger.error('Exception in JobClientFactory: {exception!r}', exception=exception)
-			self.canceledEvent.set()
 			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
 			self.logToKafka(str(exceptionOnly))
-			## Reset the client (pause/re-initialize)
+			self.shutdownEvent.set()
+			#reactor.stop()
 			self.cleanup()
+
 
 	def buildProtocol(self, addr):
 		self.logger.debug('Connected.')
@@ -275,85 +276,74 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 		protocol.factory = self
 		return protocol
 
-	def initialize(self):
+	def initialize(self, justStarted=False):
 		self.logger.debug('called initialize in jobClient...')
 		self.logger.debug('initializing : createKafkaProducer')
 		self.createKafkaProducer()
-		super().initialize()
+		super().initialize(justStarted)
 
 
-	def cleanup(self):
+	def disconnectClient(self):
 		"""Reset the client (pause/re-initialize)."""
 		print('Reset the client (pause/re-initialize)...')
-		self.logToKafka('cleanup called in {} instance {}'.format(self.serviceName, self.clientName))
-		## Stop the client to avoid accepting more work from the service
-		print('  cleanup: activeClient: {}'.format(self.clientName))
-		self.logger.warn('  cleanup: activeClient: {clientName!r}', clientName=self.clientName)
+		self.logger.info('Reset the client (pause/re-initialize)...')
+		self.logToKafka('disconnectClient called in {} instance {}'.format(self.serviceName, self.clientName))
+		self.logger.info(' disconnectClient: activeClient: {clientName!r}', clientName=self.clientName)
 		self.clientName = 'Unknown'
-		print('  cleanup: stop jobClient threads')
-		self.logger.warn('  cleanup: stop jobClient threads')
+		self.logger.debug(' disconnectClient: stop jobClient threads')
 		self.cleanupThreads()
-		print('  cleanup: waiting for threads to finish')
-		self.logger.warn('  cleanup: waiting for threads to finish')
+		print(' disconnectClient: waiting for threads to finish')
+		self.logger.debug(' disconnectClient: waiting for threads to finish')
 		self.waitForThreadsToFinish()
-		print('  cleanup: flush kafkaProducer')
-		self.logger.warn('  cleanup: flush kafkaProducer')
-		with suppress(Exception):
-			if self.kafkaProducer is not None:
-				## Close the producer
-				print('  cleanup: closing kafkaProducer...')
-				self.kafkaProducer.flush()
-				self.kafkaProducer = None
-				print('  cleanup: closed kafkaProducer')
-				self.logger.warn('  cleanup: closed kafkaProducer')
-		print('  cleanup: removing the protocolHandler')
-		with suppress(Exception):
-			del self.protocolHandler
-		print(' Cleanup complete; client is paused.')
-		self.logger.warn(' Cleanup complete; client is paused.')
+		if self.kafkaProducer is not None:
+			## Close the producer
+			print(' disconnectClient: closing kafkaProducer...')
+			self.logger.debug(' disconnectClient: closing kafkaProducer')
+			self.kafkaProducer.flush()
+			self.kafkaProducer = None
+		print(' disconnectClient complete; client is paused.')
+		self.logger.info(' disconnectClient complete; client is paused.')
 		if self.connectedClient is not None:
 			self.connectedClient.transport.loseConnection()
 			self.disconnectedOnPurpose = True
 
-		## end cleanup
+		## end disconnectClient
 		return
 
 
 	def stopFactory(self):
 		"""Manual destructor to cleanup when catching signals."""
-		print(' stopFactory: cleaning up...')
-		self.logToKafka('stopFactory called in {} instance {}'.format(self.serviceName, self.clientName))
-		## Tell ReconnectingClientFactory not to reconnect on future disconnects
-		print('  stopFactory: stop trying to reconnect on future disconnects')
-		self.stopTrying()
-		self.canceled = True
-		## Stop the client to avoid accepting more work from the service
-		print('  stopFactory: activeClient: {}'.format(self.clientName))
-		self.clientName = 'Unknown'
-		self.activeClient = None
-		print('  stopFactory: stop jobClient threads')
-		self.cleanupThreads()
-		print('  stopFactory: waiting for threads to finish')
-		self.waitForThreadsToFinish()
-		print('  stopFactory: stopping loopingJobCheck')
-		with suppress(Exception):
-			self.loopingJobCheck.stop()
-		print('  stopFactory: flush kafkaProducer')
-		with suppress(Exception):
+		try:
+			self.logger.info('stopFactory called in jobClient')
+			with suppress(Exception):
+				self.logToKafka('stopFactory called in {} instance {}'.format(self.serviceName, self.clientName))
+			## Tell ReconnectingClientFactory not to reconnect on future disconnects
+			self.logger.debug(' stopFactory: stop trying to reconnect on future disconnects')
+			self.stopTrying()
+			self.clientName = 'Unknown'
+			self.activeClient = None
+			if self.jobThreads is not None:
+				self.logger.debug(' stopFactory: cleanupThreads')
+				self.cleanupThreads()
+			self.logger.debug(' stopFactory: waiting for threads to finish')
+			self.waitForThreadsToFinish()
+			if self.loopingJobCheck is not None:
+				self.logger.debug(' stopFactory: stopping loopingJobCheck')
+				self.loopingJobCheck.stop()
+				self.loopingJobCheck = None
+			self.protocolHandler = None
 			if self.kafkaProducer is not None:
-				## Close the producer
-				print('  stopFactory: closing kafkaProducer...')
+				self.logger.debug(' stopFactory: closing kafkaProducer')
 				self.kafkaProducer.flush()
 				self.kafkaProducer = None
-				print('  stopFactory: closed kafkaProducer')
-				self.logger.warn('  cleanup: closed kafkaProducer')
-		## These are from the coreClient
-		print('  stopFactory: stopping loopingGetExecutionEnvironment and loopingAuthenticateClient')
-		with suppress(Exception):
-			self.loopingGetExecutionEnvironment.stop()
-		with suppress(Exception):
-			self.loopingAuthenticateClient.stop()
-		print(' Cleanup complete; stopping client.')
+			super().stopFactory()
+			self.logger.info(' jobClient stopFactory: complete.')
+
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			print('Exception in jobClient stopFactory: {}'.format(exception))
+			with suppress(Exception):
+				self.logger.debug('Exception: {exception!r}', exception=exception)
 
 		## end stopFactory
 		return
@@ -605,7 +595,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 							self.logger.error('Exception in doJobEndpointsKafka: {exception!r}', exception=exception)
 							exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
 							self.logToKafka(str(exceptionOnly))
-							self.canceled = True
+							self.canceledEvent.set()
 							returnMessage = 'Exited doJobEndpointsKafka for job {} with an error.'.format(jobName)
 							self.logger.debug('doJobEndpointsKafka: Manual cleanup of Job {jobName!r}...', jobName=jobName)
 							## Cleanup previously allocated resources
@@ -658,7 +648,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 		except (KeyboardInterrupt, SystemExit):
 			print('getEndpointsFromKafka: Interrrupt received...')
 			self.logger.debug('getEndpointsFromKafka: Interrrupt received...')
-			self.canceled = True
+			self.canceledEvent.set()
 			return True
 		except:
 			print('Exception in getEndpointsFromKafka...')
@@ -679,7 +669,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 					self.logger.error('getEndpointsFromKafka: kafkaErrorCount {kafkaErrorCount}', kafkaErrorCount=self.kafkaErrorCount)
 					time.sleep(2)
 				else:
-					self.canceled = True
+					self.canceledEvent.set()
 					print('getEndpointsFromKafka: kafkaErrorCount {}... exiting.'.format(self.kafkaErrorCount))
 					return True
 			except:
@@ -955,7 +945,6 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			for jobThread in self.jobThreads[jobName]:
 				jobThread.completed = True
 			## Ensure job threads finish properly, before removing references
-			#while not self.canceled:
 			while not self.canceledEvent.is_set() and not self.shutdownEvent.is_set():
 				updatedJobThreads = []
 				for jobThread in self.jobThreads[jobName]:
@@ -1029,6 +1018,8 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			if not os.path.exists(directory):
 				os.mkdir(directory)
 		filePath = directory
+		os.path.join(filePath, content.get('fileName'))
+		self.logger.info('Requesting file: {thisFile!r}', thisFile=os.path.abspath(os.path.join(filePath, content.get('fileName'))))
 		self.moduleFileContext['filePath'] = directory
 		self.moduleFileContext['fileHandle'] = None
 		self.moduleFileContext['partialContent'] = bytearray()
@@ -1156,7 +1147,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			self.logger.error('Exception in doModuleSnapshots: {stacktrace!r}', stacktrace=stacktrace)
 			exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
 			self.logToKafka(str(exceptionOnly))
-			self.cleanup()
+			self.disconnectClient()
 
 		## end doModuleSnapshots
 		return

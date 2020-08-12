@@ -3,8 +3,8 @@
 	"maxProcessCpuPercentUsageThreshold" : 10,
 	"maxSecondsSinceLastSystemStatus" : 120,
 	"waitSecondsBetweenRequestingDeltaSyncCacheUpdates" : 900,
-	"waitSecondsBetweenRequestingFullSyncCacheUpdates": 86400,
+	"waitSecondsBetweenRequestingFullSyncCacheUpdates" : 86400,
 	"waitSecondsBetweenRequestingKafkaPartitionCount" : 100,
-	"kafkaPollTimeOut": 2,
+	"kafkaPollTimeOut" : 2,
 	"kafkaPollMaxRecords" : 1
 }

@@ -1,0 +1,9 @@
+{
+	"maxProcessMemoryUsageThreshold": 150000000,
+	"maxProcessCpuPercentUsageThreshold": 0,
+	"maxSecondsSinceLastSystemStatus": 120,
+	"waitSecondsBetweenRequestingDeltaSyncCacheUpdates": 900,
+	"waitSecondsBetweenRequestingFullSyncCacheUpdates": 86400,
+	"kafkaPollTimeOut": 2,
+	"kafkaPollMaxRecords": 1
+}

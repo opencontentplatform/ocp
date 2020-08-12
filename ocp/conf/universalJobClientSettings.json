@@ -1,0 +1,10 @@
+{
+	"maxProcessMemoryUsageThreshold": 150000000,
+	"maxProcessCpuPercentUsageThreshold": 0,
+	"maxSecondsSinceLastSystemStatus": 120,
+	"waitSecondsOnJobCleanupLoop": 10,
+	"kafkaPollTimeOut": 20,
+	"kafkaPerPollJobEndpointsSize": 1,
+	"kafkaConsumerErrorLimit": 3,
+	"queuePutTimeoutInSeconds": 0.1
+}

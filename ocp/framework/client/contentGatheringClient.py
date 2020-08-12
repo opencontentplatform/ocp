@@ -59,6 +59,6 @@ class ContentGatheringClient(coreClient.ClientProcess):
 		self.clientFactory = jobClient.JobClientFactory
 		self.listeningPort = int(globalSettings['contentGatheringServicePort'])
 		self.pkgPath = env.contentGatheringPkgPath
-		self.clientSettings = globalSettings['fileContainingContentGatheringSettings']
+		self.clientSettings = globalSettings['fileContainingContentGatheringClientSettings']
 		self.clientLogSetup = globalSettings['fileContainingContentGatheringLogSettings']
 		super().__init__()

@@ -148,8 +148,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 			self.logObserver = utils.setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingClientLogSettings'])
 			self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
 			self.globalSettings = globalSettings
-			self.localSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingResultProcessingSettings']))
-			self.canceled = False
+			self.localSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingResultProcessingClientSettings']))
 			self.dbClient = None
 			self.validActions = ['connectionResponse', 'healthRequest', 'tokenExpired', 'unauthorized', 'partitionCountResponse']
 			self.actionMethods = ['doConnectionResponse', 'doHealthRequest', 'doTokenExpired', 'doUnauthorized', 'doPartitionCountResponse']
@@ -175,8 +174,8 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 			print('Exception in ResultProcessingClientFactory constructor: {}'.format(str(exception)))
 			with suppress(Exception):
 				self.logger.error('Exception in ResultProcessingClientFactory: {exception!r}', exception=exception)
-			self.canceled = True
 			self.logToKafka(sys.exc_info()[1])
+			self.shutdownEvent.set()
 			reactor.stop()
 
 
@@ -226,9 +225,6 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 			self.connectedToKafkaConsumer = False
 			self.resultProcessingUtility = None
 			super().stopFactory()
-			# self.logObserver = None
-			# self.logger = None
-			# self.logFiles = None
 			self.logger.info(' resultProcessingClient stopFactory: complete.')
 
 		except:
@@ -248,7 +244,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 			## Prepare for our maintenance work (no-op on first run)...
 			self.maintenanceMode = True
 			## Initialize the Kafka connection
-			while not self.connectedToKafkaConsumer and not self.canceled:
+			while not self.connectedToKafkaConsumer and not self.canceledEvent.is_set() and not self.shutdownEvent.is_set():
 				self.logger.debug('startProcessing: calling createKafkaConsumer')
 				self.kafkaConsumer = self.createKafkaConsumer(self.kafkaTopic)
 				## You hit an exception if this is the first time the topic is
@@ -258,7 +254,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 				continue
 			## Wait for the previous processKafkaResults to break out of the
 			## while loop and finish, before starting routine maintenance.
-			while not self.pauseKafkaProcessing and not self.canceled:
+			while not self.pauseKafkaProcessing and not self.canceledEvent.is_set() and not self.shutdownEvent.is_set():
 				self.logger.info('startProcessing: inside maintenance wait loop for pauseKafkaProcessing')
 				time.sleep(2)
 
@@ -282,13 +278,13 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 
 		except (KeyboardInterrupt, SystemExit):
 			print('Interrrupt received...')
-			self.canceled = True
+			self.shutdownEvent.set()
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error('Exception in startProcessing: {exception!r}', exception=exception)
 			self.logToKafka(sys.exc_info()[1])
 			sleep(.5)
-			self.canceled = True
+			self.canceledEvent.set()
 
 		print('startProcessing: exiting')
 		self.logger.debug('startProcessing: exiting')

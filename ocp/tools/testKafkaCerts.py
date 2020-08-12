@@ -21,8 +21,8 @@ thisPath = os.path.dirname(os.path.abspath(__file__))
 basePath = os.path.abspath(os.path.join(thisPath, '..', 'framework'))
 if basePath not in sys.path:
 	sys.path.append(basePath)
-import getEnv
-env = getEnv.GetEnv(basePath)
+
+import env
 env.addLibPath()
 import utils
 logger = utils.setupLogger('TestService', env, 'logSettingsServices.json', directoryName='service')

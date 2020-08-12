@@ -557,7 +557,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 				self.logToKafka(str(exceptionOnly))
 				if errorCount >= maxRetries:
 					self.logger.error('Too many connect attempts to kafka; need to clean/refresh client.')
-					self.cleanup()
+					self.disconnectClient()
 					break
 				errorCount += 1
 				time.sleep(sleepBetweenRetries)
@@ -590,7 +590,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 				self.logToKafka(str(exceptionOnly))
 				if errorCount >= maxRetries:
 					self.logger.error('Too many connect attempts to kafka; need to clean/refresh client.')
-					self.cleanup()
+					self.disconnectClient()
 					break
 				errorCount += 1
 				time.sleep(sleepBetweenRetries)

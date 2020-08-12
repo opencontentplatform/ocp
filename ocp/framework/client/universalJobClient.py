@@ -58,6 +58,6 @@ class UniversalJobClient(coreClient.ClientProcess):
 		self.clientFactory = jobClient.JobClientFactory
 		self.listeningPort = int(globalSettings['universalJobServicePort'])
 		self.pkgPath = env.universalJobPkgPath
-		self.clientSettings = globalSettings['fileContainingUniversalJobSettings']
+		self.clientSettings = globalSettings['fileContainingUniversalJobClientSettings']
 		self.clientLogSetup = globalSettings['fileContainingUniversalJobLogSettings']
 		super().__init__()
