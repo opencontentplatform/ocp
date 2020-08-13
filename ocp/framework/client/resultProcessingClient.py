@@ -296,7 +296,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 	def processKafkaResults(self):
 		"""Wait for kafka results, and send into the resultProcessingUtility."""
 		self.logger.info('Inside {name!r}.processKafkaResults', name=__name__)
-		while self.connectedToKafkaConsumer and not self.maintenanceMode and not self.canceled:
+		while self.connectedToKafkaConsumer and not self.maintenanceMode and not self.canceledEvent.is_set() and not self.shutdownEvent.is_set():
 			try:
 
 				msgs = self.kafkaConsumer.consume(num_messages=int(self.localSettings['kafkaPollMaxRecords']), timeout=int(self.localSettings['kafkaPollTimeOut']))
@@ -326,7 +326,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 
 			except (KeyboardInterrupt, SystemExit):
 				print('Interrrupt received...')
-				self.canceled = True
+				self.shutdownEvent.set()
 			except:
 				exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 				self.logger.error('processKafkaResults: exception in kafka wait loop: {exception}', exception=exception)
@@ -346,7 +346,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 							self.logger.error('processKafkaResults kafkaErrorCount {kafkaErrorCount}', kafkaErrorCount=self.kafkaErrorCount)
 						time.sleep(2)
 					else:
-						self.canceled = True
+						self.canceledEvent.set()
 						with suppress(Exception):
 							self.logger.error('processKafkaResults kafkaErrorCount {kafkaErrorCount}', kafkaErrorCount=self.kafkaErrorCount)
 						reactor.stop()
