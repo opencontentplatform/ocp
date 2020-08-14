@@ -26,6 +26,7 @@ This module defines the Application Programming Interface (API) methods for the
 import sys
 import traceback
 import os
+import json
 from hug.types import text
 from hug.types import json as hugJson
 from falcon import HTTP_400
@@ -169,6 +170,8 @@ def getThisJobConfig(service:text, name:text, request, response):
 			if dataHandle:
 				request.context['payload'][dataHandle.name] = {col:getattr(dataHandle, col) for col in inspect(dataHandle).mapper.c.keys()}
 
+		## Standard conversions of dates and Decimal types to string
+		request.context['payload'] = json.loads(json.dumps(request.context['payload'], default=customJsonDumpsConverter))
 	except:
 		errorMessage(request, response)
 
@@ -350,6 +353,9 @@ def executeNamedJobResultList(service:text, name:text, request, response):
 			dataHandle = request.context['dbSession'].query(dbTable).filter(dbTable.job == name).order_by(dbTable.endpoint.desc()).all()
 			for item in dataHandle:
 				request.context['payload'][item.endpoint] = {col:getattr(item, col) for col in inspect(item).mapper.c.keys() if col != 'job'}
+
+		## Standard conversions of dates and Decimal types to string
+		request.context['payload'] = json.loads(json.dumps(request.context['payload'], default=customJsonDumpsConverter))
 
 	except:
 		errorMessage(request, response)
@@ -552,6 +558,8 @@ def getThisJobReview(service:text, name:text, request, response):
 				results.append({col:getattr(item, col) for col in inspect(item).mapper.c.keys() if col != 'job'})
 			request.context['payload'][name] = results
 
+		## Standard conversions of dates and Decimal types to string
+		request.context['payload'] = json.loads(json.dumps(request.context['payload'], default=customJsonDumpsConverter))
 	except:
 		errorMessage(request, response)
 

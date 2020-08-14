@@ -81,7 +81,7 @@ class ServiceClientProtocol(CustomLineReceiverProtocol):
 		self.processData(line)
 
 	def connectionLost(self, reason):
-		print('  protocol connectionLost: reason: {}'.format(reason))
+		print('  protocol connectionLost: reason: {}'.format(str(reason).replace('\n',' ').replace('\r','')))
 		self.factory.logger.warn('Connection lost to [{clientName!r}]', clientName=self.factory.clientName)
 		self.factory.delClient()
 		self.factory.connectedClient = None
@@ -295,7 +295,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 
 
 	def clientConnectionLost(self, connector, reason):
-		print('  factory clientConnectionLost: reason: {}'.format(reason))
+		print('  factory clientConnectionLost: reason: {}'.format(str(reason).replace('\n',' ').replace('\r','')))
 		self.logger.info('  factory clientConnectionLost: Reason:{reason!r}', reason=reason)
 		#############################################################
 		## Patch to keep reactor alive when the main connection drops
@@ -321,7 +321,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 
 	def clientConnectionFailed(self, connector, reason):
 		self.logger.debug('Connection failed. Reason:{reason!r}', reason=reason)
-		print('Connection failed. Reason: {}'.format(reason))
+		print('Connection failed. Reason: {}'.format(str(reason).replace('\n',' ').replace('\r','')))
 		ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 
@@ -634,9 +634,6 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		if needToShutdown:
 			self.canceledEvent.set()
 			self.logger.info('Need to shutdown after health check.')
-		else:
-			#self.logger.debug('Health check is good.')
-			pass
 		self.checkEvents()
 
 
