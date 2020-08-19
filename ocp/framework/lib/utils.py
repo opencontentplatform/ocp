@@ -115,6 +115,8 @@ import arrow
 from queryProcessing import QueryProcessing
 ## tableMapping for StrongLink, WeakLink, BaseLink, BaseObject, RealmScope
 import database.connectionPool as tableMapping
+from sqlalchemy.orm.scoping import scoped_session as sqlAlchemyScopedSession
+from sqlalchemy.orm.session import Session as sqlAlchemySession
 
 
 def parseBooleanOperator(logger, operator='and', *attributes):
@@ -1064,22 +1066,26 @@ def getCustomHeaders(headers, customHeaders):
 	return
 
 
-def executeJsonQuery(logger, dbClient, queryFile, resultList):
+def executeProvidedJsonQuery(logger, dbClient, content, resultList):
 	"""Retrieve results from a JSON query."""
+	logger.debug('Querying database with the data {}'.format(content))
+	queryprocessing = QueryProcessing(logger, dbClient, content, resultsFormat='Nested')
+	endpointsJson = queryprocessing.runQuery()
+	for linchpinLabel in endpointsJson.keys():
+		entries = endpointsJson.get(linchpinLabel, [])
+		for thisEntry in entries:
+			resultList.append(thisEntry)
+			#logger.debug(' added endpoint: {}'.format(thisEntry))
+	endpointsJson = None
+
+
+def executeJsonQuery(logger, dbClient, queryFile, resultList):
+	"""Load JSON query from file, and retrieve results."""
 	try:
 		queryContent = None
 		with open(queryFile) as fp:
 			queryContent = json.load(fp)
-		logger.debug('Querying database with the data {queryContent!r}', queryContent=queryContent)
-		queryprocessing = QueryProcessing(logger, dbClient, queryContent, resultsFormat='Nested')
-		endpointsJson = queryprocessing.runQuery()
-		#logger.debug(' ... finished endpointQuery for target endpoints: {endpointsJson!r}', endpointsJson=endpointsJson)
-		for linchpinLabel in endpointsJson.keys():
-			entries = endpointsJson.get(linchpinLabel, [])
-			for thisEntry in entries:
-				resultList.append(thisEntry)
-				#logger.debug(' added endpoint: {thisEntry!r}', thisEntry=thisEntry)
-		endpointsJson = None
+		executeProvidedJsonQuery(logger, dbClient, queryContent, resultList)
 	except:
 		exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 		logger.error('Exception in executeJsonQuery: {exception!r}', exception=exception)
@@ -1424,12 +1430,23 @@ class RealmUtility:
 	"""Utility for checking IP inclusion/exclusion from networks in the realm."""
 	def __init__(self, dbClient):
 		self.realms = {}
-		self.getRealms(dbClient)
+		## Normalize when passed both of these two db client types:
+		##   database.connectionPool.DatabaseClient
+		##   sqlalchemy.orm.scoping.scoped_session
+		#self.getRealms(dbClient)
+		dbSession = None
+		if isinstance(dbClient, sqlAlchemySession) or isinstance(dbClient, sqlAlchemyScopedSession):
+			dbSession = dbClient
+		elif isinstance(dbClient, tableMapping.DatabaseClient):
+			dbSession = dbClient.session
+		else:
+			raise EnvironmentError('The dbClient passed to RealmUtility must be either a database.connectionPool.DatabaseClient or a sqlalchemy.orm.scoping.scoped_session.')
+		self.getRealms(dbSession)
 
 	def getRealms(self, dbClient):
 		"""Retrieve all RealmScope definitions and transform into networks."""
 		dbTable = tableMapping.RealmScope
-		dataHandle = dbClient.session.query(dbTable).all()
+		dataHandle = dbClient.query(dbTable).all()
 		for scope in dataHandle:
 			networkObjects = []
 			for networkAsString in scope.data:

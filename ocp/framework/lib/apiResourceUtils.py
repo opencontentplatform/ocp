@@ -222,7 +222,7 @@ def queryThisContentHelper(request, response, content):
 	return
 
 
-def executeStoredQueryHelper(request, response, name):
+def executeSimpleQueryHelper(request, response, name):
 	dataHandle = request.context['dbSession'].query(platformSchema.QueryDefinition.json_query).filter(platformSchema.QueryDefinition.name == name).first()
 	if dataHandle:
 		request.context['logger'].debug('query definition: {}'.format(dataHandle[0]))
@@ -236,7 +236,7 @@ def executeStoredQueryHelper(request, response, name):
 		request.context['payload']['errors'].append('Invalid query name')
 		response.status = HTTP_400
 
-	## end executeStoredQueryHelper
+	## end executeSimpleQueryHelper
 	return
 
 
@@ -398,6 +398,8 @@ def modifyPlatformSettingsFile(request, response, fileName, updatedContent):
 
 
 def hasRequiredData(request, response, dataDict, requiredKeys):
+	## Note: if 'Content-Type' is not set in the headers to 'application/json',
+	## expect the following error:  Required parameter 'content' not supplied
 	for entry in requiredKeys:
 		if entry not in dataDict.keys():
 			request.context['payload']['errors'].append('Required key not found in content: {}. This resource requires the following fields in the content section: {}'.format(entry, requiredKeys))

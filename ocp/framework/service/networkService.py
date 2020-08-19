@@ -54,26 +54,7 @@ from coreService import CoreService
 ## in '<install_path>/external'.
 externalProtocolHandler = utils.loadExternalLibrary('externalProtocolHandler')
 from database.connectionPool import DatabaseClient
-from database.schema.platformSchema import ServiceContentGatheringHealth
-from database.schema.platformSchema import ServiceResultProcessingHealth
-from database.schema.platformSchema import ServiceUniversalJobHealth
-from database.schema.platformSchema import JobContentGathering, JobUniversal, JobServerSide
 
-## Global section
-clientToHealthTableMapping = {
-	'ContentGatheringService' : {
-		'health': ServiceContentGatheringHealth,
-		'jobs' : JobContentGathering
-	},
-	'ResultProcessingService' : {
-		'health': ServiceResultProcessingHealth,
-		'jobs': None
-	},
-	'UniversalJobService' : {
-		'health': ServiceUniversalJobHealth,
-		'jobs' : JobUniversal
-	}
-}
 
 ## Overriding max length from 16K to 64M
 LineReceiver.MAX_LENGTH = 1024*1024*64
@@ -264,7 +245,7 @@ class ServiceListener(CustomLineReceiverProtocol):
 		found = False
 		try:
 			self.factory.logger.debug('Attempting to update health entry for client [{clientName!r}]', clientName=self.clientName)
-			ServiceEndpointHealth = clientToHealthTableMapping[self.factory.serviceName]['health']
+			ServiceEndpointHealth = self.factory.serviceHealthTable
 			clients = self.factory.dbClient.session.query(ServiceEndpointHealth).all()
 			self.factory.dbClient.session.commit()
 			for serviceClient in clients:
@@ -354,7 +335,7 @@ class ServiceFactory(CoreService, ServerFactory):
 			self.loopingHealthUpdates = task.LoopingCall(self.deferSendHealthRequest)
 			self.loopingHealthUpdates.start(int(globalSettings['waitSecondsBetweenClientHealthUpdates']))
 			self.loopingJobUpdates = None
-			if clientToHealthTableMapping.get(self.serviceName, {}).get('jobs') is not None:
+			if self.serviceJobTable is not None:
 				self.loopingJobUpdates = task.LoopingCall(self.deferGetJobUpdates)
 				self.loopingJobUpdates.start(int(globalSettings['waitSecondsBetweenJobUpdates']))
 
@@ -421,7 +402,7 @@ class ServiceFactory(CoreService, ServerFactory):
 	def getSpecificJob(self, jobName):
 		jobSettings = None
 		## Get job descriptors from the database
-		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
+		jobClass = self.serviceJobTable
 		jobData = self.dbClient.session.query(jobClass).filter(jobClass.name==jobName).first()
 		if jobData is not None:
 			jobSettings = copy.deepcopy(jobData.content)
@@ -461,7 +442,7 @@ class ServiceFactory(CoreService, ServerFactory):
 		self.logger.info('Creating initial job schedules...')
 		self.lastJobUpdateTime = time.time()
 		## Get job descriptors from the database
-		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
+		jobClass = self.serviceJobTable
 		jobs = self.dbClient.session.query(jobClass).all()
 
 		for job in jobs:
@@ -510,7 +491,7 @@ class ServiceFactory(CoreService, ServerFactory):
 		"""Update or load new jobs when the descriptor changes."""
 		thisJobUpdateTime = time.time()
 		## Get job descriptors from the database
-		jobClass = clientToHealthTableMapping[self.serviceName]['jobs']
+		jobClass = self.serviceJobTable
 		jobs = self.dbClient.session.query(jobClass).filter(jobClass.time_updated >= datetime.datetime.fromtimestamp(self.lastJobUpdateTime)).all()
 		for job in jobs:
 			try:
@@ -670,7 +651,7 @@ class ServiceFactory(CoreService, ServerFactory):
 	@logExceptionWithSelfLogger()
 	def cleanClientHealthTable(self):
 		"""Remove any stale clients before establishing new connections."""
-		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
+		ServiceEndpointHealth = self.serviceHealthTable
 		clients = self.dbClient.session.query(ServiceEndpointHealth).all()
 		for serviceClient in clients:
 			self.logger.debug('Removing stale client health entry for {serviceClient_name!r}, last updated {serviceClient_last_sys_stat!r}.',
@@ -713,7 +694,7 @@ class ServiceFactory(CoreService, ServerFactory):
 			self.logger.error('Exception in removeClient: {exception!r}', exception=exception)
 
 		## Remove client health entry out of the DB table
-		ServiceEndpointHealth = clientToHealthTableMapping[self.serviceName]['health']
+		ServiceEndpointHealth = self.serviceHealthTable
 		## If this operation is hit during a shutdown or restart operation, and
 		## stopFactory is starting - we may not have a dbClient left around:
 		if self.dbClient is not None:
@@ -819,7 +800,7 @@ class ServiceProcess(multiprocessing.Process):
 			## directed by additional input parameters; set args accordingly:
 			factoryArgs = None
 			if (self.serviceName == 'ContentGatheringService' or self.serviceName == 'UniversalJobService'):
-				factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent, self.moduleType, self.clientEndpointTable, self.clientResultsTable, self.serviceResultsTable, self.pkgPath, self.serviceSettings, self.serviceLogSetup)
+				factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent, self.moduleType, self.clientEndpointTable, self.clientResultsTable, self.serviceResultsTable, self.serviceJobTable, self.serviceHealthTable, self.pkgPath, self.serviceSettings, self.serviceLogSetup)
 			else:
 				factoryArgs = (self.serviceName, self.globalSettings, self.canceledEvent, self.shutdownEvent)
 

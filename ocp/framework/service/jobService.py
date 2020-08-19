@@ -85,7 +85,7 @@ class JobServiceFactory(networkService.ServiceFactory):
 
 	protocol = JobServiceListener
 
-	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent, moduleType, clientEndpointTable, clientResultsTable, serviceResultsTable, pkgPath, serviceSettings, serviceLogSetup):
+	def __init__(self, serviceName, globalSettings, canceledEvent, shutdownEvent, moduleType, clientEndpointTable, clientResultsTable, serviceResultsTable, serviceJobTable, serviceHealthTable, pkgPath, serviceSettings, serviceLogSetup):
 		"""Constructor for the JobServiceFactory."""
 		self.canceledEvent = canceledEvent
 		self.shutdownEvent = shutdownEvent
@@ -96,6 +96,8 @@ class JobServiceFactory(networkService.ServiceFactory):
 		self.clientEndpointTable = clientEndpointTable
 		self.clientResultsTable = clientResultsTable
 		self.serviceResultsTable = serviceResultsTable
+		self.serviceJobTable = serviceJobTable
+		self.serviceHealthTable = serviceHealthTable
 		self.moduleType = moduleType
 		self.pkgPath = pkgPath
 		self.validActions = ['connectionRequest', 'healthResponse', 'reAuthorization', 'jobStatistics', 'jobFinishedOnClient', 'jobIdle', 'clientGroups', 'checkModules', 'sendModule', 'receivedFile']
@@ -575,7 +577,13 @@ class JobServiceFactory(networkService.ServiceFactory):
 			endpointList = []
 			if endpointQuery is not None:
 				## Prefer to use JSON Query over Python Script
-				utils.getEndpointsFromJsonQuery(self.logger, self.dbClient, thisPackagePath, packageName, endpointQuery, endpointList)
+				dbTable = platformSchema.EndpointQuery
+				dataHandle = self.dbClient.session.query(dbTable).filter(dbTable.name == name).first()
+				if not dataHandle:
+					raise EnvironmentError('Endpoint query not found: {}'.format(name))
+				queryDefinition = dataHandle.content
+				utils.executeProvidedJsonQuery(self.logger, self.dbClient, queryDefinition, endpointList)
+				#utils.getEndpointsFromJsonQuery(self.logger, self.dbClient, thisPackagePath, packageName, endpointQuery, endpointList)
 				## Using list comprehension to remove any endpoints not matching
 				## the job's realm, and doing this in place on the endpointList.
 				## Important to mention that just because it has a realm, does
@@ -588,7 +596,6 @@ class JobServiceFactory(networkService.ServiceFactory):
 				self.logger.debug('invokeJob: Endpoint list size before realm compare: {size!r}', size=len(endpointList))
 				endpointList[:] = [x for x in endpointList if (realmUtil.isIpInRealm(x.get('data', {}).get('ipaddress', x.get('data', {}).get('address')), metaData['realm']))]
 				self.logger.debug('invokeJob: Endpoint list size after realm compare: {size!r}', size=len(endpointList))
-
 			else:
 				utils.getEndpointsFromPythonScript(self.logger, self.dbClient, thisPackagePath, packageName, endpointScript, endpointList, metaData)
 			## Return underlying DBAPI connection
@@ -997,6 +1004,19 @@ class JobServiceFactory(networkService.ServiceFactory):
 				snapshot = module.snapshot
 				moduleSnapshots[moduleName] = snapshot
 
+			## Ensure we also include the 'shared' package; it would have been
+			## included if it was a ContentGathering client request, but other
+			## clients need it too (e.g. universalJob).
+			if self.moduleType != 'contentGathering':
+				self.logger.debug('doCheckModules: need to add shared')
+				sharedModule = self.dbClient.session.query(platformSchema.ContentPackage).filter(platformSchema.ContentPackage.name=='shared').first()
+				self.dbClient.session.commit()
+				if sharedModule:
+					moduleName = sharedModule.name
+					snapshot = sharedModule.snapshot
+					moduleSnapshots[moduleName] = snapshot
+					self.logger.debug('doCheckModules: added shared {}'.format(snapshot))
+
 			## Provide the client with the current module snapshot (UUID) values
 			content = {}
 			content['content'] = moduleSnapshots
@@ -1124,6 +1144,11 @@ class JobServiceFactory(networkService.ServiceFactory):
 				self.dbClient.session.commit()
 				for moduleFile in moduleFiles:
 					fileId = moduleFile.object_id
+					## Some files are not used on clients, eg. jobs & endpoints
+					path = moduleFile.path
+					ignoreList = ['job', 'endpoint']
+					if path.endswith(tuple(ignoreList)):
+						continue
 					self.moduleFilesToTransfer.append(fileId)
 				self.logger.debug('doSendModule: finished compiling list of files: {fileList!r}', fileList=self.moduleFilesToTransfer)
 				## Start the first file transfer
