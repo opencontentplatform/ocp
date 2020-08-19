@@ -21,6 +21,7 @@ Classes defined for the 'platform' schema::
 	*  JobContentGathering - job_content_gathering
 	*  JobUniversal - job_universal
 	*  JobServerSide - job_server_side
+	*  EndpointQuery - endpoint_query
 	*  ApiConsumerAccess - api_access_consumer
 	*  ConsumerEndpoint - consumer_endpoint
 	*  ApiAccess - api_access
@@ -525,6 +526,36 @@ class JobServerSide(UniqueMixin, Base):
 	@classmethod
 	def unique_filter(cls, query, name, module, realm, active, content):
 		return query.filter(JobServerSide.name == name)
+
+
+class EndpointQuery(UniqueMixin, Base):
+	"""Defines a endpoint_query object for the database.
+
+	Table :
+	  |  endpoint_query
+	Columns :
+	  |  object_id [CHAR(32)]
+	  |  name [String(256)] PK
+	  |  content [JSON]
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
+	"""
+
+	__tablename__ = 'endpoint_query'
+	__table_args__ = {"schema":"platform"}
+	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
+	name = Column(String(256), primary_key=True)
+	content = Column(JSON, nullable=False)
+	object_created_by = Column(String(128), nullable=True)
+	object_updated_by = Column(String(128), nullable=True)
+	time_created = Column(DateTime(timezone=True), default=func.now())
+	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+	@classmethod
+	def unique_hash(cls, name, content):
+		return name
+	@classmethod
+	def unique_filter(cls, query, name, content):
+		return query.filter(EndpointQuery.name == name)
 
 
 class ApiConsumerAccess(Base):

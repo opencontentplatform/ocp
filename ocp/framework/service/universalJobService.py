@@ -73,6 +73,8 @@ class UniversalJobService(networkService.ServiceProcess):
 		self.clientEndpointTable = platformSchema.ServiceUniversalJobEndpoint
 		self.clientResultsTable = platformSchema.UniversalJobResults
 		self.serviceResultsTable = platformSchema.UniversalJobServiceResults
+		self.serviceJobTable = platformSchema.JobUniversal
+		self.serviceHealthTable = platformSchema.ServiceUniversalJobHealth
 		self.pkgPath = env.universalJobPkgPath
 		self.serviceSettings = globalSettings['fileContainingUniversalJobSettings']
 		self.serviceLogSetup = globalSettings['fileContainingServiceLogSettings']

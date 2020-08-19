@@ -4,13 +4,17 @@ This module defines the Application Programming Interface (API) methods for the
 /<root>/query endpoint. Available resources follow::
 
 	/<root>/query/this
-	/<root>/query/stored
-	/<root>/query/stored/{name}
+	/<root>/query/simple
+	/<root>/query/simple/{name}
+	/<root>/query/endpoint
+	/<root>/query/endpoint/{name}
 	/<root>/query/config
 	/<root>/query/config/simple
 	/<root>/query/config/simple/{name}
 	/<root>/query/config/inputdriven
 	/<root>/query/config/inputdriven/{name}
+	/<root>/query/config/endpoint
+	/<root>/query/config/endpoint/{name}
 	/<root>/query/cache
 	/<root>/query/cache/{queryId}
 	/<root>/query/cache/{queryId}/{chunkId}
@@ -54,7 +58,12 @@ def getQueryResources():
 				'DELETE': 'Delete all objects returned from running the ad-hoc query definition provided in the payload.'
 			}
 		},
-		'/query/stored' : {
+		'/query/simple' : {
+			'methods' : {
+				'GET' : 'Show available resources.'
+			}
+		},
+		'/query/endpoint' : {
 			'methods' : {
 				'GET' : 'Show available resources.'
 			}
@@ -155,15 +164,15 @@ def deleteExecutingGivenQueries(content:hugJson, request, response):
 	return cleanPayload(request)
 
 
-@hugWrapper.get('/stored')
+@hugWrapper.get('/simple')
 def getQueryStoredResources(request, response):
-	"""Show available stored query resources."""
+	"""Show available simple query resources."""
 	try:
 		dataHandle = request.context['dbSession'].query(platformSchema.QueryDefinition.name).all()
 		availableQueries = []
 		for item in dataHandle:
 			availableQueries.append(item[0])
-		resource = '/query/stored/{name}'
+		resource = '/query/simple/{name}'
 		methods = {
 			'methods' : {
 				'GET' : 'Run the named query (stored previously in the database) and return the results',
@@ -180,11 +189,11 @@ def getQueryStoredResources(request, response):
 	return cleanPayload(request)
 
 
-@hugWrapper.get('/stored/{name}')
+@hugWrapper.get('/simple/{name}')
 def executeStoredQuery(name:text, request, response):
 	"""Run the named query (stored in the database) and return the results."""
 	try:
-		executeStoredQueryHelper(request, response, name)
+		executeSimpleQueryHelper(request, response, name)
 	except:
 		errorMessage(request, response)
 
@@ -192,13 +201,13 @@ def executeStoredQuery(name:text, request, response):
 	return cleanPayload(request)
 
 
-@hugWrapper.delete('/stored/{name}')
+@hugWrapper.delete('/simple/{name}')
 def deleteStoredQueryDataSet(name:text, request, response):
 	"""Delete all objects returned from running the named query."""
 	try:
 		customHeaders = {}
 		utils.getCustomHeaders(request.headers, customHeaders)
-		executeStoredQueryHelper(request, response, name)
+		executeSimpleQueryHelper(request, response, name)
 		dataToDelete = request.context['payload']
 		if customHeaders['resultsFormat'].lower() == 'flat':
 			content ={'objects': dataToDelete.get('objects')}
@@ -212,6 +221,69 @@ def deleteStoredQueryDataSet(name:text, request, response):
 		errorMessage(request, response)
 
 	## end deleteStoredQueryDataSet
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/endpoint')
+def getQueryEndpointResources(request, response):
+	"""Show available endpoint query resources."""
+	try:
+		dbTable = platformSchema.EndpointQuery
+		dataHandle = request.context['dbSession'].query(dbTable.name).all()
+		availableQueries = []
+		for item in dataHandle:
+			availableQueries.append(item[0])
+		resource = '/query/endpoint/{name}'
+		methods = {
+			'methods' : {
+				'GET' : 'Run the named endpoint query and return the results'
+				}
+		}
+		request.context['payload']['Queries'] = availableQueries
+		request.context['payload'][resource] = methods
+
+	except:
+		errorMessage(request, response)
+
+	## end getQueryEndpointResources
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/endpoint/{name}')
+def executeEndpointQuery(name:text, request, response):
+	"""Run the named endpoint query and return the results."""
+	try:
+		dbTable = platformSchema.EndpointQuery
+		dataHandle = request.context['dbSession'].query(dbTable).filter(dbTable.name == name).first()
+		if dataHandle:
+			queryDefinition = dataHandle.content
+			## Pull the realm from the headers, if supplied
+			realm = 'default'
+			for thisHeader in request.headers:
+				if thisHeader.lower() == 'realm':
+					## Override when provided
+					realm = request.headers.get(thisHeader)
+					break
+			## Get raw results, before filtering by domain
+			endpointList = []
+			utils.executeProvidedJsonQuery(request.context['logger'], request.context['dbSession'], queryDefinition, endpointList)
+			## Now use the realm utility to filter the results, ensure a related
+			## IP address is included in the requested realm before adding
+			realmUtil = utils.RealmUtility(request.context['dbSession'])
+			#request.context['logger'].debug('executeEndpointQuery: Endpoint list size before realm ({}) compare: {}'.format(realm, len(endpointList)))
+			endpointList[:] = [x for x in endpointList if (realmUtil.isIpInRealm(x.get('data', {}).get('ipaddress', x.get('data', {}).get('address')), realm))]
+			#request.context['logger'].debug('executeEndpointQuery: Endpoint list size after realm compare: {}'.format(len(endpointList)))
+			request.context['logger'].debug('endpointList {}'.format(endpointList))
+			request.context['payload'] = endpointList
+			request.context['logger'].debug('payload charCount {}'.format(len(str(request.context['payload']))))
+
+		else:
+			request.context['payload']['errors'].append('Invalid query name')
+			response.status = HTTP_400
+	except:
+		errorMessage(request, response)
+
+	## end executeEndpointQuery
 	return cleanPayload(request)
 
 
@@ -245,6 +317,20 @@ def getQueryConfigResources(request, response):
 			'GET' : 'Return the definition for the named input-driven query.',
 			'DELETE' : 'Removes stored definition for the named input-driven query.',
 			'PUT' :'Updates the definition for the named input-driven query.'
+		}
+	}
+	staticPayload['/query/config/endpoint'] = {
+		'methods' : {
+			'GET' : 'Return the names of all saved endpoint queries.',
+			'POST': 'Create a new endpoint query definition.',
+			'DELETE' : 'Delete all defined endpoint query definitions.'
+		}
+	}
+	staticPayload['/query/config/endpoint/{name}'] = {
+		'methods' : {
+			'GET' : 'Return the definition for the named endpoint query.',
+			'DELETE' : 'Removes stored definition for the named endpoint query.',
+			'PUT' :'Updates the definition for the named endpoint query.'
 		}
 	}
 
@@ -579,6 +665,158 @@ def deleteSpecificInputDrivenQuery(queryName:text, request, response):
 		errorMessage(request, response)
 
 	## end deleteSpecificInputDrivenQuery
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/config/endpoint')
+def getQueryConfigEndpointResources(request, response):
+	"""Get available queries and methods for ./query/config/endpoint."""
+	try:
+		dbTable = platformSchema.EndpointQuery
+		dataHandle = request.context['dbSession'].query(dbTable.name).order_by(dbTable.name.asc()).all()
+		availableQueries = []
+		for item in dataHandle:
+			availableQueries.append(item[0])
+		request.context['payload']['Queries'] = availableQueries
+
+	except:
+		errorMessage(request, response)
+
+	## end getQueryConfigEndpointResources
+	return cleanPayload(request)
+
+
+@hugWrapper.post('/config/endpoint')
+def postEndpointQuery(content:hugJson, request, response):
+	"""Posts the endpoint query to the database."""
+	try:
+		if hasRequiredData(request, response, content, ['name', 'source', 'json_query']):
+			dataHandle = request.context['dbSession'].query(platformSchema.EndpointQuery).filter(platformSchema.EndpointQuery.name==content['name']).first()
+			if dataHandle is not None:
+				request.context['payload']['errors'].append('Cannot insert {name}; query by that name already exists'.format(name=content['name']))
+				response.status = HTTP_405
+			else:
+				if not content['json_query'] or type(content['json_query']) != type(dict()):
+					request.context['payload']['errors'].append('Expected JSON for \'json_query\' field.')
+					response.status = HTTP_400
+				elif content['name'] == '' or content['name'] == None:
+					request.context['payload']['errors'].append('\'name\' field cannot be empty.')
+					response.status = HTTP_400
+				else:
+					## Data looks good
+					source = mergeUserAndSource(content, request)
+					content['object_created_by'] = source
+					dataHandle = platformSchema.EndpointQuery(**content)
+					request.context['dbSession'].add(dataHandle)
+					request.context['dbSession'].commit()
+					request.context['payload']['Response'] = 'Success'
+
+	except:
+		errorMessage(request, response)
+
+	## end postEndpointQuery
+	return cleanPayload(request)
+
+
+@hugWrapper.delete('/config/endpoint')
+def deleteAllEndpointQueries(request, response):
+	"""Delete all stored endpoint queries."""
+	try:
+		dataHandle = request.context['dbSession'].query(platformSchema.EndpointQuery).all()
+		deletedQueries = dict()
+		for item in dataHandle:
+			deletedQueries[item.object_id] = { col:getattr(item, col) for col in inspect(item).mapper.c.keys() if col != 'object_id'}
+			request.context['dbSession'].delete(item)
+		request.context['dbSession'].commit()
+		request.context['payload']['Success'] = deletedQueries
+
+	except:
+		errorMessage(request, response)
+
+	## end deleteAllEndpointQueries
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/config/endpoint/{queryName}')
+def getSpecificEndpointQuery(queryName:text, request, response):
+	"""Get the content of the named endpoint query"""
+	try:
+		dataHandle = request.context['dbSession'].query(platformSchema.EndpointQuery).filter(platformSchema.EndpointQuery.name==queryName).first()
+		if dataHandle:
+			for col in inspect(dataHandle).mapper.c.keys():
+				request.context['payload'][col] = getattr(dataHandle, col)
+		else:
+			request.context['payload']['errors'].append('No query exists with name {queryName!r}'.format(queryName=queryName))
+			response.status = HTTP_404
+
+	except:
+		errorMessage(request, response)
+
+	## end getSpecificEndpointQuery
+	return cleanPayload(request)
+
+
+@hugWrapper.put('/config/endpoint/{queryName}')
+def updateSpecificEndpointQuery(queryName:text, content:hugJson, request, response):
+	"""Update named query with the provided JSON"""
+	try:
+		if hasRequiredData(request, response, content, ['source', 'json_query']):
+			dataHandle = request.context['dbSession'].query(platformSchema.EndpointQuery).filter(platformSchema.EndpointQuery.name==queryName).first()
+			if dataHandle is None:
+				request.context['payload']['errors'].append('No query exists with name {queryName!r}'.format(queryName=queryName))
+				response.status = HTTP_404
+			else:
+				tempObjectId = dataHandle.object_id
+				## Set the source
+				source = mergeUserAndSource(content, request)
+				content['object_updated_by'] = source
+				definedColumns = [col for col in inspect(platformSchema.EndpointQuery).mapper.c.keys() if col not in ['name', 'object_id', 'time_created', 'object_created_by', 'time_updated', 'object_updated_by']]
+				request.context['logger'].debug('Printing the required column {}'.format(definedColumns))
+				if any(col in content.keys() for col in definedColumns):
+					content['object_id']= tempObjectId
+					dataHandle = platformSchema.EndpointQuery(**content)
+					try:
+						apiQueryPath = request.context['envApiQueryPath']
+						dataHandle = request.context['dbSession'].merge(dataHandle)
+						fileToRemove = os.path.join(apiQueryPath, queryName + '.json')
+						request.context['dbSession'].commit()
+						if 'json_query' in content.keys():
+							if os.path.isfile(fileToRemove):
+								os.remove(fileToRemove)
+							with open(os.path.join(fileToRemove),'w') as fh:
+								json.dump(content['json_query'], fh)
+						request.context['payload']['Response'] = 'Updated the query : {name}'.format(name=queryName)
+					except KeyError:
+						request.context['payload']['errors'].append('Invalid data, key does not exist for {queryName!r} 1'.format(queryName=queryName))
+						response.status = HTTP_400
+				else:
+					request.context['payload']['errors'].append('Invalid data, key does not exist for {queryName!r}'.format(queryName=queryName))
+					response.status = HTTP_400
+
+	except:
+		errorMessage(request, response)
+
+	## end updateSpecificEndpointQuery
+	return cleanPayload(request)
+
+
+@hugWrapper.delete('/config/endpoint/{queryName}')
+def deleteSpecificEndpointQuery(queryName:text, request, response):
+	"""Delete endpoint query with the specified name."""
+	try:
+		dataHandle = request.context['dbSession'].query(platformSchema.EndpointQuery).filter(platformSchema.EndpointQuery.name==queryName).first()
+		if dataHandle is None:
+			request.context['payload']['errors'].append('No query exist with name {queryName!r}'.format(queryName=queryName))
+			response.status = HTTP_404
+		else:
+			request.context['dbSession'].delete(dataHandle)
+			request.context['dbSession'].commit()
+			request.context['payload']['Response'] = 'Deleted the query: {queryName}'.format(queryName=queryName)
+
+	except:
+		errorMessage(request, response)
+
+	## end deleteSpecificEndpointQuery
 	return cleanPayload(request)
 
 

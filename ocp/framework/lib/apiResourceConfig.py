@@ -1358,12 +1358,12 @@ def getClientByName(endpointName, request, response):
 					dbTable2 = clientToHealthTableClass[tableName2]
 					results = request.context['dbSession'].query(dbTable2)
 					matchSet = request.context['dbSession'].query(dbTable2).all()
+					clientHealth = []
 					for entry in matchSet:
 						thisClientName = entry.name
 						if re.search('{}\-\d+'.format(endpointName), thisClientName, re.I):
-							clientHealth = { col:getattr(entry, col) for col in inspect(entry).mapper.c.keys() }
-							request.context['payload']['health'][tableName2] = clientHealth
-							break
+							clientHealth.append({ col:getattr(entry, col) for col in inspect(entry).mapper.c.keys() })
+					request.context['payload']['health'][tableName2] = clientHealth
 				break
 		if not matched:
 			request.context['payload']['errors'].append('Client endpoint does not exist: {}'.format(endpointName))

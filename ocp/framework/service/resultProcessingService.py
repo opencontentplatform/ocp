@@ -69,6 +69,8 @@ class ResultProcessingFactory(networkService.ServiceFactory):
 		self.localSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingResultProcessingSettings']))
 		self.globalSettings = globalSettings
 		self.clientEndpointTable = platformSchema.ServiceResultProcessingEndpoint
+		self.serviceJobTable = None
+		self.serviceHealthTable = platformSchema.ServiceResultProcessingHealth
 		self.validActions = ['connectionRequest', 'healthResponse', 'cacheResponse', 'getKafkaPartitionCount','kafkaHealth']
 		self.actionMethods = ['doConnectionRequest', 'doHealthResponse', 'doCacheResponse', 'doGetKafkaPartitionCount','doKafkaHealth']
 		super().__init__(serviceName, globalSettings)

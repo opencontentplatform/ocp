@@ -233,6 +233,45 @@ def getDbConnection(logger):
 	return dbClient
 
 
+def insertEndpointQuery(logger, dbClient, entry, packageName, endpointFile):
+	try:
+		query = None
+		if not endpointFile.endswith('.json'):
+			## Don't load endpointScripts; table expects JSON, not Python format
+			return
+		m = re.search('(.*)\.json$', entry)
+		name = m.group(1)
+		with open(endpointFile, 'r') as json_data:
+			query = json.load(json_data)
+
+		attributes = {}
+		attributes['name'] = name
+		attributes['content'] = query
+
+		logger.debug('  Inserting endpoint query: {}  from package: {} '.format(entry, packageName))
+		dbClass = platformSchema.EndpointQuery
+		endpointQuery = dbClient.session.query(dbClass).filter(dbClass.name == name).first()
+		## Insert the file if it doesn't exist
+		if endpointQuery is None:
+			attributes['object_created_by'] = 'contentManagement module'
+			logger.debug('  {} is new; inserting...'.format(attributes['name']))
+			endpointQuery = dbClass(**attributes)
+			endpointQuery = dbClient.session.add(endpointQuery)
+			dbClient.session.commit()
+		## The file has been tracked before
+		else:
+			attributes['object_updated_by'] = 'contentManagement module'
+			logger.debug('  {} already exists; overwriting...'.format(attributes['name']))
+			endpointQuery = dbClass(**attributes)
+			endpointQuery = dbClient.session.merge(endpointQuery)
+			dbClient.session.commit()
+	except:
+		logger.error('Error loading endpoint file {}: {}'.format(endpointFile, str(sys.exc_info()[1])))
+
+	## end insertEndpointQuery
+	return
+
+
 def insertJob(logger, dbClient, entry, packageSystemName, packageName, jobFile):
 	try:
 		jobSettings = None
@@ -268,7 +307,7 @@ def insertJob(logger, dbClient, entry, packageSystemName, packageName, jobFile):
 				dbClient.session.commit()
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			logger.error('Exception in insertJob on job {}:  {}'.format(jobShortName, stacktrace))
+			logger.error('Exception on job {}:  {}'.format(jobShortName, stacktrace))
 	except:
 		logger.error('Error loading job file {}: {}'.format(jobFile, str(sys.exc_info()[1])))
 
@@ -334,7 +373,7 @@ def getFileDataAndHash(targetFile):
 	return (fileHash, allChunks)
 
 
-def recursePathsAndInsertFiles(thisPath, relativePath, packageSystemName, fileIndex, dbClient, packageName, logger, isJobPath=False):
+def recursePathsAndInsertFiles(thisPath, relativePath, packageSystemName, fileIndex, dbClient, packageName, logger, isJobPath=False, isEndpointPath=False):
 	"""Go through all files/directories in the package, and load into the DB."""
 	for entry in os.listdir(thisPath):
 		if entry == '__pycache__':
@@ -343,10 +382,13 @@ def recursePathsAndInsertFiles(thisPath, relativePath, packageSystemName, fileIn
 		thisIndex = {}
 		if os.path.isdir(target):
 			newPath = '{},{}'.format(relativePath, entry)
+			isEndpointPath = False
 			isJobPath = False
 			if entry == 'job':
 				isJobPath = True
-			recursePathsAndInsertFiles(target, newPath, packageSystemName, thisIndex, dbClient, packageName, logger, isJobPath)
+			elif entry == 'endpoint':
+				isEndpointPath = True
+			recursePathsAndInsertFiles(target, newPath, packageSystemName, thisIndex, dbClient, packageName, logger, isJobPath, isEndpointPath)
 		else:
 			fileSize = int(os.path.getsize(target))
 			(fileHash, data) = getFileDataAndHash(target)
@@ -365,9 +407,11 @@ def recursePathsAndInsertFiles(thisPath, relativePath, packageSystemName, fileIn
 			## Insert
 			insertFile(logger, dbClient, attributes)
 
-			## Do something more with job descriptors
+			## Do something more with job descriptors and endpoint queries
 			if isJobPath:
 				insertJob(logger, dbClient, entry, packageSystemName, packageName, target)
+			elif isEndpointPath:
+				insertEndpointQuery(logger, dbClient, entry, packageName, target)
 
 		fileIndex[entry] = thisIndex
 

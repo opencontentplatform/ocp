@@ -228,10 +228,10 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		self.loopingHealthCheck = task.LoopingCall(self.deferHealthCheck)
 		self.loopingHealthCheck.start(self.globalSettings['waitSecondsBetweenHealthChecks'])
 		self.loopingGetExecutionEnvironment = task.LoopingCall(self.deferGetExecutionEnvironment)
-		## The initial environment check needs to wait for the client to
-		## startup, since you will see a false reading if measured right at
-		## process startup time, when it's establishing initial runtime.
-		self.loopingGetExecutionEnvironment.start(self.globalSettings['waitSecondsBetweenExecutionEnvironmentChecks'], now=False)
+		## Should the initial environment check wait for the client to startup?
+		## We see a false negative (higher reading) when measured at startup...
+		#self.loopingGetExecutionEnvironment.start(self.globalSettings['waitSecondsBetweenExecutionEnvironmentChecks'], now=False)
+		self.loopingGetExecutionEnvironment.start(self.globalSettings['waitSecondsBetweenExecutionEnvironmentChecks'])
 		self.loopingAuthenticateClient = task.LoopingCall(self.authenticateClient)
 		self.loopingAuthenticateClient.start(int(self.globalSettings['waitSecondsBetweenClientAuthorizationAttempts']))
 		self.pid = str(os.getpid())
