@@ -376,11 +376,11 @@ def deleteSpecificConfigGroups(realm:text, request, response):
 @hugWrapper.delete('/ConfigGroups/{realm}/{configGroupName}')
 def deleteRealmConfigGroupEntry(realm:text, configGroupName:text, request, response):
 	"""Delete a named entry from ConfigGroups in the specified realm.
-	
+
 	Note 1: To expose maximum flexibility, there are no required attributes for
 	an entry in ConfigGroups. It's an ordered list of dictionaries. A name
 	is not required; it's just a suggested convention that is used internally.
-	
+
 	Note 2: Removing an entry on the list fits best in a RESTful PUT method on
 	/ConfigGroups/{realm}. However, there are good reasons not to add it there.
 	Probably the most important one is if an external tool (eg. OS provisioning)
@@ -390,9 +390,9 @@ def deleteRealmConfigGroupEntry(realm:text, configGroupName:text, request, respo
 	that means) and finally issue a PUT on /ConfigGroups/realm. So, to simplify
 	an update, we allowed a PUT on /ConfigGroups/realm to only contain a single
 	(new or updated) entry, and then common/shared code would do the merge.
-	
+
 	Note 3: Given note 2, that meant we needed an explicit method to remove a
-	current entry... hence this function that leverages the name. 
+	current entry... hence this function that leverages the name.
 	"""
 	try:
 		request.context['logger'].debug('deleteRealmConfigGroupEntry: configGroupName: {}'.format(configGroupName))
@@ -406,7 +406,7 @@ def deleteRealmConfigGroupEntry(realm:text, configGroupName:text, request, respo
 			request.context['logger'].debug('deleteRealmConfigGroupEntry: contentToUpdate 1: {}'.format(contentToUpdate))
 			contentToUpdate[:] = [x for x in contentToUpdate if not (x.get('name') == configGroupName)]
 			request.context['logger'].debug('deleteRealmConfigGroupEntry: contentToUpdate 2: {}'.format(contentToUpdate))
-			
+
 			## Set the source
 			source = request.context['apiUser']
 			## Create an object to merge/update with the previous DB entry

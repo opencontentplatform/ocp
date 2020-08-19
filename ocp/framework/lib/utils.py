@@ -1068,14 +1068,13 @@ def getCustomHeaders(headers, customHeaders):
 
 def executeProvidedJsonQuery(logger, dbClient, content, resultList):
 	"""Retrieve results from a JSON query."""
-	logger.debug('Querying database with the data {}'.format(content))
+	#logger.debug('Querying database with the data {}'.format(str(content)))
 	queryprocessing = QueryProcessing(logger, dbClient, content, resultsFormat='Nested')
 	endpointsJson = queryprocessing.runQuery()
 	for linchpinLabel in endpointsJson.keys():
 		entries = endpointsJson.get(linchpinLabel, [])
 		for thisEntry in entries:
 			resultList.append(thisEntry)
-			#logger.debug(' added endpoint: {}'.format(thisEntry))
 	endpointsJson = None
 
 

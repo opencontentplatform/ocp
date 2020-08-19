@@ -578,9 +578,9 @@ class JobServiceFactory(networkService.ServiceFactory):
 			if endpointQuery is not None:
 				## Prefer to use JSON Query over Python Script
 				dbTable = platformSchema.EndpointQuery
-				dataHandle = self.dbClient.session.query(dbTable).filter(dbTable.name == name).first()
+				dataHandle = self.dbClient.session.query(dbTable).filter(dbTable.name == endpointQuery).first()
 				if not dataHandle:
-					raise EnvironmentError('Endpoint query not found: {}'.format(name))
+					raise EnvironmentError('Endpoint query not found: {}'.format(endpointQuery))
 				queryDefinition = dataHandle.content
 				utils.executeProvidedJsonQuery(self.logger, self.dbClient, queryDefinition, endpointList)
 				#utils.getEndpointsFromJsonQuery(self.logger, self.dbClient, thisPackagePath, packageName, endpointQuery, endpointList)
@@ -807,7 +807,6 @@ class JobServiceFactory(networkService.ServiceFactory):
 						setattr(thisEntry, 'total_jobs_passed', thisEntry.total_jobs_passed + 1)
 						## If last execution failed, this is the first consecutive pass
 						if prevStatus == 'FAILURE':
-							self.logger.debug('     --> overriding consecutive_jobs_passed')
 							prevConJobPass = 0
 						setattr(thisEntry, 'consecutive_jobs_passed', prevConJobPass + 1)
 					## If this execution failed
@@ -816,7 +815,6 @@ class JobServiceFactory(networkService.ServiceFactory):
 						setattr(thisEntry, 'total_jobs_failed', thisEntry.total_jobs_failed + 1)
 						## If last execution didn't fail, this is the first consecutive fail
 						if prevStatus != 'FAILURE':
-							self.logger.debug('     --> overriding consecutive_jobs_failed')
 							prevConJobFail = 0
 						setattr(thisEntry, 'consecutive_jobs_failed', prevConJobFail + 1)
 
