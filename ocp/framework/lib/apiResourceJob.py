@@ -11,6 +11,10 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/job/runtime/{service}/filter
 	/<root>/job/runtime/{service}/{jobName}
 	/<root>/job/runtime/{service}/{jobName}/stats
+	/<root>/job/review
+	/<root>/job/review/{service}
+	/<root>/job/review/{service}/filter
+	/<root>/job/review/{service}/{jobName}
 
 .. hidden::
 
@@ -308,6 +312,9 @@ def executeJobResultListFilter(service:text, content:hugJson, request, response)
 			filterConditions = content.get('filter')
 			countResult = content.get('count', False)
 			getJobResultsFilterHelper(request, response, filterConditions, countResult, False, service)
+
+		## Standard conversions of dates and Decimal types to string
+		request.context['payload'] = json.loads(json.dumps(request.context['payload'], default=customJsonDumpsConverter))
 	except:
 		errorMessage(request, response)
 
@@ -578,6 +585,8 @@ def executeJobReviewFilter(service:text, content:hugJson, request, response):
 				countResult = content.get('count', False)
 				searchThisContentHelper(request, response, filterConditions, dbTable, countResult, False)
 
+		## Standard conversions of dates and Decimal types to string
+		request.context['payload'] = json.loads(json.dumps(request.context['payload'], default=customJsonDumpsConverter))
 	except:
 		errorMessage(request, response)
 

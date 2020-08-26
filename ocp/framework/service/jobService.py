@@ -205,9 +205,21 @@ class JobServiceFactory(networkService.ServiceFactory):
 	def reportJobSchedules(self):
 		try:
 			scheduledJobs = self.scheduler.get_jobs()
+			## This short wait time allows get_jobs to complete; without it,
+			## some of the job attributes (e.g. next_run_time) are unavailable
+			## for the first few iterations through the following loop.
+			time.sleep(.5)
 			self.logger.info("Number of jobs {activeJobs!r}:", activeJobs=len(scheduledJobs))
 			for job in scheduledJobs:
-				self.logger.info("  job {job_id!r:4}: {job_name!r}", job_id=job.id, job_name=job.name)
+				simpleDateString = getattr(job, 'next_run_time', None)
+				if isinstance(simpleDateString, datetime.datetime):
+					simpleDateString = simpleDateString.__str__()
+					with suppress(Exception):
+						## Change the default value: 2017-08-31 08:21:00-05:00
+						##     to something simpler: 2017-08-31 08:21:00
+						## Without going through time conversion libs
+						simpleDateString = simpleDateString[:19]
+				self.logger.info("  job {job_id!r:4}: {job_name!r}.  Next run time: {run_time!r}", job_id=job.id, job_name=job.name, run_time=simpleDateString)
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error(' Exception with job report loop: {stacktrace!r}', stacktrace=stacktrace)
