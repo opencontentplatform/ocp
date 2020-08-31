@@ -286,7 +286,6 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 			sleep(.5)
 			self.canceledEvent.set()
 
-		print('startProcessing: exiting')
 		self.logger.debug('startProcessing: exiting')
 
 		## end startProcessing

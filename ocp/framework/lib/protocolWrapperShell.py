@@ -263,12 +263,19 @@ class NonBlockingStreamReader:
 		self.quit = False
 
 		def _populateQueue(stream, queue):
-			for line in iter(stream.readline, b''):
-				if line:
-					queue.put(line)
-				else:
-					print('breaking out of _populateQueue')
-					break
+			try:
+				for line in iter(stream.readline, b''):
+					if line:
+						queue.put(line)
+					else:
+						print('breaking out of _populateQueue')
+						break
+			except ValueError:
+				## These ValueError exceptions mean we need to stop as well:
+				## PyMemoryView_FromBuffer(): info->buf must not be NULL
+				pass
+			except:
+				raise
 
 		self._thread = Thread(target=_populateQueue, args=(self._stream, self._queue))
 		self._thread.start()
