@@ -123,7 +123,8 @@ def updatePackage(pkgName, pkgSystem='contentGathering', pkgPath=None, forceUpda
 
 		else:
 			## First time load of the package into the database
-			logger.info('Attempting to update a package that did not previously exist in the database. Please compress and then add the package first.')
+			logger.error('Attempting to update a package that did not previously exist in the database. Please compress and then add the package first.')
+			print('Attempting to update a package that did not previously exist in the database. Please compress and then add the package first.')
 
 		## Cleanup
 		logger.info('Finished content management work on package {}; cleaning up.'.format(pkgName))
@@ -682,8 +683,8 @@ Usage:  python {} <option> [parameters]
        filesystem. The <system> parameter should be one of the following values:
        'contentGathering', 'universal', 'serverSide'. The <fullyQualifiedPath>
        parameter defaults to the server's ./content/<system>/<packageName> path,
-       if not specified. If a package by the same name already exists, it is
-       updated; otherwise it is created new.
+       if not specified. When using the uncompressed option, the package must
+       already exist; if it does not yet exist, use the compressed option first.
 
     -baseline
        Re-runs the loading of all packages into the database, from the server's
