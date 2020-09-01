@@ -13,6 +13,7 @@ This module defines the Application Programming Interface (API) methods for the
 	Version info:
 	  1.0 : (CS) Created Sep 15, 2017
 	  1.1 : (CS) Replaced apiUtils with Falcon middleware, Sept 2, 2019
+	  1.2 : (CS) Added /data/schema resource, Sep 1, 2020
 
 """
 
@@ -43,6 +44,8 @@ def getData(request, response):
 		tempdict['classObject'] = BaseObjectClass
 		tempdict['children'] = [i.__name__ for i in BaseObjectClass.__subclasses__()]
 		utils.classDict(tempdict, BaseObjectClass)
+		tempdict.pop('classObject')
+		tempdict.pop('children')
 		staticPayload = {
 			'Available classes:' : tempdict.keys(),
 			'/data/{class}' : {
@@ -57,6 +60,11 @@ def getData(request, response):
 					'GET' : 'Report entry with specified object id from the class resource.',
 					'PUT' : 'Update entry with specified object id from the class resource.',
 					'DELETE' : 'Remove entry with specified object id from the class resource.'
+				}
+			},
+			'/data/schema/{class}' : {
+				'methods' : {
+					'GET' : 'Provide specified class definition from the data schema.'
 				}
 			}
 		}
@@ -288,3 +296,36 @@ def deleteDataForClassObjectId(className:text, object_id:text, request, response
 
 	## end deleteDataForClassObjectId
 	return cleanPayload(request)
+
+
+@hugWrapper.get('/schema/{className}')
+def getDataSchemaClassDefinition(className, request, response):
+	"""Report class definition."""
+	staticPayload = {}
+	try:
+		request.context['logger'].debug('getSchemaDataClassDefinition: className: {}'.format(className))
+		table = eval('tableMapping.{}'.format(className))
+		classTable = table.__tablename__
+		staticPayload["class"] = className
+		staticPayload["table"] = classTable
+		#staticPayload["args"] = str(table.__table_args__)
+		## Leave constraints in list form
+		#staticPayload["constraints"] = str(table._constraints)
+		staticPayload["constraints"] = table._constraints
+		attrs = {}
+		for entry in inspect(table).mapper.c:
+			mapperTable = str(entry.table)
+			value = { "type": str(entry.type) }
+			if mapperTable == classTable or mapperTable.endswith('.{}'.format(classTable)):
+				value["inherited"] = False
+			else:
+				value["inherited"] = True
+			value["table"] = str(entry.table)
+			attrs[str(entry.name)] = value
+		staticPayload["attributes"] = attrs
+		request.context['logger'].debug(' staticPayload ==> {}'.format(staticPayload))
+	except:
+		errorMessage(request, response)
+
+	## end getDataSchemaClassDefinition
+	return staticPayload
