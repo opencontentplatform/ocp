@@ -97,7 +97,15 @@ class LogCollectionForJobs(localService.LocalService):
 		endpoint = message['endpoint']
 		content = message['content']
 		self.logger.info('Received message from: {packageName!r}.{jobName!r}.{endpointName!r}',
-						 packageName=packageName, jobName=jobName, endpointName=endpointName)
+						 packageName=packageName, jobName=jobName, endpointName=endpoint)
+
+		## Write to ./runtime/log/job/<jobName>/<endpoint>.log
+		logPath = os.path.join(env.logPath, 'job', jobName)
+		if not os.path.exists(logPath):
+			os.makedirs(logPath)
+		exectutionLogFile = os.path.join(logPath, '{}.log'.format(endpoint))
+		with open(exectutionLogFile, 'w') as fh:
+			fh.write(content)
 
 		## end workOnMessage
 		return

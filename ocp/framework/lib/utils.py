@@ -74,6 +74,7 @@ import traceback
 import sys
 import pathlib
 import copy
+import stat
 import time
 import random
 import ipaddress
@@ -653,37 +654,49 @@ def setupLogFile(serviceName, env, logSettingsFileName, pid=None, directoryName=
 	logSettings = loadSettings(os.path.join(configPath, logSettingsFileName))
 	## Create requested handler for this service
 	logEntry = logSettings.get(serviceName)
-	logFiles =[]
 	jsonPath = os.path.join(logPath, 'json')
 	if not os.path.exists(jsonPath):
 		os.makedirs(jsonPath)
 	logFile1 = os.path.join(jsonPath, logEntry.get('fileNameJson'))
 	logFile2 = os.path.join(logPath, logEntry.get('fileNameText'))
-	logFiles.append(logFile1)
-	logFiles.append(logFile2)
+
+	logFileList = dict()
+	logFileList['fileNameJson'] = twisted.python.logfile.LogFile(logFile1, logPath, rotateLength=int(logEntry.get('maxSizeInBytes')), maxRotatedFiles=int(logEntry.get('maxRollovers')))
+	logFileList['fileNameText'] = twisted.python.logfile.LogFile(logFile2, logPath, rotateLength=int(logEntry.get('maxSizeInBytes')), maxRotatedFiles=int(logEntry.get('maxRollovers')))
+	## As of Dec 2018 release, we were no longer using PIDs for file uniqueness;
+	## it became too messy to cleanup log rotation over client restarts. Now
+	## each client instance should have a unique/cloned working directory, so
+	## the logs can rotate and cleanup without issue. Leaving this note in for
+	## a release or so for reference.
+	## ========================================================================
+	# logFiles =[]
+	# logFiles.append(logFile1)
+	# logFiles.append(logFile2)
 	## If multiple clients are running on a single machine, we create multiple
 	## log instances to avoid file handle issues, using the pid for uniqueness.
-	NewlogFiles =[]
-	if pid:
-		try:
-			for logFile in logFiles:
-				m = re.search('(^.*)(\.log)', logFile)
-				logFile = '{}-{}{}'.format(m.group(1), pid, m.group(2))
-				NewlogFiles.append(logFile)
-		except:
-			pass
-	if len(NewlogFiles) == 0:
-		NewlogFiles = logFiles
-	logFileList =dict()
-	logfile1 = twisted.python.logfile.LogFile(NewlogFiles[0], logPath,
-											 rotateLength=int(logEntry.get('maxSizeInBytes')),
-											 maxRotatedFiles=int(logEntry.get('maxRollovers')))
-
-	logfile2 = twisted.python.logfile.LogFile(NewlogFiles[1], logPath,
-											 rotateLength=int(logEntry.get('maxSizeInBytes')),
-											 maxRotatedFiles=int(logEntry.get('maxRollovers')))
-	logFileList['fileNameJson'] = logfile1
-	logFileList['fileNameText'] = logfile2
+	# NewlogFiles =[]
+	# if pid:
+	# 	try:
+	# 		for logFile in logFiles:
+	# 			m = re.search('(^.*)(\.log)', logFile)
+	# 			logFile = '{}-{}{}'.format(m.group(1), pid, m.group(2))
+	# 			NewlogFiles.append(logFile)
+	# 	except:
+	# 		pass
+	# if len(NewlogFiles) == 0:
+	# 	NewlogFiles = logFiles
+	#
+	# logfile1 = twisted.python.logfile.LogFile(NewlogFiles[0], logPath,
+	# 										 rotateLength=int(logEntry.get('maxSizeInBytes')),
+	# 										 maxRotatedFiles=int(logEntry.get('maxRollovers')))
+	#
+	# logfile2 = twisted.python.logfile.LogFile(NewlogFiles[1], logPath,
+	# 										 rotateLength=int(logEntry.get('maxSizeInBytes')),
+	# 										 maxRotatedFiles=int(logEntry.get('maxRollovers')))
+	# logFileList = dict()
+	# logFileList['fileNameJson'] = logfile1
+	# logFileList['fileNameText'] = logfile2
+	## ========================================================================
 
 	## end setupLogFile
 	return logFileList
@@ -820,6 +833,7 @@ def setupObservers(logFileList, serviceName, env, logSettingsFileName, createJSO
 	LogPublisherInstance = None
 	try:
 		observers=[]
+		## This is a weird way of checking for None... but ok
 		if type(logFileList.get('fileNameJson')) != type(str()):
 			callable1 = _formatEventFactory(logSettingsFileName, env, serviceName)
 			FileLogObserverInstance = FilteringLogObserver(FileLogObserver(logFileList['fileNameText'],callable1), [predicate]) #placeholder for _formatEventFactory
@@ -847,6 +861,62 @@ def setupObservers(logFileList, serviceName, env, logSettingsFileName, createJSO
 
 	## end setupObservers
 	return LogPublisherInstance
+
+
+def setupJobExecutionLoggger(mainLogger, logPath, logFile):
+	"""Create a logger with static values on provided file."""
+	twistedLogger = None
+	twistedLogFile = None
+	try:
+		maxSizeInBytes = 10485760
+		maxRollovers = 0
+		if not os.path.exists(logPath):
+			os.makedirs(logPath)
+		## The file should have been removed at the end of creation, which does
+		## not work reliably on windows (filehandle issues), so at least zero
+		## it out so the file doesn't continue appending to previous runs, and
+		## then sending the appended file back through Kafka to the server.
+		with open(logFile, 'w') as fh:
+			fh.write('')
+
+		twistedLogFile = twisted.python.logfile.LogFile(logFile, logPath, rotateLength=maxSizeInBytes, maxRotatedFiles=maxRollovers)
+		predicate = LogLevelFilterPredicate(defaultLogLevel=LogLevel.debug)
+		formatEvents = formatEventFactoryForJobExecutionLogger()
+		fileLogObserverInstance = FilteringLogObserver(FileLogObserver(twistedLogFile, formatEvents), [predicate])
+		LogPublisherInstance = LogPublisher()
+		LogPublisherInstance.addObserver(fileLogObserverInstance)
+		twistedLogger = twisted.logger.Logger(observer=LogPublisherInstance, namespace='jobExecutionLog')
+	except:
+		exceptionOnly = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+		mainLogger.error('Exception setting up the job execution logger:  {}'.format(str(exceptionOnly)))
+
+	## end setupJobExecutionLoggger
+	return twistedLogFile, twistedLogger
+
+
+def formatEventFactoryForJobExecutionLogger():
+	"""Static formatter for job execution logs"""
+	lineFormat = "%(asctime)s  %(levelname)-7s %(message)s"
+	dateFormat = "%Y-%m-%d %H:%M:%S.%f%z"
+	def format(event):
+		"""Return callable that handles event and returns expected text format.
+
+		Arguments:
+		  event (Twisted.Event):
+		"""
+		## Convert from float (log_time) to datetime, then use strftime. Format
+		## override is used since time.strftime doesn't handle milliseconds, and
+		## if the requested format included %f for microseconds, it won't work.
+		text = ''
+		try:
+			text = lineFormat %{'asctime':datetime.fromtimestamp(float(event['log_time'])).strftime(dateFormat), 'levelname' : event['log_level'].name, 'message' : str(event['log_format']).format(**event)}
+		except:
+			text = lineFormat %{'asctime':datetime.fromtimestamp(float(event['log_time'])).strftime(dateFormat), 'levelname' : event['log_level'].name, 'message' : str(event['log_format'])}
+		text = text + '\n'
+		return text
+
+	## end formatEventFactory
+	return format
 
 
 def prettyRunTime(startTime, endTime):

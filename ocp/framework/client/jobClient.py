@@ -237,6 +237,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 			self.clientSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingJobClientConfig']))
 			self.clientGroups = { 'clientGroups' : self.clientSettings.get('clientGroups', []) }
 			self.kafkaTopic = globalSettings['kafkaTopic']
+			self.kafkaLogForJobsTopic = globalSettings['kafkaLogForJobsTopic']
 			self.kafkaConsumerErrorLimit = self.localSettings['kafkaConsumerErrorLimit']
 			self.kafkaProducer = None
 			self.requiresRestart = False
@@ -486,7 +487,7 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 		numberOfJobThreads = int(jobMetaData['numberOfJobThreads'])
 		self.logger.info('Spinning up {numberOfJobThreads!r} threads for job {jobName!r}', numberOfJobThreads=numberOfJobThreads, jobName=jobName)
 		for i in range(int(numberOfJobThreads)):
-			activeThread = RemoteThread(self.dStatusLogger, self.dDetailLogger, env, jobShortName, packageName, scriptName, jobMetaData, protocolType, inputParameters, protocols, shellConfig, self.jobEndpoints[jobName], self.jobStatistics[jobName], self.kafkaProducer, self.kafkaTopic)
+			activeThread = RemoteThread(self.dStatusLogger, self.dDetailLogger, env, jobShortName, packageName, scriptName, jobMetaData, protocolType, inputParameters, protocols, shellConfig, self.jobEndpoints[jobName], self.jobStatistics[jobName], self.kafkaProducer, self.kafkaTopic, self.kafkaLogForJobsTopic)
 			activeThread.start()
 			self.jobThreads[jobName].append(activeThread)
 

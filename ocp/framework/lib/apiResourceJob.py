@@ -15,6 +15,9 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/job/review/{service}
 	/<root>/job/review/{service}/filter
 	/<root>/job/review/{service}/{jobName}
+	/<root>/job/log
+	/<root>/job/log/{jobName}
+	/<root>/job/log/{jobName}/{endpoint}
 
 .. hidden::
 
@@ -60,6 +63,11 @@ def getJobResources(request, response):
 		'/job/review' : {
 			'methods' : {
 				'GET' : 'Show available review resources.'
+			}
+		},
+		'/job/log' : {
+			'methods' : {
+				'GET' : 'Show available directories on the server containing (or previously containing) job execution logs.'
 			}
 		}
 	}
@@ -277,7 +285,7 @@ def getJobRuntimeResources(request, response):
 			'methods' : {
 				'GET' : 'Return statistical analysis on the runtime results for the specified job.'
 			}
-		},
+		}
 	}
 
 	## end getJobRuntimeResources
@@ -612,4 +620,84 @@ def deleteJobReviewFilter(service:text, content:hugJson, request, response):
 		errorMessage(request, response)
 
 	## end deleteJobReviewFilter
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/log')
+def getJobLogDirectories(request, response):
+	"""Return log directories (jobNames) available in runtime/log/job."""
+	try:
+		logDir = os.path.join(request.context['envLogPath'], 'job')
+		jobDirectories = []
+		for jobName in os.listdir(logDir):
+			if os.path.isdir(os.path.join(logDir, jobName)):
+				jobDirectories.append(jobName)
+
+		staticPayload = {'Jobs' : jobDirectories,
+			'/job/log' : {
+				'methods' : {
+					'GET' : 'Return a list of Job directories on the server containing (or previously containing) execution logs.'
+				}
+			},
+			'/job/log/{job}' : {
+				'methods' : {
+					'GET' : 'Return logs available in the ./runtime/log/job/{job} directory.'
+				}
+			},
+			'/job/log/{job}/{endpoint}' : {
+				'methods' : {
+					'GET' : 'Return the ./runtime/log/job/{job}/{endpoint}.log file.'
+				}
+			}
+		}
+
+	except:
+		errorMessage(request, response)
+
+	## end getJobLogDirectories
+	return staticPayload
+
+
+@hugWrapper.get('/log/{jobName}')
+def getLogEndpointsForJob(jobName:text, request, response):
+	"""Return logs available in the ./runtime/log/job/jobName directory."""
+	try:
+		logDir = os.path.join(request.context['envLogPath'], 'job', jobName)
+		request.context['payload']['Endpoints'] = []
+		for logFile in os.listdir(logDir):
+			m = re.search('(.+)\.log', logFile)
+			if m:
+				endpoint = m.group(1)
+				request.context['payload']['Endpoints'].append(endpoint)
+	except:
+		errorMessage(request, response)
+
+	## end getLogEndpointsForJob
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/log/{jobName}/{endpoint}')
+def getLogForJobEndpoint(jobName:text, endpoint:text, request, response):
+	"""Return the ./runtime/log/job/jobName/endpointName.log file."""
+	try:
+		logDir = os.path.join(request.context['envLogPath'], 'job', jobName)
+		logFile = '{}.log'.format(endpoint)
+		target = os.path.join(logDir, logFile)
+		if os.path.isfile(target):
+			request.context['payload']['job'] = jobName
+			request.context['payload']['endpoint'] = endpoint
+			fileContents = None
+			with open(target, 'r') as fh:
+				## Should we create a generator function for file chunks?
+				## Current assumption is that it's not needed...
+				fileContents = fh.read()
+			request.context['payload']['content'] = fileContents
+		else:
+			request.context['payload']['errors'].append('File not found: {}'.format(target))
+			response.status = HTTP_404
+
+	except:
+		errorMessage(request, response)
+
+	## end getLogForJobEndpoint
 	return cleanPayload(request)

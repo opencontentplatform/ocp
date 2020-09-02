@@ -29,9 +29,6 @@ import utils
 import database.connectionPool as tableMapping
 from apiHugWrapper import hugWrapper
 from apiResourceUtils import *
-## Load the global settings
-import env
-globalSettings = utils.loadSettings(os.path.join(env.configPath, "globalSettings.json"))
 
 
 @hugWrapper.get('/')
