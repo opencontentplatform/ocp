@@ -14,6 +14,7 @@ Classes:
 """
 import sys
 import traceback
+import os
 import time
 import json
 import datetime
@@ -25,12 +26,13 @@ from queue import Full as Queue_Full
 ## From openContentPlatform
 from threadInstance import ThreadInstance
 from remoteRuntime import Runtime
+from utils import setupJobExecutionLoggger
 
 
 class RemoteThread(ThreadInstance):
 	"""Wraps job invocation with a common framework."""
 
-	def __init__(self, dStatusLogger, dDetailLogger, env, jobName, packageName, scriptName, jobMetaData, protocolType, inputParameters, protocols, shellConfig, jobEndpoints, jobStatistics, kafkaProducer, kafkaTopic):
+	def __init__(self, dStatusLogger, dDetailLogger, env, jobName, packageName, scriptName, jobMetaData, protocolType, inputParameters, protocols, shellConfig, jobEndpoints, jobStatistics, kafkaProducer, kafkaTopic, kafkaLogForJobsTopic):
 		"""Constructor for the RemoteThread.
 
 		Arguments:
@@ -58,6 +60,7 @@ class RemoteThread(ThreadInstance):
 		self.jobStatistics = jobStatistics
 		self.kafkaProducer = kafkaProducer
 		self.kafkaTopic = kafkaTopic
+		self.kafkaLogForJobsTopic = kafkaLogForJobsTopic
 		self.endpointIdColumn = jobMetaData['endpointIdColumn']
 		self.jobMaxJobRunTime = int(jobMetaData['maxJobRunTime'])
 		self.threadedFunction = self.jobWrapper
@@ -100,7 +103,7 @@ class RemoteThread(ThreadInstance):
 		if unstructuredData is not None:
 			if kafkaTopic is not None:
 				self.logger.debug('Sending to Kafka topic {kafkaTopic} data type {dataType!r}', kafkaTopic=kafkaTopic, dataType=type(unstructuredData))
-				self.kafkaProducer.produce(kafkaTopic, value=json.dumps(unstructuredData).encode('utf-8'))
+				self.kafkaProducer.produce(kafkaTopic, value=str(unstructuredData).encode('utf-8'))
 			else:
 				self.logger.error('Received unstructured data for Kafka, but without a specified topic: {unstructuredData!r}', unstructuredData=unstructuredData)
 		else:
@@ -119,6 +122,41 @@ class RemoteThread(ThreadInstance):
 					self.kafkaProducer.produce(self.kafkaTopic, value=json.dumps(jsonResult).encode('utf-8'))
 			self.runtime.results.clearJson()
 		self.kafkaProducer.flush()
+
+
+	def sendExecutionLog(self, jobExecutionLogger, jobExecutionLogFile, endpointValue, exectutionLogFile):
+		"""If createExecutionLog was set in the job, send the execution log back."""
+		if jobExecutionLogFile is not None:
+			try:
+				## Disconnect logger and close the twisted.python.logfile.Logfile
+				## filehandle references, so we can os.remove the file below
+				del jobExecutionLogger
+				jobExecutionLogFile.flush()
+				jobExecutionLogFile.close()
+				del jobExecutionLogFile
+				time.sleep(.5)
+
+				fileContents = None
+				with open(exectutionLogFile, 'r') as fh:
+					## Should we create a generator function for file chunks?
+					## Current assumption is that it's not needed...
+					fileContents = fh.read()
+				message = {}
+				message['package'] = self.packageName
+				message['job'] = self.jobName
+				message['endpoint'] = self.endpoint
+				message['content'] = fileContents
+				self.kafkaProducer.poll(0)
+				self.kafkaProducer.produce(self.kafkaLogForJobsTopic, value=json.dumps(message).encode('utf-8'))
+				self.kafkaProducer.flush()
+				try:
+					## Note: this isn't always reliable in Windows, so we also have
+					## utils.setupJobExecutionLoggger zero it out before new runs
+					os.remove(exectutionLogFile)
+				except:
+					self.logger.error('Failed to remove job execution log: {logFile!r}: {exception!r}', logFile=exectutionLogFile, exception=str(sys.exc_info()[1]))
+			except:
+				self.logger.error('Error sending execution log to Kafka. Exception: {exception!r}', exception=str(sys.exc_info()[1]))
 
 
 	def jobWrapper(self, *args, **kargs):
@@ -153,10 +191,19 @@ class RemoteThread(ThreadInstance):
 					## Track in class variable so we can see externally
 					self.endpoint = endpointValue
 
-					## Reset count if we run multiple endpoints in same thread
+					## Setup custom logger if needed
+					jobExecutionLogger = self.logger
+					jobExecutionLogFile = None
+					jobExecutionLogFileDest = None
+					if self.jobMetaData.get('createExecutionLog', False):
+						logPath = os.path.join(self.env.logPath, 'job', self.jobName)
+						jobExecutionLogFileDest = os.path.join(logPath, '{}.log'.format(self.endpoint))
+						jobExecutionLogFile, jobExecutionLogger = setupJobExecutionLoggger(self.logger, logPath, jobExecutionLogFileDest)
+
+					## Reset count when we run multiple endpoints in same thread
 					self.resultCount = {}
 					## Initialize runtime container
-					self.runtime = Runtime(self.logger, self.env, self.packageName, self.jobName, endpoint, self.jobMetaData, self.sendToKafka, self.parameters, self.protocolType, self.protocols, self.shellConfig)
+					self.runtime = Runtime(jobExecutionLogger, self.env, self.packageName, self.jobName, endpoint, self.jobMetaData, self.sendToKafka, self.parameters, self.protocolType, self.protocols, self.shellConfig)
 					if not self.runtime.setupComplete:
 						raise EnvironmentError('Runtime was not initialized properly!')
 
@@ -182,6 +229,7 @@ class RemoteThread(ThreadInstance):
 					## Job cleanup
 					self.runtime.setEndTime()
 					self.loggerStatus.info('{runtime_repr!r}, {result_count!r}', runtime_repr=self.runtime, result_count=self.resultCount)
+					self.sendExecutionLog(jobExecutionLogger, jobExecutionLogFile, endpointValue, jobExecutionLogFileDest)
 
 					## Update the job statistics from this run
 					## If we hit a cancel flag, might as well submit results

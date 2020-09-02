@@ -887,10 +887,13 @@ class JobServiceFactory(networkService.ServiceFactory):
 			if clientName in self.jobActiveClients[jobName]:
 				self.logger.info('removeClientFromAllActiveJobs: removing client {clientName!r} from job {jobName!r}', clientName=clientName, jobName=jobName)
 				self.jobActiveClients[jobName].remove(clientName)
-				## If all the clients reported back in, shut it down
-				if len(self.jobActiveClients[jobName]) <= 0:
-					self.logger.info('removeClientFromAllActiveJobs: calling doJobComplete for job {jobName!r}', jobName=jobName)
-					self.doJobComplete(jobName)
+		## Using a second loop to check this, in case of unclean disconnects;
+		## force-stop jobs without clients... they won't progress or finish.
+		for jobName in list(self.jobActiveClients.keys()):
+			## If all the clients reported back in, shut it down
+			if len(self.jobActiveClients[jobName]) <= 0:
+				self.logger.info('removeClientFromAllActiveJobs: calling doJobComplete for job {jobName!r}', jobName=jobName)
+				self.doJobComplete(jobName)
 
 		## end removeClientFromAllActiveJobs
 		return

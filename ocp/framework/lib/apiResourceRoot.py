@@ -129,6 +129,7 @@ class VariableAndLoggerMiddleware:
 			request.context['kafkaCertificateFile'] = self.globalSettings['kafkaCertificateFile']
 			request.context['kafkaKeyFile'] = self.globalSettings['kafkaKeyFile']
 			request.context['envConfigPath'] = self.env.configPath
+			request.context['envLogPath'] = self.env.logPath
 			request.context['envApiQueryPath'] = self.env.apiQueryPath
 			request.context['envContentGatheringSharedConfigGroupPath'] = self.env.contentGatheringSharedConfigGroupPath
 			## Create an errors section so we can simply append within functions

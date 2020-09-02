@@ -468,7 +468,7 @@ class CoreService():
 						self.logger.debug('getKafkaResults: Kafka error: {error!r}', error=message.error())
 						continue
 					thisMsg = json.loads(message.value().decode('utf-8'))
-					self.logger.debug('Data received for processing: {thisMsg!r}', thisMsg=thisMsg)
+					#self.logger.debug('Data received for processing: {thisMsg!r}', thisMsg=thisMsg)
 					self.workOnMessage(thisMsg)
 
 			except:
