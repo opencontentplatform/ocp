@@ -90,6 +90,12 @@ class ResultProcessingFactory(networkService.ServiceFactory):
 				self.loopingGetKafkaPartitionCount = None
 			super().stopFactory()
 			self.logger.info(' resultProcessingService stopFactory: complete.')
+			## Logger and log file handle cleanup needs to be the last step
+			for label,twistedLogFile in self.logFiles.items():
+				del self.logger
+				twistedLogFile.flush()
+				twistedLogFile.close()
+				del twistedLogFile
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])

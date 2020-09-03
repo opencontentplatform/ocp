@@ -35,7 +35,6 @@ env.addLibPath()
 ## From openContentPlatform
 import utils
 from coreService import CoreService
-from database.connectionPool import DatabaseClient
 
 
 class LocalService(CoreService):

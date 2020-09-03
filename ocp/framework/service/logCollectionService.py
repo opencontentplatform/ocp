@@ -76,6 +76,12 @@ class LogCollection(localService.LocalService):
 			self.globalSettings = None
 			self.localSettings = None
 			self.logger.info(' logCollection stopFactory: complete.')
+			## Logger and log file handle cleanup needs to be the last step
+			for label,twistedLogFile in self.logFiles.items():
+				del self.logger
+				twistedLogFile.flush()
+				twistedLogFile.close()
+				del twistedLogFile
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			print('Exception in logCollection stopFactory: {}'.format(exception))

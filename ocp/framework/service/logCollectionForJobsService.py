@@ -19,6 +19,7 @@ import os
 import sys
 import traceback
 import json
+import time
 from contextlib import suppress
 import twisted.logger
 from twisted.internet import reactor, task, defer, threads
@@ -45,6 +46,8 @@ class LogCollectionForJobs(localService.LocalService):
 		self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
 		super().__init__(serviceName, globalSettings)
 		self.localSettings = loadSettings(os.path.join(env.configPath, globalSettings['fileContainingLogCollectionForJobsSettings']))
+		self.secondsBetweenLogCleanup = int(self.localSettings['waitHoursBetweenLogCleanupChecks']) * 60 * 60
+		self.secondsToRetainLogFiles = int(self.localSettings['numberOfHoursToRetainLogFiles']) * 60 * 60
 
 		## Make checking kafka and processing results a looping call, to give a
 		## break to the main reactor thread; otherwise it blocks other looping
@@ -53,12 +56,14 @@ class LogCollectionForJobs(localService.LocalService):
 		self.loopingGetKafkaResults = task.LoopingCall(self.getKafkaResults, self.kafkaConsumer)
 		## Give a second break before starting the main LoopingCall
 		self.loopingGetKafkaResults.start(1, now=False)
+		## Regularly check logs for cleanup; avoid filling disk with old logs
+		self.loopingCleanupLogs = task.LoopingCall(self.deferCleanupLogs)
+		self.loopingCleanupLogs.start(self.secondsBetweenLogCleanup)
 		self.logger.debug('Leaving LogCollectionForJobs constructor')
 
 
 	def stopFactory(self):
 		try:
-			#print('logCollectionForJobs stopFactory start: {}'.format(str(self.__dict__)))
 			self.logger.info('stopFactory called in logCollectionForJobs')
 			if self.loopingGetKafkaResults is not None:
 				self.logger.debug(' stopFactory: stopping loopingGetKafkaResults')
@@ -72,6 +77,12 @@ class LogCollectionForJobs(localService.LocalService):
 			self.globalSettings = None
 			self.localSettings = None
 			self.logger.info(' logCollectionForJobs stopFactory: complete.')
+			## Logger and log file handle cleanup needs to be the last step
+			for label,twistedLogFile in self.logFiles.items():
+				del self.logger
+				twistedLogFile.flush()
+				twistedLogFile.close()
+				del twistedLogFile
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -109,6 +120,54 @@ class LogCollectionForJobs(localService.LocalService):
 
 		## end workOnMessage
 		return
+
+
+	def deferCleanupLogs(self):
+		"""Looping method for cleanup logs; done via non-blocking thread."""
+		threadHandle = None
+		try:
+			threadHandle = threads.deferToThread(self.cleanupLogs)
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error('Exception in deferCleanupLogs: {exception!r}', exception=exception)
+
+		## end deferCleanupLogs
+		return threadHandle
+
+
+	def cleanupLogs(self):
+		"""Check all active jobs to see if there are statistics to process."""
+		try:
+			self.logger.error('Removing job execution logs older than {hours!r}...', hours=self.localSettings['numberOfHoursToRetainLogFiles'])
+			currentTime = time.time()
+			thresholdTime = currentTime - self.secondsToRetainLogFiles
+			logDir = os.path.join(env.logPath, 'job')
+			for jobName in os.listdir(logDir):
+				if os.path.isdir(os.path.join(logDir, jobName)):
+					## For each job directory, stat the log files
+					self.logger.error(' Inspecting logs for {jobName!r}', jobName=jobName)
+					jobDir = os.path.join(logDir, jobName)
+					removedCount = 0
+					for logFile in os.listdir(jobDir):
+						try:
+							endpointLog = os.path.join(jobDir, logFile)
+							## epoch seconds
+							fileTime = os.path.getmtime(endpointLog)
+							if thresholdTime > fileTime:
+								self.logger.error('  removing {logFile!r}', logFile=logFile)
+								os.remove(endpointLog)
+								removedCount += 1
+						except:
+							exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+							self.logger.error('Exception on log: {logFile!r}: {exception!r}', logFile=logFile, exception=exception)
+					if removedCount > 0:
+						self.logger.error('  removed {removedCount!r} logs for {jobName!r}', removedCount=removedCount, jobName=jobName)
+		except:
+			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+			self.logger.error('Exception in cleanupLogs: {exception!r}', exception=exception)
+
+		## end cleanupLogs
+		return 'Exiting cleanupLogs'
 
 
 class LogCollectionForJobsService(localService.ServiceProcess):

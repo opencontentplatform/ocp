@@ -140,7 +140,6 @@ class JobServiceFactory(networkService.ServiceFactory):
 	def callMainLoop(self):
 		## coreService.healthCheck uses coreService.checkEvents; we need to
 		## do something similar here since the scheduler needs notified
-		#self.logger.info('mainServiceLoop...')
 		if self.shutdownEvent.is_set() or self.canceledEvent.is_set():
 			self.logger.info('mainServiceLoop: shutting down scheduler.')
 			# shutdownArgs = { 'shutdown_threadpool': False }
@@ -186,6 +185,12 @@ class JobServiceFactory(networkService.ServiceFactory):
 				self.kafkaProducer = None
 			super().stopFactory()
 			self.logger.info(' jobService stopFactory: complete.')
+			## Logger and log file handle cleanup needs to be the last step
+			for label,twistedLogFile in self.logFiles.items():
+				del self.logger
+				twistedLogFile.flush()
+				twistedLogFile.close()
+				del twistedLogFile
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			print('Exception in jobService stopFactory: {}'.format(exception))

@@ -406,49 +406,6 @@ class CoreService():
 		return kafkaProducer
 
 
-	def processKafkaResults(self, topic):
-		"""Wait for kafka messages and start processing when they arrive.
-
-		Deprecated. Looping becomes blocking; migrate to using getKafkaResults."""
-		exitMessage = 'Leaving processKafkaResults'
-		kafkaConsumer = self.createKafkaConsumer(topic)
-		while kafkaConsumer is not None and not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():
-			try:
-				msgs = kafkaConsumer.consume(num_messages=int(self.localSettings['kafkaPollMaxRecords']), timeout=int(self.localSettings['kafkaPollTimeOut']))
-				## Manual commit prevents message from being re-processed
-				## more than once by either this consumer or another one.
-				kafkaConsumer.commit()
-				if msgs is None or len(msgs) <= 0:
-					self.logger.debug('processKafkaResults: no msg...')
-					continue
-				else:
-					for message in msgs:
-						if message is None:
-							continue
-						elif message.error():
-							self.logger.debug('processKafkaResults: Kafka error: {error!r}', error=message.error())
-							continue
-						thisMsg = json.loads(message.value().decode('utf-8'))
-						self.logger.debug('Data received for processing: {thisMsg!r}', thisMsg=thisMsg)
-						self.workOnMessage(thisMsg)
-
-			except:
-				self.exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-				self.logger.error('{exception}', exception=self.exception)
-				exitMessage = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-				self.logger.debug('Aborting processKafkaResults')
-
-		if kafkaConsumer is not None:
-			with suppress(Exception):
-				kafkaConsumer.close()
-				kafkaConsumer = None
-				self.logger.debug('processKafkaResults: closed kafkaConsumer')
-		self.logger.debug('Leaving processKafkaResults. shutdownEvent: {}, canceledEvent: {}'.format(self.shutdownEvent.is_set(), self.canceledEvent.is_set()))
-
-		## end processKafkaResults
-		return exitMessage
-
-
 	def getKafkaResults(self, kafkaConsumer):
 		"""Process kafka messages if available, timeout and return if not."""
 		while kafkaConsumer is not None and not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():
@@ -457,6 +414,12 @@ class CoreService():
 				## Manual commit prevents message from being re-processed
 				## more than once by either this consumer or another one.
 				kafkaConsumer.commit()
+				## Remaining in this loop (called by a LoopingCall) blocks the
+				## main reactor thread. So after receiving zero kafka messages
+				## over the course of the configured timeout in the consume(),
+				## we break out and return to the main reactor thread, to have
+				## the LoopingCall restart this loop. We could accomplish this
+				## other ways, like invoking the function in a callInThread...
 				if msgs is None or len(msgs) <= 0:
 					#self.logger.debug('Leaving getKafkaResults. Nothing to process.')
 					return
