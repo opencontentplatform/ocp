@@ -3,5 +3,7 @@
 	"maxProcessCpuPercentUsageThreshold" : 10,
 	"maxSecondsSinceLastSystemStatus" : 120,
 	"kafkaPollTimeOut" : 1,
-	"kafkaPollMaxRecords" : 1
+	"kafkaPollMaxRecords" : 1,
+	"waitHoursBetweenLogCleanupChecks" : 12,
+	"numberOfHoursToRetainLogFiles" : 24
 }
