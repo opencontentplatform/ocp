@@ -516,7 +516,10 @@ class JobServiceFactory(networkService.ServiceFactory):
 
 
 	def finalizeJobStats(self, jobName):
-		jobStats = self.jobStatistics[jobName]
+		jobStats = self.jobStatistics.get(jobName, {})
+		## If there were zero endpoints or it didn't kick off, stats won't exist
+		if len(jobStats) <= 0:
+			return
 		jobStats['time_finished'] = datetime.datetime.now()
 		jobStats['time_elapsed'] = (jobStats['time_finished'] - jobStats['time_started']).total_seconds()
 		if jobStats['endpoint_count'] == jobStats['completed_count']:
@@ -624,6 +627,12 @@ class JobServiceFactory(networkService.ServiceFactory):
 				## No target endpoints returned
 				self.logger.debug('No target endpoints found for job {jobName!r}', jobName=jobName)
 				self.logger.info('invokeJob telling clients to remove job {jobName!r}', jobName=jobName)
+				## Add clients to the active job list so doJobComplete can tell
+				## the clients to cleanup; good to share common code paths...
+				self.jobActiveClients[jobName] = []
+				self.jobStatistics[jobName] = {}
+				for clientEndpoint in clientEndpoints:
+					self.jobActiveClients[jobName].append(clientEndpoint)
 				self.doJobComplete(jobName)
 				return
 
