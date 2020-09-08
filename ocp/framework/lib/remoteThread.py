@@ -128,6 +128,7 @@ class RemoteThread(ThreadInstance):
 		"""If createExecutionLog was set in the job, send the execution log back."""
 		if jobExecutionLogFile is not None:
 			try:
+				self.logger.debug('Sending execution log to Kafka for endpoint: {endpointValue!r}', endpointValue=endpointValue)
 				## Disconnect logger and close the twisted.python.logfile.Logfile
 				## filehandle references, so we can os.remove the file below
 				del jobExecutionLogger

@@ -144,26 +144,27 @@ class LogCollectionForJobs(localService.LocalService):
 			currentTime = time.time()
 			thresholdTime = currentTime - self.secondsToRetainLogFiles
 			logDir = os.path.join(env.logPath, 'job')
-			for jobName in os.listdir(logDir):
-				if os.path.isdir(os.path.join(logDir, jobName)):
-					## For each job directory, stat the log files
-					self.logger.error(' Inspecting logs for {jobName!r}', jobName=jobName)
-					jobDir = os.path.join(logDir, jobName)
-					removedCount = 0
-					for logFile in os.listdir(jobDir):
-						try:
-							endpointLog = os.path.join(jobDir, logFile)
-							## epoch seconds
-							fileTime = os.path.getmtime(endpointLog)
-							if thresholdTime > fileTime:
-								self.logger.error('  removing {logFile!r}', logFile=logFile)
-								os.remove(endpointLog)
-								removedCount += 1
-						except:
-							exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-							self.logger.error('Exception on log: {logFile!r}: {exception!r}', logFile=logFile, exception=exception)
-					if removedCount > 0:
-						self.logger.error('  removed {removedCount!r} logs for {jobName!r}', removedCount=removedCount, jobName=jobName)
+			if os.path.exists(logDir):
+				for jobName in os.listdir(logDir):
+					if os.path.isdir(os.path.join(logDir, jobName)):
+						## For each job directory, stat the log files
+						self.logger.error(' Inspecting logs for {jobName!r}', jobName=jobName)
+						jobDir = os.path.join(logDir, jobName)
+						removedCount = 0
+						for logFile in os.listdir(jobDir):
+							try:
+								endpointLog = os.path.join(jobDir, logFile)
+								## epoch seconds
+								fileTime = os.path.getmtime(endpointLog)
+								if thresholdTime > fileTime:
+									self.logger.error('  removing {logFile!r}', logFile=logFile)
+									os.remove(endpointLog)
+									removedCount += 1
+							except:
+								exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+								self.logger.error('Exception on log: {logFile!r}: {exception!r}', logFile=logFile, exception=exception)
+						if removedCount > 0:
+							self.logger.error('  removed {removedCount!r} logs for {jobName!r}', removedCount=removedCount, jobName=jobName)
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error('Exception in cleanupLogs: {exception!r}', exception=exception)

@@ -166,6 +166,7 @@ def authenticateServiceClient(endpointName:text, clientType:text, platformType:t
 	"""Validate OCP clients."""
 	try:
 		token = None
+		payload = None
 		## See if the client already exists
 		dbTable = clientToEndpointTableClass[clientType]
 		matchedEntry = request.context['dbSession'].query(dbTable).filter(dbTable.name == endpointName).first()
