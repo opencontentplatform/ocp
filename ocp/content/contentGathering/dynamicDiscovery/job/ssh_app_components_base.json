@@ -9,7 +9,7 @@
 	"endpointIdColumn" : "ipaddress",
 	"loadConfigGroups" : true,
 	"updateParameters" : true,
-	"isDisabled" : false,
+	"isDisabled" : true,
 	"runTimeValues" : {
 		"maxJobRunTime" : 600,
 		"maxProtocolTime" : 600,

@@ -629,9 +629,11 @@ def getJobLogDirectories(request, response):
 	try:
 		logDir = os.path.join(request.context['envLogPath'], 'job')
 		jobDirectories = []
-		for jobName in os.listdir(logDir):
-			if os.path.isdir(os.path.join(logDir, jobName)):
-				jobDirectories.append(jobName)
+		## The job directory may not yet exist
+		if os.path.exists(logDir):
+			for jobName in os.listdir(logDir):
+				if os.path.isdir(os.path.join(logDir, jobName)):
+					jobDirectories.append(jobName)
 
 		staticPayload = {'Jobs' : jobDirectories,
 			'/job/log' : {
