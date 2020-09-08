@@ -94,6 +94,7 @@ class ApiService(multiprocessing.Process):
 		logFiles = setupLogFile(self.serviceName, env, self.globalSettings['fileContainingServiceLogSettings'], directoryName='service')
 		logObserver  = setupObservers(logFiles, 'ApiService', env, self.globalSettings['fileContainingServiceLogSettings'])
 		self.logger = twisted.logger.Logger(observer=logObserver, namespace='ApiService')
+		self.logger.info('Started logger for {serviceName!r}', serviceName=self.serviceName)
 
 		## end getLocalLogger
 		return

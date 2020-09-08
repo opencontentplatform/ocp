@@ -55,6 +55,7 @@ class Query(localService.LocalService):
 		self.logFiles = utils.setupLogFile(serviceName, env, globalSettings['fileContainingServiceLogSettings'], directoryName='service')
 		self.logObserver  = utils.setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingServiceLogSettings'])
 		self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
+		self.logger.info('Started logger for {serviceName!r}', serviceName=serviceName)
 
 		## Allow the dbClient to get created in the main thread, to reuse pool
 		self.dbClient = None
@@ -101,7 +102,8 @@ class Query(localService.LocalService):
 			self.logger.info(' query stopFactory: complete.')
 			## Logger and log file handle cleanup needs to be the last step
 			for label,twistedLogFile in self.logFiles.items():
-				del self.logger
+				with suppress(Exception):
+					del self.logger
 				twistedLogFile.flush()
 				twistedLogFile.close()
 				del twistedLogFile

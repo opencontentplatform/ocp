@@ -82,6 +82,7 @@ class TransportService(multiprocessing.Process):
 		logFiles = setupLogFile(self.serviceName, env, self.globalSettings['fileContainingServiceLogSettings'], directoryName='service')
 		logObserver  = setupObservers(logFiles, 'TransportService', env, self.globalSettings['fileContainingServiceLogSettings'])
 		self.logger = twistedLogger(observer=logObserver, namespace='TransportService')
+		self.logger.info('Started logger for {serviceName!r}', serviceName=self.serviceName)
 
 		## end getLocalLogger
 		return

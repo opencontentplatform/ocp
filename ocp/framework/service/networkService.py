@@ -42,6 +42,9 @@ from sqlalchemy import exc
 from confluent_kafka import KafkaError
 
 ## Add openContentPlatform directories onto the sys path
+frameworkPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+if frameworkPath not in sys.path:
+	sys.path.append(frameworkPath)
 import env
 env.addLibPath()
 env.addExternalPath()
@@ -122,6 +125,7 @@ class ServiceListener(CustomLineReceiverProtocol):
 					if action == thisAction:
 						self.factory.logger.debug('Server requests action [{action!r}]', action=action)
 						eval('self.{}'.format(thisMethod))(content)
+						break
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.factory.logger.error('Exception: {exception!r}', exception=exception)

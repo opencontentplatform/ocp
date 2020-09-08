@@ -66,6 +66,7 @@ class ResultProcessingFactory(networkService.ServiceFactory):
 		self.logFiles = utils.setupLogFile(serviceName, env, globalSettings['fileContainingServiceLogSettings'], directoryName='service')
 		self.logObserver  = utils.setupObservers(self.logFiles, serviceName, env, globalSettings['fileContainingServiceLogSettings'])
 		self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
+		self.logger.info('Started logger for {serviceName!r}', serviceName=serviceName)
 		self.localSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingResultProcessingSettings']))
 		self.globalSettings = globalSettings
 		self.clientEndpointTable = platformSchema.ServiceResultProcessingEndpoint
@@ -92,7 +93,8 @@ class ResultProcessingFactory(networkService.ServiceFactory):
 			self.logger.info(' resultProcessingService stopFactory: complete.')
 			## Logger and log file handle cleanup needs to be the last step
 			for label,twistedLogFile in self.logFiles.items():
-				del self.logger
+				with suppress(Exception):
+					del self.logger
 				twistedLogFile.flush()
 				twistedLogFile.close()
 				del twistedLogFile

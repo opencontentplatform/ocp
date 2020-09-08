@@ -93,6 +93,7 @@ class JobServiceFactory(networkService.ServiceFactory):
 		self.logObserver  = utils.setupObservers(self.logFiles, serviceName, env, serviceLogSetup)
 		self.logger = twisted.logger.Logger(observer=self.logObserver, namespace=serviceName)
 		self.localSettings = utils.loadSettings(os.path.join(env.configPath, serviceSettings))
+		self.logger.info('Started logger for {serviceName!r}', serviceName=serviceName)
 		self.clientEndpointTable = clientEndpointTable
 		self.clientResultsTable = clientResultsTable
 		self.serviceResultsTable = serviceResultsTable
@@ -187,7 +188,8 @@ class JobServiceFactory(networkService.ServiceFactory):
 			self.logger.info(' jobService stopFactory: complete.')
 			## Logger and log file handle cleanup needs to be the last step
 			for label,twistedLogFile in self.logFiles.items():
-				del self.logger
+				with suppress(Exception):
+					del self.logger
 				twistedLogFile.flush()
 				twistedLogFile.close()
 				del twistedLogFile
