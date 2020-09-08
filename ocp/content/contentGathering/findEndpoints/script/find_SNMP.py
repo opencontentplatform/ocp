@@ -205,8 +205,10 @@ def parseNameForDomain(runtime, name, endpoint):
 				socketResponse = socket.getfqdn(endpoint)
 				runtime.logger.error('   socket lookup returned {socketResponse!r}', socketResponse=socketResponse)
 				m = re.search('^([^.]+)(\.(.*))?$', socketResponse)
-				shortName = m.group(1)
-				domain = m.group(3) or None
+				## Don't override the shortName if we came up empty with DNS
+				if not m.group(1).isdigit():
+					shortName = m.group(1)
+					domain = m.group(3) or None
 
 			except:
 				runtime.setError(__name__)
