@@ -97,7 +97,7 @@ class RemoteThread(ThreadInstance):
 				self.resultCount[linkType] = prevCount + 1
 
 
-	def sendToKafka(self, kafkaTopic=None, unstructuredData=None):
+	def sendToKafka(self, kafkaTopic=None, unstructuredData=None, logger=None):
 		"""Send results from a thread over to kafka queues/topics."""
 		self.kafkaProducer.poll(0)
 		if unstructuredData is not None:
@@ -111,9 +111,10 @@ class RemoteThread(ThreadInstance):
 			if (jsonResult is not None and len(jsonResult['objects']) > 0):
 				## Accumulate and track object counts.
 				self.trackResultCount(jsonResult)
-				## Should we verify the type is strictly json or dict
-				## before attempting the send? Or let the error return?
-				self.logger.debug('Sending to Kafka {jsonResult!r}', jsonResult=jsonResult)
+				## Use the jobExecutionLog when set; default self.logger
+				if logger is None:
+					logger = self.logger
+				logger.debug('Sending to Kafka {jsonResult!r}', jsonResult=jsonResult)
 				if kafkaTopic is not None:
 					#self.kafkaProducer.send(kafkaTopic, value=jsonResult)
 					self.kafkaProducer.produce(kafkaTopic, value=json.dumps(jsonResult).encode('utf-8'))
@@ -222,7 +223,7 @@ class RemoteThread(ThreadInstance):
 
 					## Send any (remaining) results to Kafka
 					try:
-						self.sendToKafka()
+						self.sendToKafka(logger=jobExecutionLogger)
 					except:
 						self.logger.error('Error sending results to Kafka. Exception: {exception!r}', exception=str(sys.exc_info()[1]))
 						self.runtime.message(str(sys.exc_info()[1]))

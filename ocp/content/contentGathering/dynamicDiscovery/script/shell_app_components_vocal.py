@@ -203,7 +203,10 @@ def createEstablishedRemotePort(runtime, data, serverIp, serverPort, clientIp):
 		runtime.logger.report(' createEstablishedRemotePort tcpPorts1:  tcpIpPortId {tcpIpPortId!r} - tcpIpPortClientId {tcpIpPortClientId!r}', tcpIpPortId=tcpIpPortId, tcpIpPortClientId=tcpIpPortClientId)
 		if tcpIpPortId is None or tcpIpPortClientId is None:
 			runtime.logger.report('   Creating Server TcpIpPort {serverEndpoint!r}', serverEndpoint=serverEndpoint)
-			(tcpIpPortId, tcpIpPortClientId) = osNetworkStack.addTcpPort(runtime, 'tcp', serverIp, serverPort, data.trackedIPs, clientIP=clientIp)
+			## Not using avoidDuplicates here; we do a better job with directly
+			## managing the keys in data.clientPorts above, instead of having to
+			## do after-the-fact lookups in the runtime.results.
+			(tcpIpPortId, tcpIpPortClientId) = osNetworkStack.addTcpPort(runtime, 'tcp', serverIp, serverPort, data.trackedIPs, clientIP=clientIp, avoidDuplicates=False)
 			runtime.logger.report(' createEstablishedRemotePort tcpPorts2:  tcpIpPortId {tcpIpPortId!r} - tcpIpPortClientId {tcpIpPortClientId!r}', tcpIpPortId=tcpIpPortId, tcpIpPortClientId=tcpIpPortClientId)
 			## Update the port dictionaries
 			if tcpIpPortId is not None:

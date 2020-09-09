@@ -222,6 +222,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		self.numPortsChanged = False
 		self.disconnectedOnPurpose = False
 
+		self.dbClient = None
 		if getDbClient:
 			self.getDbSession()
 
@@ -439,7 +440,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 	@logExceptionWithSelfLogger()
 	def updateExecutionEnvironment(self, data):
 		content = self.executionEnvironment['runtime']
-		## Mutate in place in case of references
+		## Mutate in place and in the main thread
 		content.clear()
 		for key,value in data.items():
 			content[key] = value
@@ -473,6 +474,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error('Exception: {exception!r}', exception=exception)
 			self.logger.error('AccessDenied errors on Windows usually mean the client was not started as Administrator.')
+			print('AccessDenied errors for environment usually mean the client was not started as Administrator; please run with an elevated account.')
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
