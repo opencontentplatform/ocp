@@ -1014,7 +1014,6 @@ def addTcpPort(runtime, portType, serverIP, serverPort, trackedIPs, clientIP=Non
 			## Create server-side port
 			runtime.results.addLink('Enclosed', serverIpId, tcpIpPortId)
 
-
 		## TODO: Probably want to use the is_local type lookup on ipaddress,
 		## instead of trying to string parse for local IPv6 variants
 		if clientIP:
@@ -1026,6 +1025,17 @@ def addTcpPort(runtime, portType, serverIP, serverPort, trackedIPs, clientIP=Non
 			clientIpId = getThisIp(runtime, trackedIPs, clientIP)
 			if clientIpId:
 				if avoidDuplicates:
+					## This section isn't granular enough for multiple clients
+					## from different IPs connecting into the same listener; we
+					## need to track 3 unique items: serverPort, serverIP *and*
+					## clientIP... but this leaves out clientIP, incorrectly
+					## merging remote endpoints. Best for the calling code to
+					## control this, in a separate memory structure like a dict.
+					## Look at shell_app_components_vocal.py for an example in
+					## createEstablishedRemotePort(), where all 3 data points
+					## are used in the lookup in data.clientPorts via this key:
+					##   '{}:{}:{}'.format(serverIp, serverPort, clientIp)
+					## Set avoidDuplicates to False when controlled elsewhere.
 					for thisObject in runtime.results.getObjects():
 						if thisObject.get('class_name') != 'TcpIpPortClient':
 							continue
@@ -1039,7 +1049,8 @@ def addTcpPort(runtime, portType, serverIP, serverPort, trackedIPs, clientIP=Non
 					## port numbers on the client; the server IP/port is simply
 					## mapped under the client IP, so services hosted by shared
 					## servers are mapped correctly/independently to each client
-					tcpIpPortClientId, exists = runtime.results.addObject('TcpIpPortClient', name=serverPort, port=int(serverPort), ip=serverIP, port_type=portType, is_tcp=isTcp)
+					## Also, no reason to checkExisting, since we do that here.
+					tcpIpPortClientId, exists = runtime.results.addObject('TcpIpPortClient', name=serverPort, port=int(serverPort), ip=serverIP, port_type=portType, is_tcp=isTcp, checkExisting=False)
 					runtime.results.addLink('Enclosed', clientIpId, tcpIpPortClientId)
 					if serverIP != clientIP and not isLocal:
 						## Don't use this if it's on the same server
