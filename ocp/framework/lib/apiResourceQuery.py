@@ -380,6 +380,8 @@ def postSimpleQuery(content:hugJson, request, response):
 					request.context['dbSession'].add(dataHandle)
 					request.context['dbSession'].commit()
 					apiQueryPath = request.context['envApiQueryPath']
+					if not os.path.exists(apiQueryPath):
+						os.makedirs(apiQueryPath)
 					with open(os.path.join(apiQueryPath, content['name']+'.json'), 'w') as fh:
 						json.dump(content['json_query'], fh)
 					request.context['logger'].debug('Successfully created the json query in the path: {}'.format(apiQueryPath))
@@ -455,6 +457,8 @@ def updateSpecificSimpleQuery(queryName:text, content:hugJson, request, response
 					dataHandle = platformSchema.QueryDefinition(**content)
 					try:
 						apiQueryPath = request.context['envApiQueryPath']
+						if not os.path.exists(apiQueryPath):
+							os.makedirs(apiQueryPath)
 						dataHandle = request.context['dbSession'].merge(dataHandle)
 						fileToRemove = os.path.join(apiQueryPath, queryName + '.json')
 						request.context['dbSession'].commit()
@@ -545,6 +549,8 @@ def postInputDrivenQuery(content:hugJson, request, response):
 					request.context['dbSession'].add(dataHandle)
 					request.context['dbSession'].commit()
 					apiQueryPath = request.context['envApiQueryPath']
+					if not os.path.exists(apiQueryPath):
+						os.makedirs(apiQueryPath)
 					with open(os.path.join(apiQueryPath, content['name']+'.json'), 'w') as fh:
 						json.dump(content['json_query'], fh)
 					request.context['logger'].debug('Successfully created the json query in the path: {}'.format(apiQueryPath))
@@ -621,6 +627,8 @@ def updateSpecificInputDrivenQuery(queryName:text, content:hugJson, request, res
 					dataHandle = platformSchema.InputDrivenQueryDefinition(**content)
 					try:
 						apiQueryPath = request.context['envApiQueryPath']
+						if not os.path.exists(apiQueryPath):
+							os.makedirs(apiQueryPath)
 						dataHandle = request.context['dbSession'].merge(dataHandle)
 						fileToRemove = os.path.join(apiQueryPath, queryName + '.json')
 						request.context['dbSession'].commit()
@@ -777,6 +785,8 @@ def updateSpecificEndpointQuery(queryName:text, content:hugJson, request, respon
 					dataHandle = platformSchema.EndpointQuery(**content)
 					try:
 						apiQueryPath = request.context['envApiQueryPath']
+						if not os.path.exists(apiQueryPath):
+							os.makedirs(apiQueryPath)
 						dataHandle = request.context['dbSession'].merge(dataHandle)
 						fileToRemove = os.path.join(apiQueryPath, queryName + '.json')
 						request.context['dbSession'].commit()
