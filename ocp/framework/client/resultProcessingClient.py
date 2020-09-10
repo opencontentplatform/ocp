@@ -250,7 +250,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 				## You hit an exception if this is the first time the topic is
 				## used (auto.create.topics.enable=true), as no partitions exist
 				with suppress(Exception):
-					self.partitionCount = getKafkaPartitionCount(self.logger, self.kafkaConsumer, self.kafkaTopic)
+					self.partitionCount = utils.getKafkaPartitionCount(self.logger, self.kafkaConsumer, self.kafkaTopic)
 				continue
 			## Wait for the previous processKafkaResults to break out of the
 			## while loop and finish, before starting routine maintenance.

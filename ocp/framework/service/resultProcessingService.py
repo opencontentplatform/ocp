@@ -51,7 +51,7 @@ class ResultProcessingListener(networkService.ServiceListener):
 		elif len(self.factory.activeClients.keys()) > int(content['KafkaPartitionCount'])/2:
 			self.factory.logger.warn('The number of clients {cCount!r} has exceeded 50% of the partition count {pCount!r}. Consider increasing the number of kafka partitions.', cCount=len(self.factory.activeClients.keys()), pCount=content['KafkaPartitionCount'])
 		else:
-			self.factory.logger.info('Kafka has a healthy partition count {cCount!r} for the number of previous clients {pCount!r}', pCount=content['KafkaPartitionCount'], cCount=len(self.factory.activeClients.keys()))
+			self.factory.logger.info('Kafka has a healthy partition count for the results processing topic. Number of partitions = {pCount!r}. Number of connected clients = {cCount!r}', cCount=len(self.factory.activeClients.keys()), pCount=content['KafkaPartitionCount'])
 
 
 class ResultProcessingFactory(networkService.ServiceFactory):
