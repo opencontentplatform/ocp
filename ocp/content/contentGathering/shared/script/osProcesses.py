@@ -302,7 +302,7 @@ def cleanUnixProcessCommand(runtime, commAndPath, processArgs, interpreters):
 	## following is much more helpful:
 	##    ['sh:opr-backend_run', 'sh:service_manager.sh', 'nannyManager', 'wrapper']
 	## This allows the user to pattern-match interpreter scripts.
-	runtime.logger.report('  @@@@@@@ 1 processArgs: {processArgs!r}', processArgs=processArgs)
+	runtime.logger.report('  cleanUnixProcessCommand: processArgs: {processArgs!r}', processArgs=processArgs)
 	if processArgs:
 		try:
 			## Sample interpreters: sh, bash, tcsh, ksh, zsh, fish, perl
@@ -314,14 +314,15 @@ def cleanUnixProcessCommand(runtime, commAndPath, processArgs, interpreters):
 				m = re.search(r'^\s*('+interpreter+')\s*$', cleanCommand)
 				if m:
 					interpreterMatch = m.group(1)
-					runtime.logger.report('  @@@@@@@ 3 found interpreter: {interpreterMatch!r}', interpreterMatch=interpreterMatch)
+					runtime.logger.report('  cleanUnixProcessCommand: found interpreter: {interpreterMatch!r}', interpreterMatch=interpreterMatch)
+					runtime.logger.report('  cleanUnixProcessCommand: looking at processArgs: {processArgs!r}', processArgs=processArgs)
 					## If the first parameter after the interpreter is a path or
 					## alphabetical character (specifically not a dash or slash
 					## option), assume it's worth retaining (e.g. a script name)
 					m = re.search('^\s*([\./a-zA-Z]\S+)', processArgs)
 					if (m):
 						script = m.group(1)
-						runtime.logger.report('  @@@@@@@ 4 found script: {script!r}', script=script)
+						runtime.logger.report('  cleanUnixProcessCommand: found arg: {script!r}', script=script)
 						m1 = re.search('^\s*(/.+)/([^/]+)', script)
 						m2 = re.search('^\s*(\./(?:.*/)?)([^/]+)', script)
 						## Check for script names with preceeding paths
@@ -331,7 +332,7 @@ def cleanUnixProcessCommand(runtime, commAndPath, processArgs, interpreters):
 						if (m2):
 							script = m2.group(2)
 						parsedArgs = script[:256]
-						runtime.logger.report('  @@@@@@@ 5 cleanCommand: {cleanCommand!r}', cleanCommand=cleanCommand)
+						runtime.logger.report('  cleanUnixProcessCommand: clean arg: {parsedArgs!r}', parsedArgs=parsedArgs)
 					break
 		except:
 			stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -398,7 +399,7 @@ def updateThisProcess(runtime, processData, client, osType, pid, objectId=None):
 def getFingerprintAttributes(runtime, resultList, entry, osType, attributes, excludedProcessList, processIgnoreList, resultDictionary, logContext=""):
 	"""Get the process hierarchy and then set attributes."""
 	(nodeId, user, pid, name, ppid, commandLine, pathFromProcess, pathFromAnalysis, pathFromFilesystem, args, parsedArgs) = entry
-	runtime.logger.report('  {osType!r} process: {pid!r}, {ppid!r}, {name!r}, {user!r}, {pathFromProcess!r}, {commandLine!r}', osType=osType, pid=pid, ppid=ppid, name=name, user=user, pathFromProcess=pathFromProcess, commandLine=commandLine[:256])
+	runtime.logger.report('  {osType!r} process: {pid!r}, {ppid!r}, {name!r}, {user!r}, {pathFromProcess!r}, {parsedArgs!r}, {commandLine!r}', osType=osType, pid=pid, ppid=ppid, name=name, user=user, pathFromProcess=pathFromProcess, parsedArgs=parsedArgs, commandLine=commandLine[:256])
 	## Establish the parsedArgs. Note, this may already be set from the initial
 	## process parsing by pulling off the interpretor script name.
 	parsedArgContext = parsedArgs
@@ -665,7 +666,11 @@ def buildProcessHierarchy(runtime, nextPID, osType, processList, excludedProcess
 					foundParent = True
 					if (name in processIgnoreList):
 						break
-					processTree.append(str(name))
+					labelToAdd = str(name)
+					if parsedArgs is not None:
+						labelToAdd = '{}:{}'.format(str(name), str(parsedArgs))
+					processTree.append(labelToAdd)
+					#processTree.append(str(name))
 					break
 			except:
 				stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -681,7 +686,11 @@ def buildProcessHierarchy(runtime, nextPID, osType, processList, excludedProcess
 						break
 					nextPID = ppid
 					foundParent = True
-					processTree.append(str(name))
+					labelToAdd = str(name)
+					if parsedArgs is not None:
+						labelToAdd = '{}:{}'.format(str(name), str(parsedArgs))
+					processTree.append(labelToAdd)
+					#processTree.append(str(name))
 					break
 			except:
 				stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
@@ -1226,10 +1235,12 @@ def windowsGetProcess(runtime, osType, nodeId, line, errorCount, resultList, exc
 			## This allows the user to pattern-match interpreter scripts.
 			if (commandLine is not None and len(commandLine) > 0):
 				try:
+					runtime.logger.report('  windowsGetProcess: commandLine: {commandLine!r}', commandLine=commandLine)
 					## Sample interpreters: sh, bash, tcsh, ksh, zsh, fish, perl
 					for interpreter in filters['interpreterList']:
 						#if (re.search(concatenate(r'^(?:.*)', interpreter, '(?:\.exe)?(?:[\"])?\s*$'), name)):
 						if (re.search(r'^(?:.*)'+interpreter+'(?:\.exe)?(?:[\"])?\s*$', name)):
+							runtime.logger.report('  windowsGetProcess: found interpreter: {interpreter!r}', interpreter=interpreter)
 							## If the first parameter after the interpreter is a path or
 							## alphabetical character (specifically not a dash or slash
 							## option), assume it's worth retaining (e.g. a script name)
@@ -1237,9 +1248,11 @@ def windowsGetProcess(runtime, osType, nodeId, line, errorCount, resultList, exc
 							if m:
 								interpreterMatch = m.group(1)
 								processArg = m.group(2)
+								runtime.logger.report('  windowsGetProcess: looking at args: {processArg!r}', processArg=processArg)
 								m = re.search('^\s*([\.a-zA-Z]\S+)', processArg)
 								if (m):
 									script = m.group(1)
+									runtime.logger.report('  windowsGetProcess: found arg: {script!r}', script=script)
 									m1 = re.search(r'^(.*?)([^/\\]+)$', script)
 									## Check for script names with preceeding paths
 									if (m1):
@@ -1248,6 +1261,8 @@ def windowsGetProcess(runtime, osType, nodeId, line, errorCount, resultList, exc
 									runtime.logger.report('Changing interpreterProcess: {name!r} --> {newName!r}', name=name, newName='{}:{}'.format(interpreterMatch, script[:30]))
 									#name = '{}:{}'.format(interpreterMatch, script[:30])
 									parsedArgs = script[:256]
+									runtime.logger.report('  windowsGetProcess: clean arg: {parsedArgs!r}', parsedArgs=parsedArgs)
+
 								break
 
 				except:

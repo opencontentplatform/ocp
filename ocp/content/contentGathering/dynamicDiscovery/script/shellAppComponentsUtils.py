@@ -369,7 +369,7 @@ def getRawProcesses(runtime, data):
 
 	except:
 		stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-		runtime.logger.error(' Failure in getProcesses: {stacktrace!r}', stacktrace=stacktrace)
+		runtime.logger.error(' Failure in getRawProcesses: {stacktrace!r}', stacktrace=stacktrace)
 
 	## Abort if no process data returned; error already logged
 	if ((rawProcessOutput is None) or (len(data.filteredProcessList) == 0)):
@@ -377,7 +377,7 @@ def getRawProcesses(runtime, data):
 		## Prevent calling script from thinking everything is fine
 		raise EnvironmentError('Failed to discover processes')
 
-	## end getProcesses
+	## end getRawProcesses
 	return
 
 
@@ -589,13 +589,14 @@ def createObjects(runtime, osType, nodeId, softwareFingerprints, processData, ta
 		if processFingerprintId is not None:
 			runtime.results.updateObject(processFingerprintId, is_filtered_out=True)
 
-	## Create the ProcessFingerprint; Note this is constructed in osProcesses,
-	## and if buildProcessDictionary was called with trackResults=True, then the
-	## process has already been created in the results. Since this depends on
-	## user settings, we need to conditionally add it:
-	pfAlreadyCreated = True
-	if processFingerprintId is None:
-		(processFingerprintId, pfAlreadyCreated) = runtime.results.addObject('ProcessFingerprint', **processFingerprintData)
+	(processFingerprintId, pfAlreadyCreated) = runtime.results.addObject('ProcessFingerprint', **processFingerprintData)
+	if pfAlreadyCreated:
+		newAttrs = runtime.results.getObject(processFingerprintId).get('data', {})
+		## Provide debug visibility to what will be merged objects
+		runtime.logger.report('   createObjects: already created process {name!r}:', name=processShortName)
+		runtime.logger.report('      Prev attrs: {prev!r}', prev=processFingerprintData)
+		runtime.logger.report('       New attrs: {newAttrs!r}', newAttrs=newAttrs)
+
 	psAlreadyCreated = False
 	processSignatureId = None
 	if not pfAlreadyCreated:

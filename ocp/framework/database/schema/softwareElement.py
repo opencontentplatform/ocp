@@ -134,7 +134,7 @@ class ProcessFingerprint(SoftwareElement):
 	"""
 
 	__tablename__ = 'process_fingerprint'
-	_constraints = ['container', 'name', 'process_hierarchy', 'process_owner', 'process_args', 'path_from_process', 'path_from_filesystem', 'path_from_analysis']
+	_constraints = ['container', 'name', 'process_hierarchy', 'process_owner', 'process_args', 'path_from_process', 'path_from_filesystem', 'path_from_analysis', 'process_args']
 	_captionRule = {
 		"expression": {
 			"operator": "and",
