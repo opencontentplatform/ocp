@@ -41,10 +41,9 @@ import platform
 import psutil
 import multiprocessing
 from contextlib import suppress
-from twisted.internet import reactor, threads, task, threads
 from sqlalchemy import exc
 from confluent_kafka import KafkaError
-
+from twisted.internet import threads
 ## Add openContentPlatform directories onto the sys path
 import env
 env.addLibPath()
@@ -71,6 +70,9 @@ class CoreService():
 			if getDbClient:
 				self.getDbSession()
 			self.baselineEnvironment()
+
+			## Twisted import here to avoid issues with epoll on Linux
+			from twisted.internet import reactor, task
 
 			#self.loopingHealthCheck = task.LoopingCall(self.healthCheck)
 			self.loopingHealthCheck = task.LoopingCall(self.deferHealthCheck)

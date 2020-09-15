@@ -27,7 +27,6 @@ import datetime
 import time
 from contextlib import suppress
 import twisted.logger
-from twisted.internet import reactor, task, defer, threads
 
 ## Add openContentPlatform directories onto the sys path
 import env
@@ -64,6 +63,9 @@ class Query(localService.LocalService):
 
 		self.localSettings = utils.loadSettings(os.path.join(env.configPath, globalSettings['fileContainingQuerySettings']))
 		self.logger.info('waitSecondsBetweenCacheCleanupJobs: {secs!r}', secs=self.localSettings['waitSecondsBetweenCacheCleanupJobs'])
+
+		## Twisted import here to avoid issues with epoll on Linux
+		from twisted.internet import task, threads
 
 		## TODO: modify looping calls to use threads.deferToThread(); avoid
 		## time delays/waits from being blocking to the main reactor thread

@@ -23,11 +23,6 @@ import os
 import sys
 import traceback
 from contextlib import suppress
-from twisted.internet import reactor, ssl
-from twisted.python.filepath import FilePath
-from twisted.web.server import Site
-from twisted.web.wsgi import WSGIResource
-from twisted.python.threadpool import ThreadPool
 import multiprocessing
 
 ## Different logger options
@@ -145,6 +140,13 @@ class TransportService(multiprocessing.Process):
 		"""
 		## Setup requested log handler
 		try:
+			## Twisted imports here to avoid issues with epoll on Linux
+			from twisted.internet import reactor, ssl
+			from twisted.python.filepath import FilePath
+			from twisted.web.server import Site
+			from twisted.web.wsgi import WSGIResource
+			from twisted.python.threadpool import ThreadPool
+
 			print('Starting {}'.format(self.serviceName))
 			self.getLocalLogger()
 			self.logger.info('Starting {}'.format(self.serviceName))

@@ -25,10 +25,9 @@ import time
 import datetime
 import twisted.logger
 from contextlib import suppress
-from twisted.internet import reactor, threads, defer, task
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.schedulers.twisted import TwistedScheduler
+
 from sqlalchemy import and_
+from twisted.internet import threads
 
 ## Add openContentPlatform directories onto the sys path
 import env
@@ -103,6 +102,7 @@ class JobServiceFactory(networkService.ServiceFactory):
 		self.pkgPath = pkgPath
 		self.validActions = ['connectionRequest', 'healthResponse', 'reAuthorization', 'jobStatistics', 'jobFinishedOnClient', 'jobIdle', 'clientGroups', 'checkModules', 'sendModule', 'receivedFile']
 		self.actionMethods = ['doConnectionRequest', 'doHealthResponse', 'doReAuthorization', 'doJobStatistics', 'doJobFinishedOnClient', 'doJobIdle', 'doClientGroups', 'doCheckModules', 'doSendModule', 'doReceivedFile']
+
 		super().__init__(serviceName, globalSettings)
 		if self.canceledEvent.is_set() or self.shutdownEvent.is_set():
 			self.logger.error('Cancelling startup of {serviceName!r}', serviceName=serviceName)
@@ -112,12 +112,18 @@ class JobServiceFactory(networkService.ServiceFactory):
 		self.jobStatistics = {}
 		self.clientGroups = {}
 		self.moduleFilesToTransfer = []
+
+		## Twisted import here to avoid issues with epoll on Linux
+		from twisted.internet import reactor, task
+		from apscheduler.schedulers.twisted import TwistedScheduler
+		
 		self.scheduler = TwistedScheduler({
 			'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
 		})
 
 		## Block on setting schedules; nothing to do without this
 		self.setupJobSchedules()
+
 		## Call the scheduler in a different thread, so we can stop it later
 		reactor.callInThread(self.scheduler.start)
 
