@@ -25,7 +25,6 @@ import sys
 import traceback
 from contextlib import suppress
 import twisted.logger
-from twisted.internet import reactor, task, defer, threads
 
 ## Add openContentPlatform directories onto the sys path
 import env
@@ -50,6 +49,9 @@ class LogCollection(localService.LocalService):
 		self.logger.info('Started logger for {serviceName!r}', serviceName=serviceName)
 		super().__init__(serviceName, globalSettings)
 		self.localSettings = loadSettings(os.path.join(env.configPath, globalSettings['fileContainingLogCollectionSettings']))
+
+		## Twisted import here to avoid issues with epoll on Linux
+		from twisted.internet import task
 
 		## Make checking kafka and processing results a looping call, to give a
 		## break to the main reactor thread; otherwise it blocks other looping

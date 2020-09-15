@@ -22,7 +22,7 @@ import json
 import time
 from contextlib import suppress
 import twisted.logger
-from twisted.internet import reactor, task, defer, threads
+from twisted.internet import threads
 
 ## Add openContentPlatform directories onto the sys path
 import env
@@ -49,6 +49,9 @@ class LogCollectionForJobs(localService.LocalService):
 		self.localSettings = loadSettings(os.path.join(env.configPath, globalSettings['fileContainingLogCollectionForJobsSettings']))
 		self.secondsBetweenLogCleanup = int(self.localSettings['waitHoursBetweenLogCleanupChecks']) * 60 * 60
 		self.secondsToRetainLogFiles = int(self.localSettings['numberOfHoursToRetainLogFiles']) * 60 * 60
+
+		## Twisted import here to avoid issues with epoll on Linux
+		from twisted.internet import task
 
 		## Make checking kafka and processing results a looping call, to give a
 		## break to the main reactor thread; otherwise it blocks other looping

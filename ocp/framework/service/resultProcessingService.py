@@ -26,7 +26,6 @@ import json
 import twisted.logger
 import traceback
 from contextlib import suppress
-from twisted.internet import task
 
 ## Add openContentPlatform directories onto the sys path
 import env
@@ -78,6 +77,10 @@ class ResultProcessingFactory(networkService.ServiceFactory):
 		if self.canceledEvent.is_set() or self.shutdownEvent.is_set():
 			self.logger.error('Cancelling startup of {serviceName!r}', serviceName=serviceName)
 			return
+
+		## Twisted import here to avoid issues with epoll on Linux
+		from twisted.internet import task
+
 		self.loopingGetKafkaPartitionCount = task.LoopingCall(self.doGetKafkaPartitionCount)
 		self.loopingGetKafkaPartitionCount.start(self.localSettings['waitSecondsBetweenRequestingKafkaPartitionCount'])
 

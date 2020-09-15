@@ -24,7 +24,6 @@ import platform
 import psutil
 import multiprocessing
 from contextlib import suppress
-from twisted.internet import reactor, task, defer
 from sqlalchemy import exc
 from confluent_kafka import KafkaError
 
@@ -63,6 +62,9 @@ class ServiceProcess(multiprocessing.Process):
 
 		"""
 		try:
+			## Twisted import here to avoid issues with epoll on Linux
+			from twisted.internet import reactor
+
 			## There are two types of event handlers being used here:
 			##   self.shutdownEvent : main process tells this one to shutdown
 			##                        (e.g. on a Ctrl+C type event)

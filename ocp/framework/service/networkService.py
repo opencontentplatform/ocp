@@ -34,12 +34,12 @@ import requests
 import multiprocessing
 import logging, logging.handlers
 from contextlib import suppress
-from twisted.internet import reactor, task, defer, ssl, threads
 from twisted.internet.protocol import ServerFactory
 from twisted.protocols.basic import LineReceiver
 from twisted.python.filepath import FilePath
 from sqlalchemy import exc
 from confluent_kafka import KafkaError
+from twisted.internet import threads
 
 ## Add openContentPlatform directories onto the sys path
 frameworkPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -308,6 +308,9 @@ class ServiceFactory(CoreService, ServerFactory):
 
 	def __init__(self, serviceName, globalSettings, hasClients=True, getDbClient=True):
 		"""Constructor for the ServiceFactory."""
+		## Twisted import here to avoid issues with epoll on Linux
+		from twisted.internet import task
+
 		## Need to call both inherented constructors with different args, which
 		## means using 'super' won't work unless *args and **kwargs are handled:
 		##   super().__init__(serviceName, globalSettings, getDbClient)
@@ -790,6 +793,9 @@ class ServiceProcess(multiprocessing.Process):
 
 		"""
 		try:
+			## Twisted import here to avoid issues with epoll on Linux
+			from twisted.internet import reactor, ssl
+
 			## There are two types of event handlers being used here:
 			##   self.shutdownEvent : main process tells this one to shutdown
 			##                        (e.g. on a Ctrl+C type event)
