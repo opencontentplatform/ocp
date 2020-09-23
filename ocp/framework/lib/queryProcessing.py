@@ -137,13 +137,13 @@ class QueryProcessing:
 				exc_type, exc_value, exc_traceback = sys.exc_info()
 				errorValue = traceback.format_exception_only(exc_type, exc_value)
 				stacktrace = traceback.format_exception(exc_type, exc_value, exc_traceback)
-				self.logger.error("Failure in processFilter: {}".format(stacktrace))
+				self.logger.error("Failure in storeLinks: {}".format(stacktrace))
 				self.errorList.append("Failure {}".format(errorValue))
 			except:
 				exc_type, exc_value, exc_traceback = sys.exc_info()
 				errorValue = traceback.format_exception_only(exc_type, exc_value)
 				stacktrace = traceback.format_exception(exc_type, exc_value, exc_traceback)
-				self.logger.error("Failure in processFilter: {}".format(stacktrace))
+				self.logger.error("Failure in storeLinks: {}".format(stacktrace))
 				self.errorList.append("Failure {}".format(errorValue))
 
 			## end storeLinks
@@ -1220,7 +1220,8 @@ class QueryProcessing:
 							## connected to this link.
 							joinObject = self.recurseObjects(thisObject, linchpinLink, joinObject)
 							return joinObject, flag
-					self.logger.warn("No linchpin assigned for: {quryDicitinary}", quryDicitinary=self.dictQueryContent)
+					self.logger.warn("No linchpin assigned in query: {}", self.dictQueryContent)
+					self.errorList.append("No linchpin assigned in query")
 					raise Exception("No linchpin assigned")
 			except:
 				exc_type, exc_value, exc_traceback = sys.exc_info()

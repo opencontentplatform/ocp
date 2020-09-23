@@ -214,6 +214,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		self.kafkaCaRootFile = os.path.join(env.configPath, globalSettings.get('kafkaCaRootFile'))
 		self.kafkaCertFile = os.path.join(env.configPath, globalSettings.get('kafkaCertificateFile'))
 		self.kafkaKeyFile = os.path.join(env.configPath, globalSettings.get('kafkaKeyFile'))
+		self.ocpCertFile = os.path.join(env.configPath, globalSettings.get('ocpCertificateFile'))
 
 		self.endpointKey = utils.getServiceKey(env.configPath)
 		self.executionEnvironment = None
@@ -396,9 +397,8 @@ class ServiceClientFactory(ReconnectingClientFactory):
 
 	def getEndpointTokenApiCall(self, urlForTokenGeneration, payloadAsString, headersAsDict):
 		"""Issue an API call for client token generation."""
-		apiResponse = requests.get(urlForTokenGeneration, data=payloadAsString, headers=headersAsDict, verify=False)
+		apiResponse = requests.get(urlForTokenGeneration, data=payloadAsString, headers=headersAsDict, verify=self.ocpCertFile)
 		self.logger.debug('getEndpointTokenApiCall response code: {apiResponse_status_code!r}', apiResponse_status_code=str(apiResponse.status_code))
-		#self.logger.debug('Response text: {apiResponse_text!r}', apiResponse_text=str(apiResponse.text))
 		responseAsJson = json.loads(apiResponse.text)
 		self.endpointToken = responseAsJson['token']
 
@@ -768,7 +768,7 @@ class ClientProcess(multiprocessing.Process):
 
 			if useCertificates:
 				## Use TLS to encrypt the communication
-				certData = FilePath(os.path.join(env.configPath, 'server_cert_public.pem')).getContent()
+				certData = FilePath(os.path.join(env.configPath, globalSettings.get('ocpCertificateFile'))).getContent()
 				authority = ssl.Certificate.loadPEM(certData)
 				sslOptions = ssl.optionsForClientTLS(serviceEndpoint, authority)
 				print('Starting encrypted client: {}'.format(self.clientName))

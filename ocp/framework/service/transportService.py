@@ -171,7 +171,7 @@ class TransportService(multiprocessing.Process):
 			self.logger.info('calling listener on {}:{}.'.format(str(self.serviceEndpoint), self.listeningPort))
 			if self.useCertificates:
 				## Use TLS to encrypt the communication
-				certData = FilePath(os.path.join(env.configPath, 'server_cert_private.pem')).getContent()
+				certData = FilePath(os.path.join(env.configPath, globalSettings.get('ocpCertificateFile'))).getContent()
 				certificate = ssl.PrivateCertificate.loadPEM(certData)
 				reactor.listenSSL(self.listeningPort, Site(resource), certificate.options())
 			else:
