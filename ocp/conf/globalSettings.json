@@ -29,6 +29,7 @@
 	"transportIpAddress" : "localhost",
 	"transportType" : "http",
 	"useCertificates" : false,
+	"ocpCertificateFile" : "server_cert_public.pem",
 	"useCertificatesWithKafka" : false,
 	"kafkaEndpoint" : "localhost:9092",
 	"kafkaCaRootFile" : "kafka_ca_root.pem",
