@@ -11,6 +11,8 @@
 	"jobScript" : "find_PowerShell",
 	"endpointQuery" : "ipv4NoSSH",
 	"endpointIdColumn" : "address",
+	"endpointAttrForRealmCheck": "address",
+	"createExecutionLog": false,
 	"loadConfigGroups" : true,
 	"isDisabled" : false,
 	"runTimeValues" : {

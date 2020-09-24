@@ -768,7 +768,7 @@ class ClientProcess(multiprocessing.Process):
 
 			if useCertificates:
 				## Use TLS to encrypt the communication
-				certData = FilePath(os.path.join(env.configPath, globalSettings.get('ocpCertificateFile'))).getContent()
+				certData = FilePath(os.path.join(env.configPath, self.globalSettings.get('ocpCertificateFile'))).getContent()
 				authority = ssl.Certificate.loadPEM(certData)
 				sslOptions = ssl.optionsForClientTLS(serviceEndpoint, authority)
 				print('Starting encrypted client: {}'.format(self.clientName))

@@ -256,7 +256,7 @@ def executeEndpointQuery(name:text, request, response):
 		dbTable = platformSchema.EndpointQuery
 		dataHandle = request.context['dbSession'].query(dbTable).filter(dbTable.name == name).first()
 		if dataHandle:
-			queryDefinition = dataHandle.content
+			queryDefinition = dataHandle.json_query
 			## Pull the realm from the headers, if supplied
 			realm = 'default'
 			for thisHeader in request.headers:
@@ -782,6 +782,7 @@ def updateSpecificEndpointQuery(queryName:text, content:hugJson, request, respon
 				request.context['logger'].debug('Printing the required column {}'.format(definedColumns))
 				if any(col in content.keys() for col in definedColumns):
 					content['object_id']= tempObjectId
+					content['name'] = queryName
 					dataHandle = platformSchema.EndpointQuery(**content)
 					try:
 						apiQueryPath = request.context['envApiQueryPath']

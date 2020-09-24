@@ -8,6 +8,7 @@
 	"clientOnlyTrigger" : true,
 	"clientEndpoint" : "any",
 	"endpointIdColumn" : "value",
+	"createExecutionLog": false,
 	"loadConfigGroups" : true,
 	"updateParameters" : true,
 	"isDisabled" : true,

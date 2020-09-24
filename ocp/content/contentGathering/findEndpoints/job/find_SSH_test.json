@@ -11,6 +11,8 @@
 	"jobScript" : "find_SSH",
 	"endpointQuery" : "ipv4NoPowerShell",
 	"endpointIdColumn" : "address",
+	"endpointAttrForRealmCheck": "address",
+	"createExecutionLog": false,
 	"loadConfigGroups" : true,
 	"singleEndpointTest" : false,
 	"isDisabled" : true,

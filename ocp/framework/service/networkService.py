@@ -816,7 +816,7 @@ class ServiceProcess(multiprocessing.Process):
 
 			if useCertificates:
 				## Use TLS to encrypt the communication
-				certData = FilePath(os.path.join(env.configPath, globalSettings.get('ocpCertificateFile'))).getContent()
+				certData = FilePath(os.path.join(env.configPath, self.globalSettings.get('ocpCertificateCaFile'))).getContent()
 				certificate = ssl.PrivateCertificate.loadPEM(certData)
 				print('Starting encrypted service: {}'.format(self.serviceName))
 				reactor.listenSSL(self.listeningPort, self.serviceFactory(*factoryArgs), certificate.options())

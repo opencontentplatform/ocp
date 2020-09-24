@@ -7,6 +7,8 @@
 	"jobScript" : "shell_app_components_vocal",
 	"endpointQuery" : "powershell_with_node_process_ips",
 	"endpointIdColumn" : "ipaddress",
+	"endpointAttrForRealmCheck": "ipaddress",
+	"createExecutionLog": false,
 	"loadConfigGroups" : true,
 	"updateParameters" : true,
 	"singleEndpointTest" : false,

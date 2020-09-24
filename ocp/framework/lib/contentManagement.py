@@ -247,7 +247,7 @@ def insertEndpointQuery(logger, dbClient, entry, packageName, endpointFile):
 
 		attributes = {}
 		attributes['name'] = name
-		attributes['content'] = query
+		attributes['json_query'] = query
 
 		logger.debug('  Inserting endpoint query: {}  from package: {} '.format(entry, packageName))
 		dbClass = platformSchema.EndpointQuery

@@ -609,7 +609,7 @@ class JobServiceFactory(networkService.ServiceFactory):
 				dataHandle = self.dbClient.session.query(dbTable).filter(dbTable.name == endpointQuery).first()
 				if not dataHandle:
 					raise EnvironmentError('Endpoint query not found: {}'.format(endpointQuery))
-				queryDefinition = dataHandle.content
+				queryDefinition = dataHandle.json_query
 				utils.executeProvidedJsonQuery(self.logger, self.dbClient, queryDefinition, endpointList)
 				#utils.getEndpointsFromJsonQuery(self.logger, self.dbClient, thisPackagePath, packageName, endpointQuery, endpointList)
 				## Using list comprehension to remove any endpoints not matching
@@ -622,7 +622,9 @@ class JobServiceFactory(networkService.ServiceFactory):
 				## is included in defined scope before allowing execution
 				realmUtil = utils.RealmUtility(self.dbClient)
 				self.logger.debug('invokeJob: Endpoint list size before realm compare: {size!r}', size=len(endpointList))
-				endpointList[:] = [x for x in endpointList if (realmUtil.isIpInRealm(x.get('data', {}).get('ipaddress', x.get('data', {}).get('address')), metaData['realm']))]
+				#endpointList[:] = [x for x in endpointList if (realmUtil.isIpInRealm(x.get('data', {}).get('ipaddress', x.get('data', {}).get('address')), metaData['realm']))]
+				attrForRealmCheck = metaData['endpointAttrForRealmCheck']
+				endpointList[:] = [x for x in endpointList if (realmUtil.isIpInRealm(x.get('data', {}).get(attrForRealmCheck), metaData['realm']))]
 				self.logger.debug('invokeJob: Endpoint list size after realm compare: {size!r}', size=len(endpointList))
 			else:
 				utils.getEndpointsFromPythonScript(self.logger, self.dbClient, thisPackagePath, packageName, endpointScript, endpointList, metaData)

@@ -11,6 +11,8 @@
 	"jobScript" : "find_WMI",
 	"endpointQuery" : "ipv4NoSSH",
 	"endpointIdColumn" : "address",
+	"endpointAttrForRealmCheck": "address",
+	"createExecutionLog": false,
 	"isDisabled" : false,
 	"runTimeValues" : {
 		"maxJobRunTime" : 600,

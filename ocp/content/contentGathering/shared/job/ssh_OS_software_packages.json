@@ -7,6 +7,8 @@
 	"jobScript" : "shell_OS_software_packages",
 	"endpointQuery" : "ssh_with_node",
 	"endpointIdColumn" : "ipaddress",
+	"endpointAttrForRealmCheck": "ipaddress",
+	"createExecutionLog": false,
 	"loadConfigGroups" : true,
 	"updateParameters" : true,
 	"isDisabled" : true,

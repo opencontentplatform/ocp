@@ -536,7 +536,7 @@ class EndpointQuery(UniqueMixin, Base):
 	Columns :
 	  |  object_id [CHAR(32)]
 	  |  name [String(256)] PK
-	  |  content [JSON]
+	  |  json_query [JSON]
 	  |  time_created [DateTime]
 	  |  time_updated [DateTime]
 	"""
@@ -545,16 +545,16 @@ class EndpointQuery(UniqueMixin, Base):
 	__table_args__ = {"schema":"platform"}
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
-	content = Column(JSON, nullable=False)
+	json_query = Column(JSON, nullable=False)
 	object_created_by = Column(String(128), nullable=True)
 	object_updated_by = Column(String(128), nullable=True)
 	time_created = Column(DateTime(timezone=True), default=func.now())
 	time_updated = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 	@classmethod
-	def unique_hash(cls, name, content):
+	def unique_hash(cls, name, json_query):
 		return name
 	@classmethod
-	def unique_filter(cls, query, name, content):
+	def unique_filter(cls, query, name, json_query):
 		return query.filter(EndpointQuery.name == name)
 
 
