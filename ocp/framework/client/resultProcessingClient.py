@@ -92,7 +92,6 @@ import os, sys
 import traceback
 import json
 import time
-import datetime
 from twisted.internet import reactor, task, defer, threads, ssl
 from twisted.internet.protocol import ReconnectingClientFactory
 import twisted.logger

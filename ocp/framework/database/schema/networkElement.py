@@ -235,3 +235,54 @@ class URL(NetworkElement):
 	@classmethod
 	def unique_filter(cls, query, **kwargs):
 		return query.filter(URL.name == kwargs['name'])
+
+
+class SSLCertificate(NetworkElement):
+	"""Defines an ssl_certificate object for the database.
+
+	Table :
+	  |  ssl_certificate
+	Columns :
+	  |  object_id [CHAR(32)] FK(network_element.object_id) PK
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
+	  |  object_created_by [String(128)]
+	  |  object_updated_by [String(128)]
+	  |  description [String(256)]
+	  |  container [CHAR(32)] FK(ip_address.object_id) PK
+	  |  name [String(128)]
+	  |  value [String(64)]
+	Constraints :
+	  |  ssl_certificate_constraint(container, name, value)
+	"""
+
+	__tablename__ = 'ssl_certificate'
+	_constraints = ['container', 'serial_number']
+	_captionRule = {
+		"expression": {
+			"operator": "or",
+			"entries": [
+				{ "condition": ["common_name"] },
+				{ "condition": ["SN:", "serial_number"] }
+			]
+		}
+	}
+	__table_args__ = (UniqueConstraint(*_constraints, name='ssl_certificate_constraint'), {"schema":"data"})
+	object_id = Column(CHAR(32), ForeignKey(NetworkElement.object_id), primary_key=True)
+	## If TcpIpPort is deleted this will be deleted (strong relationship)
+	container = Column(None, ForeignKey(TcpIpPort.object_id), nullable=False)
+	serial_number = Column(String(256), nullable=False)
+	subject = Column(JSON, nullable=True)
+	common_name = Column(String(256), nullable=True)
+	issuer = Column(JSON, nullable=True)
+	version = Column(String(32), nullable=True)
+	not_before = Column(DateTime(timezone=True), nullable=True)
+	not_after = Column(DateTime(timezone=True), nullable=True)
+	signature_algorithm = Column(String(64), nullable=True)
+	subject_alt_name = Column(String(2056), nullable=True)
+	container_relationship = relationship('TcpIpPort', backref = backref('ssl_certificate_objects', cascade='all, delete'), foreign_keys = 'SSLCertificate.container')
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'ssl_certificate', 'inherit_condition': object_id == NetworkElement.object_id}
+
+	@classmethod
+	def unique_filter(cls, query, **kwargs):
+		return query.filter(and_(SSLCertificate.container == kwargs['container'], SSLCertificate.name == kwargs['serial_number']))
