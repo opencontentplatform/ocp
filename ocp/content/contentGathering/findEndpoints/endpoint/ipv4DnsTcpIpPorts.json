@@ -1,0 +1,45 @@
+{
+	"objects": [{
+			"class_name": "IpAddress",
+			"attributes": ["address"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		}, {
+			"class_name": "TcpIpPort",
+			"attributes": ["ip", "name"],
+			"minimum": "1",
+			"maximum": ""
+		}, {
+			"label": "Record",
+			"class_name": "NameRecord",
+			"attributes": ["name", "value"],
+			"minimum": "1",
+			"maximum": ""
+		},
+		{
+			"label": "Alias",
+			"class_name": "NameRecord",
+			"attributes": ["name", "value"],
+			"minimum": "0",
+			"maximum": ""
+	}],
+	"links": [{
+			"label": "IP_To_Record",
+			"class_name": "Usage",
+			"first_id": "IpAddress",
+			"second_id": "Record"
+		},
+		{
+			"label": "IP_To_Port",
+			"class_name": "Enclosed",
+			"first_id": "IpAddress",
+			"second_id": "TcpIpPort"
+		},
+		{
+			"label": "Alias_To_Record",
+			"class_name": "Route",
+			"first_id": "Alias",
+			"second_id": "Record"
+	}]
+}

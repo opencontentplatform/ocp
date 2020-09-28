@@ -1,0 +1,43 @@
+{
+	"jobName" : "find_SSL_certificate_via_portscan",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"numberOfJobThreads" : 3,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 10,
+	"endpointQueueSize" : 50,
+	"jobScript" : "find_SSL_certificate_via_portscan",
+	"endpointQuery" : "ipv4addresses",
+	"endpointIdColumn" : "address",
+	"endpointAttrForRealmCheck": "address",
+	"createExecutionLog": true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 6,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"portTestBeforeConnectionAttempt" : true,
+		"portsToTest" : [443, 52707],
+		"connectTimeoutInSeconds": 3,
+		"printDebug" : true
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 60,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

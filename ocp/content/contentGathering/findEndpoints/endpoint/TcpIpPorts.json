@@ -1,0 +1,11 @@
+{
+	"objects": [{
+		"class_name": "TcpIpPort",
+		"attributes": ["name", "ip", "object_id", "container"],
+		"minimum": "1",
+		"maximum": "",
+		"filter": [],
+		"linchpin": true
+	}],
+	"links": []
+}

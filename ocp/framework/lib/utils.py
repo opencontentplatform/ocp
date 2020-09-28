@@ -871,7 +871,11 @@ def setupJobExecutionLoggger(mainLogger, logPath, logFile):
 		maxSizeInBytes = 10485760
 		maxRollovers = 0
 		if not os.path.exists(logPath):
-			os.makedirs(logPath)
+			## Supress errors since multiple threads may try this at same time,
+			## and consequently complain that it already exists.
+			with suppress(Exception):
+				os.makedirs(logPath)
+
 		## The file should have been removed at the end of creation, which does
 		## not work reliably on windows (filehandle issues), so at least zero
 		## it out so the file doesn't continue appending to previous runs, and

@@ -1,0 +1,34 @@
+{
+	"objects": [{
+			"class_name": "IpAddress",
+			"attributes": ["address"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		}, {
+			"label": "Record",
+			"class_name": "NameRecord",
+			"attributes": ["name", "value"],
+			"minimum": "0",
+			"maximum": ""
+		},
+							 {
+			"label": "Alias",
+			"class_name": "NameRecord",
+			"attributes": ["name", "value"],
+			"minimum": "0",
+			"maximum": ""
+	}],
+	"links": [{
+			"label": "IP_To_Record",
+			"class_name": "Usage",
+			"first_id": "IpAddress",
+			"second_id": "Record"
+		},
+		{
+			"label": "Alias_To_Record",
+			"class_name": "Route",
+			"first_id": "Alias",
+			"second_id": "Record"
+	}]
+}
