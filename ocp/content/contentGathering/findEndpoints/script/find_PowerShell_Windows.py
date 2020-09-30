@@ -26,7 +26,7 @@ from utilities import addObject, addIp, addLink
 from utilities import getInstanceParameters, setInstanceParameters
 
 
-def createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddresses, endpoint, protocolReference):
+def createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddresses, ipDict, endpoint, protocolReference):
 	"""Create objects and links in our results."""
 	protocolId = None
 	try:
@@ -55,7 +55,9 @@ def createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddre
 			FQDN = hostname
 			if (domain is not None and domain not in hostname):
 				FQDN = '{}.{}'.format(hostname, domain)
+
 		## Now create the IPs
+		trackedZones = {}
 		for ip in ipAddresses:
 			ipId = None
 			if (ip in ['127.0.0.1', '::1', '0:0:0:0:0:0:0:1']):
@@ -64,6 +66,21 @@ def createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddre
 				ipId, exists = runtime.results.addIp(address=ip, realm=FQDN)
 			else:
 				ipId, exists = runtime.results.addIp(address=ip, realm=realm)
+
+				## Add any DNS records found
+				if ip in ipDict:
+					for entry in ipDict[ip]:
+						(domainName, recordData) = entry
+						## Create the zone if necessary
+						if domainName not in trackedZones:
+							## Add the zone onto the result set
+							zoneId, exists = addObject(runtime, 'Domain', name=domainName)
+							trackedZones[domainName] = zoneId
+						zoneId = trackedZones[domainName]
+						## Create the DNS record
+						recordId, exists = addObject(runtime, 'NameRecord', name=recordData, value=ip)
+						addLink(runtime, 'Enclosed', zoneId, recordId)
+
 			addLink(runtime, 'Usage', nodeId, ipId)
 		## In case the IP we've connected in on isn't in the IP table list:
 		if endpoint not in ipAddresses:
@@ -90,6 +107,60 @@ def createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddre
 
 	## end createObjects
 	return protocolId
+
+
+def queryForNameRecords(client, runtime, ipAddresses, ipDict):
+	try:
+		## Only run lookup commands on our IPs, if we have a lookup utility.
+		## If the utilities become more numerous, move this to osParameters.
+		lookupCmds = [{
+			'lookupTest': 'nslookup 127.0.0.1',
+			'lookupCommand': 'nslookup',
+			'regExParser': '^\s*[Nn]ame:\s*(\S+)\s*$'
+		}]
+		## Sample nslookup output:
+		##  Server:  192.168.121.142
+		##  Address:  192.168.121.142
+		##
+		##  Name:    revelation.local.net
+		##  Address:  192.168.121.190
+		lookup = None
+		for entry in lookupCmds:
+			(stdout, stderr, hitProblem) = client.run(entry['lookupTest'])
+			if not hitProblem:
+				lookup = entry
+				break
+		if lookup is None:
+			## No utility available to issue a local DNS lookup of the IP
+			return
+
+		for ipAddress in ipAddresses:
+			command = '{} {}'.format(lookup['lookupCommand'], ipAddress)
+			(stdout, stderr, hitProblem) = client.run(command)
+			runtime.logger.report(' {command!r}: {stdout!r}, {stderr!r}, {hitProblem!r}', command=command, stdout=stdout, stderr=stderr, hitProblem=hitProblem)
+			if not hitProblem and stdout is not None and len(stdout.strip()) > 0:
+				for line in stdout.splitlines():
+					try:
+						m = re.search(lookup['regExParser'], line)
+						if m:
+							recordData = m.group(1)
+							domainName = '.'.join(recordData.split('.')[1:])
+							if domainName is None or len(domainName) <= 0:
+								## Exclude entries without domain extensions
+								continue
+							if ipAddress not in ipDict:
+								ipDict[ipAddress] = []
+							ipDict[ipAddress].append((domainName, recordData))
+							runtime.logger.report('  resolved name: {valueString!r}', valueString=recordData)
+					except:
+						stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+						runtime.logger.error('queryForNameRecords: {exception!r}', exception=stacktrace)
+
+	except:
+		runtime.setError(__name__)
+
+	## end queryForNameRecords
+	return
 
 
 def queryForIps(client, runtime, ipAddresses):
@@ -228,7 +299,6 @@ def queryWindows(runtime, client, endpoint, protocolReference, osType):
 		if len(list(osAttrDict.keys())) > 0:
 			## If connections failed before succeeding, remove false negatives
 			runtime.clearMessages()
-			runtime.jobStatus == 'SUCCESS'
 
 			## Assign shell configuration and potential config group
 			shellParameters = {}
@@ -250,8 +320,16 @@ def queryWindows(runtime, client, endpoint, protocolReference, osType):
 			queryForIps(client, runtime, ipAddresses)
 			runtime.logger.report('ipAddresses: {ipAddresses!r}', ipAddresses=ipAddresses)
 
+			## Associate DNS names to the IPs; unless you have DNS zone discovery
+			ipDict = {}
+			queryForNameRecords(client, runtime, ipAddresses, ipDict)
+			runtime.logger.report('ipDict: {ipDict!r}', ipDict=ipDict)
+
+			## Update the runtime status to success
+			runtime.status(1)
+
 			## Create the objects
-			protocolId = createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddresses, endpoint, protocolReference)
+			protocolId = createObjects(runtime, osType, osAttrDict, biosAttrDict, csAttrDict, ipAddresses, ipDict, endpoint, protocolReference)
 			setInstanceParameters(runtime, protocolId, shellParameters)
 			#runtime.logger.report('shell parameters: {shellParameters!r}', shellParameters=runtime.results.getObject(protocolId).get('shellConfig'))
 
