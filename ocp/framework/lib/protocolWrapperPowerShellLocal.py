@@ -21,6 +21,8 @@ Classes:
 import sys
 import traceback
 import os
+import time
+import random
 from contextlib import suppress
 import subprocess
 from protocolWrapperShell import Shell, NonBlockingStreamReader
@@ -58,6 +60,12 @@ class PowerShellLocal(Shell):
 		is accomplished by establishing a remote PowerShell session off a local
 		PowerShell subprocess call.
 		'''
+		## Short delay so that 100 threads won't start at the exact same time
+		## on a single client; more than about 10 sessions starting at the same
+		## time has been seen to cause resource restrictions and stifle
+		## additional concurrent requests.
+		time.sleep(random.uniform(0,2))
+
 		self.log('open: Popen starting')
 		self.process = subprocess.Popen([self.shellExecutable], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
 		self.log('open: Popen finished')
