@@ -1,26 +1,24 @@
 {
-	"jobName" : "test_command",
+	"jobName" : "test_local_pwsh",
 	"realm" : "default",
 	"clientGroup" : "default",
-	"protocolType" : ["ProtocolPowerShell", "ProtocolSsh"],
 	"numberOfJobThreads" : 1,
-	"jobScript" : "test_command",
+	"jobScript" : "test_local_shell",
 	"clientOnlyTrigger" : true,
 	"clientEndpoint" : "any",
 	"endpointIdColumn" : "value",
 	"createExecutionLog": false,
-	"loadConfigGroups" : true,
-	"updateParameters" : true,
 	"isDisabled" : true,
+	"singleEndpointTest" : false,
 	"runTimeValues" : {
 		"maxJobRunTime" : 600,
 		"maxProtocolTime" : 600,
 		"maxCommandTime" : 60
 	},
 	"inputParameters" : {
-		"endpointIp" : "192.168.121.142",
-		"inputQuery" : "shell_with_node_details",
-		"commandList" : ["hostname", "Get-Process"],
+		"shellType": "pwsh",
+		"commandList" : ["hostname", "sleep 5", "$PSVersionTable.PSVersion | ConvertTo-Json"],
+		"commandTimeout": 3,
 		"printDebug" : true
 	},
 	"triggerType" : "interval",

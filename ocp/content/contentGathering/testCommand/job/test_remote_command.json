@@ -1,0 +1,43 @@
+{
+	"jobName" : "test_remote_command",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : ["ProtocolPowerShell", "ProtocolSsh"],
+	"numberOfJobThreads" : 1,
+	"jobScript" : "test_remote_command",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"createExecutionLog": false,
+	"loadConfigGroups" : true,
+	"updateParameters" : true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"endpointIp" : "192.168.121.142",
+		"inputQuery" : "shell_with_node_details",
+		"commandList" : ["hostname", "Get-Process"],
+		"commandTimeout": 10,
+		"printDebug" : true
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}
