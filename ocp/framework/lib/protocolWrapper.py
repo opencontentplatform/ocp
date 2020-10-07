@@ -22,15 +22,21 @@ import traceback
 import platform
 import socket
 from contextlib import suppress
-from protocolWrapperSnmp import Snmp
-from protocolWrapperPowerShell import PowerShell
-from protocolWrapperPowerShellLocal import PowerShellLocal
-from protocolWrapperSSH import SSH
-from utils import loadExternalLibrary
 
+## External lib for protocol handling
+from utils import loadExternalLibrary
 externalProtocolHandler = loadExternalLibrary('externalProtocolHandler')
 
-## The Pymi wmi module is not supported on Linux, and went through a build 
+## Local shell/terminal wrappers
+from protocolWrapperPowerShellLocal import PowerShellLocal
+from protocolWrapperCmdLocal import CmdLocal
+from protocolWrapperPwshLocal import PwshLocal
+
+## Remote shell/terminal wrappers
+from protocolWrapperSnmp import Snmp
+from protocolWrapperSSH import SSH
+from protocolWrapperPowerShell import PowerShell
+## The Pymi wmi module is not supported on Linux, and went through a build
 ## change that made it unavailable for several Python builds. So don't assume
 ## it's there; check for it and handle appropriately...
 try:
@@ -46,13 +52,15 @@ except ImportError:
 		## This EnvironmentError will reflect in the returned job status.
 		raise EnvironmentError('Trying to use WMI, but the PyMi module is not installed. PyMi is not supported on Linux or on some newer Python versions; see here for details: https://github.com/cloudbase/PyMI.')
 
-## Global for ease of update
-localProtocolTypes = ['powershell']
+## Globals for ease of update
 remoteProtocolTypes = ['protocolsnmp', 'protocolwmi', 'protocolssh', 'protocolpowershell']
 clientToProtocolTable = {'snmp': 'protocolsnmp',
 						 'wmi': 'protocolwmi',
 						 'ssh': 'protocolssh',
 						 'powershell': 'protocolpowershell'}
+localProtocolTypes = {'powershell': PowerShellLocal,
+					  'cmd': CmdLocal,
+					  'pwsh': PwshLocal}
 
 
 def getClient(runtime, **kwargs):
@@ -182,12 +190,9 @@ def localClient(runtime, clientType, **kwargs):
 		raise NotImplementedError('Local client type not available for {}'.format(clientType))
 	runtime.logger.report(' localClient: type {clientType!r}', clientType=clientType)
 
-	## PowerShell
-	if normalizedType == 'powershell':
-		client = PowerShellLocal(runtime, runtime.logger, **kwargs)
-
+	client = localProtocolTypes[normalizedType](runtime, runtime.logger, **kwargs)
 	if client is None:
-		raise EnvironmentError('Unable to establish connection to endpoint')
+		raise EnvironmentError('Unable to establish local shell type: {}'.format(clientType))
 
 	## end getLocalClient
 	return client

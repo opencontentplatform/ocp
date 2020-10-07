@@ -1,0 +1,40 @@
+{
+	"jobName" : "test_local_powershell",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "test_local_shell",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"createExecutionLog": false,
+	"isDisabled" : true,
+	"singleEndpointTest" : false,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"shellType": "powershell",
+		"commandList" : ["hostname", "sleep 5", "$PSVersionTable.PSVersion | ConvertTo-Json"],
+		"commandTimeout": 3,
+		"printDebug" : true
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

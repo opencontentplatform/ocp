@@ -1,4 +1,4 @@
-"""Wrapper for using a local Windows PowerShell on the client.
+"""Wrapper for using a local open-source PowerShell on the client.
 
 This PowerShell is running "local" to the client; it's not a remote session. The
 reason for using this class instead subprocess.Popen() directly, is to enable
@@ -8,7 +8,7 @@ resets, and data pipes.
 
 
 Classes:
-  |  PowerShellLocal : wrapper class for a local PowerShell
+  |  PwshLocal : wrapper class for a local open-source PowerShell (PWSH)
 
 .. hidden::
 
@@ -28,12 +28,11 @@ import subprocess
 from protocolWrapperShell import Shell, NonBlockingStreamReader
 
 
-class PowerShellLocal(Shell):
-	"""Wrapper class for PowerShell."""
+class PwshLocal(Shell):
+	"""Wrapper class for PWSH."""
 	def __init__(self, runtime, logger, **kwargs):
 		if ('shellExecutable' not in kwargs or kwargs['shellExecutable'] is None):
-			#kwargs['shellExecutable'] = 'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
-			kwargs['shellExecutable'] = 'powershell.exe'
+			kwargs['shellExecutable'] = 'pwsh'
 		kwargs['echoCmd'] = 'write-host'
 		self.exitStatusCheck = '$?'
 		self.exitStatusPassRegEx = '^True$'
@@ -108,7 +107,7 @@ class PowerShellLocal(Shell):
 
 	def close(self):
 		"""Stop the shell process."""
-		self.log('close protocolWrapperPowerShell')
+		self.log('close PwshLocal')
 		if self.connected:
 			self.connected = False
 		if self.process:
@@ -179,7 +178,7 @@ def psLocalTest():
 		logObserver  = utils.setupObservers(logFiles, 'JobDetail', env, globalSettings['fileContainingContentGatheringLogSettings'])
 		logger = twisted.logger.Logger(observer=logObserver, namespace='JobDetail')
 
-		client = PowerShellLocal(logger)
+		client = PwshLocal(logger)
 		version = client.open()
 		logger.debug('version: {version!r}', version=version)
 
