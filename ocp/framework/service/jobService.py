@@ -28,6 +28,7 @@ from contextlib import suppress
 
 from sqlalchemy import and_
 from twisted.internet import threads
+from apscheduler.schedulers.background import BackgroundScheduler
 
 ## Add openContentPlatform directories onto the sys path
 import env
@@ -115,9 +116,18 @@ class JobServiceFactory(networkService.ServiceFactory):
 
 		## Twisted import here to avoid issues with epoll on Linux
 		from twisted.internet import reactor, task
-		from apscheduler.schedulers.twisted import TwistedScheduler
-		
-		self.scheduler = TwistedScheduler({
+
+		## Replacing the TwistedScheduler with BackgroundScheduler; preparation
+		## for next major version of APScheduler (v4) dropping its support.
+		# from apscheduler.schedulers.twisted import TwistedScheduler
+		# self.scheduler = TwistedScheduler({
+		# 	'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
+		# })
+		self.scheduler = BackgroundScheduler({
+			'apscheduler.executors.default': {
+				'class': 'apscheduler.executors.pool:ThreadPoolExecutor',
+				'max_workers': '10'
+			},
 			'apscheduler.timezone': globalSettings.get('localTimezone', 'UTC')
 		})
 
