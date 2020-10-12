@@ -45,7 +45,8 @@ def startJob(runtime):
 				else:
 					runtime.logger.debug(' command successful: {}'.format(command))
 				runtime.logger.debug('  stdOut: {stdOut!r}', stdOut=stdOut)
-				runtime.logger.debug('  stdError: {stdError!r}', stdError=stdError)
+				if stdError is not None:
+					runtime.logger.debug('  stdError: {stdError!r}', stdError=stdError)
 
 			## Update the runtime status to success
 			runtime.status(1)
