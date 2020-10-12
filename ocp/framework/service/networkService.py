@@ -149,7 +149,23 @@ class ServiceListener(CustomLineReceiverProtocol):
 			self.factory.logger.debug('SERVICE constructAndSendData to {client!r}: {message!r}', client=self.clientName, message=message)
 			jsonMessage = json.dumps(message)
 			msg = jsonMessage.encode('utf-8')
-			self.sendLine(msg)
+
+			## Force synchronous usage of the TCP connection to a client; if two
+			## separate jobs are running in separate threads, and both sendLine
+			## at the same time (actions like sending the jobEndpoints) then the
+			## messages can be undesirebly combined on the client read; this can
+			## cause a second message forcefully inserted into the first (e.g.
+			## with its JSON payload spliced inside the first. Also, the end of
+			## line of the second message terminates the partial first message.
+			## The rest of the first message still comes in, but we see JSON
+			## parsing errors on both messages and then the client job isn't
+			## sure what to do. In the case of the improper jobEndpoint load,
+			## the job just hangs, waiting on acceptable endpoints. It's best to
+			## avoid this altogether and ensure this happens on the main thread:
+			# self.sendLine(msg)
+			## Twisted import here to avoid issues with epoll on Linux
+			from twisted.internet import reactor
+			reactor.callFromThread(self.sendLine, msg)
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.factory.logger.error('Exception in constructAndSendData: {exception!r}', exception=exception)

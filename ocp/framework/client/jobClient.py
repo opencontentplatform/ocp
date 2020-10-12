@@ -912,21 +912,21 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 		jobName = content['jobName']
 		self.logger.debug('doRemoveJob for job {jobName!r}', jobName=jobName)
 		## For debugging purposes:
-		self.logger.debug('  self.jobEndpoints.keys: {data!r}', data=self.jobEndpoints.keys())
-		if jobName in self.jobEndpoints.keys():
-			self.logger.debug('    self.jobEndpoints[jobName]: {data!r}', data=self.jobEndpoints[jobName])
-		self.logger.debug('  self.jobStatistics.keys: {data!r}', data=self.jobStatistics.keys())
-		if jobName in self.jobStatistics.keys():
-			self.logger.debug('    self.jobStatistics[jobName]: {data!r}', data=self.jobStatistics[jobName])
-		self.logger.debug('  self.jobThreads.keys: {data!r}', data=self.jobThreads.keys())
-		if jobName in self.jobThreads.keys():
-			self.logger.debug('    self.jobThreads[jobName]: {data!r}', data=self.jobThreads[jobName])
-		self.logger.debug('  self.jobEndpointsLoaded.keys: {data!r}', data=self.jobEndpointsLoaded.keys())
+		# self.logger.debug('  jobEndpoints.keys: {data!r}', data=self.jobEndpoints.keys())
+		# if jobName in self.jobEndpoints.keys():
+		# 	self.logger.debug('    jobEndpoints[jobName]: {data!r}', data=self.jobEndpoints[jobName])
+		# self.logger.debug('  jobStatistics.keys: {data!r}', data=self.jobStatistics.keys())
+		# if jobName in self.jobStatistics.keys():
+		# 	self.logger.debug('    jobStatistics[jobName]: {data!r}', data=self.jobStatistics[jobName])
+		# self.logger.debug('  jobThreads.keys: {data!r}', data=self.jobThreads.keys())
+		# if jobName in self.jobThreads.keys():
+		# 	self.logger.debug('    jobThreads: {data!r}', data=self.jobThreads[jobName])
+		# self.logger.debug('  jobEndpointsLoaded.keys: {data!r}', data=self.jobEndpointsLoaded.keys())
 		if jobName in self.jobEndpointsLoaded.keys():
-			self.logger.debug('    self.jobEndpointsLoaded[jobName]: {data!r}', data=self.jobEndpointsLoaded[jobName])
-		self.logger.debug('  self.jobEndpointsCount.keys: {data!r}', data=self.jobEndpointsCount.keys())
+			self.logger.debug('    jobEndpointsLoaded: {data!r}', data=self.jobEndpointsLoaded[jobName])
+		# self.logger.debug('  self.jobEndpointsCount.keys: {data!r}', data=self.jobEndpointsCount.keys())
 		if jobName in self.jobEndpointsCount.keys():
-			self.logger.debug('    self.jobEndpointsCount[jobName]: {data!r}', data=self.jobEndpointsCount[jobName])
+			self.logger.debug('    jobEndpointsCount: {data!r}', data=self.jobEndpointsCount[jobName])
 
 		## Gracefully close all threads via notification
 		if jobName not in self.jobThreads:
