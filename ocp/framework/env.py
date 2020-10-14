@@ -9,6 +9,7 @@ some convenience functions to conditionally add to sys.path.
 	Contributors:
 	Version info:
 	  1.0 : (CS) Created Aug 17, 2017
+	  1.1 : (CS) Moved external and internal private paths, Oct 14, 2020
 
 """
 import os, sys
@@ -19,8 +20,6 @@ basePath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__
 configPath = os.path.join(basePath, 'conf')
 ## ./docs
 docsPath = os.path.join(basePath, 'docs')
-## ./external
-externalPath = os.path.join(basePath, 'external')
 ## ./temp
 tempPath = os.path.join(basePath, 'temp')
 
@@ -67,6 +66,20 @@ universalJobPkgPath = os.path.join(packagePath, 'universalJob')
 ## ./content/serverSide
 serverSidePkgPath = os.path.join(packagePath, 'serverSide')
 
+## ./conf/private
+privatePath = os.path.join(configPath, 'private')
+## ./conf/private/content
+privateContentPath = os.path.join(privatePath, 'content')
+privateContentCertPath = os.path.join(privateContentPath, 'certs')
+privateContentKeyPath = os.path.join(privateContentPath, 'keys')
+## ./conf/private/internal
+privateInternalPath = os.path.join(privatePath, 'internal')
+privateInternalCertPath = os.path.join(privateInternalPath, 'certs')
+privateInternalKeyPath = os.path.join(privateInternalPath, 'keys')
+## ./conf/private/external
+privateExternalPath = os.path.join(privatePath, 'external')
+
+
 def addFrameworkPath():
 	"""Add ./framework to sys.path if not already there."""
 	if scriptPath not in sys.path:
@@ -87,8 +100,8 @@ def addLibThirdPartyPath():
 
 def addExternalPath():
 	"""Add ./external to sys.path if not already there."""
-	if externalPath not in sys.path:
-		sys.path.append(externalPath)
+	if privateExternalPath not in sys.path:
+		sys.path.append(privateExternalPath)
 
 def addPackagePath():
 	"""Add ./content to sys.path if not already there."""

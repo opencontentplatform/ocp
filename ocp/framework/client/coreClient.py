@@ -211,12 +211,12 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		self.kafkaLogTopic = globalSettings['kafkaLogTopic']
 		self.kafkaEndpoint = globalSettings['kafkaEndpoint']
 		self.useCertsWithKafka = globalSettings.get('useCertificatesWithKafka')
-		self.kafkaCaRootFile = os.path.join(env.configPath, globalSettings.get('kafkaCaRootFile'))
-		self.kafkaCertFile = os.path.join(env.configPath, globalSettings.get('kafkaCertificateFile'))
-		self.kafkaKeyFile = os.path.join(env.configPath, globalSettings.get('kafkaKeyFile'))
-		self.ocpCertFile = os.path.join(env.configPath, globalSettings.get('ocpCertificateFile'))
+		self.kafkaCaRootFile = os.path.join(env.privateInternalCertPath, globalSettings.get('kafkaCaRootFile'))
+		self.kafkaCertFile = os.path.join(env.privateInternalCertPath, globalSettings.get('kafkaCertificateFile'))
+		self.kafkaKeyFile = os.path.join(env.privateInternalCertPath, globalSettings.get('kafkaKeyFile'))
+		self.ocpCertFile = os.path.join(env.privateInternalCertPath, globalSettings.get('ocpCertificateFile'))
 
-		self.endpointKey = utils.getServiceKey(env.configPath)
+		self.endpointKey = utils.getServiceKey(env.privateInternalKeyPath)
 		self.executionEnvironment = None
 		self.baselineEnvironment()
 		self.endpointToken = None
@@ -768,7 +768,7 @@ class ClientProcess(multiprocessing.Process):
 
 			if useCertificates:
 				## Use TLS to encrypt the communication
-				certData = FilePath(os.path.join(env.configPath, self.globalSettings.get('ocpCertificateFile'))).getContent()
+				certData = FilePath(os.path.join(env.privateInternalCertPath, self.globalSettings.get('ocpCertificateFile'))).getContent()
 				authority = ssl.Certificate.loadPEM(certData)
 				sslOptions = ssl.optionsForClientTLS(serviceEndpoint, authority)
 				print('Starting encrypted client: {}'.format(self.clientName))

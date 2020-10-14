@@ -688,7 +688,8 @@ class ResultProcessing:
 				if key in constraints and data[key] is None:
 					del data[key]
 			if constraints and all(col in data.keys() for col in constraints):
-				self.logger.debug('Initating an insert or an update based on constraints: {constraints!r}', constraints=constraints)
+				#self.logger.debug('Initating an insert or an update based on constraints: {constraints!r}', constraints=constraints)
+				self.logger.debug('Initiating an insert or an update on class {className!r} based on constraints: {constraints!r}. Data: {data!r}', className=className, constraints=constraints, data=data)
 				thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 				## INSERT
 				if thisEntry is None:

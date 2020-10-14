@@ -1048,7 +1048,7 @@ def readonly_handler(func, path, execinfo):
 	func(path)
 
 
-def getServiceKey(configPath=None):
+def getServiceKey(certPath):
 	"""Pull service key from an existing file.
 
 	Return:
@@ -1057,9 +1057,7 @@ def getServiceKey(configPath=None):
 	"""
 	encodedKey = None
 	try:
-		keyFile = os.path.join('..', 'conf', 'client.conf')
-		if configPath:
-			keyFile = os.path.join(configPath, 'client.conf')
+		keyFile = os.path.join(certPath, 'client.conf')
 		with open(keyFile, 'r') as f:
 			encodedKey = f.read()
 		if len(encodedKey) == 0:

@@ -63,9 +63,9 @@ class CoreService():
 			self.globalSettings = globalSettings
 			self.kafkaEndpoint = self.globalSettings['kafkaEndpoint']
 			self.useCertsWithKafka = self.globalSettings.get('useCertificatesWithKafka')
-			self.kafkaCaRootFile = os.path.join(env.configPath, self.globalSettings.get('kafkaCaRootFile'))
-			self.kafkaCertFile = os.path.join(env.configPath, self.globalSettings.get('kafkaCertificateFile'))
-			self.kafkaKeyFile = os.path.join(env.configPath, self.globalSettings.get('kafkaKeyFile'))
+			self.kafkaCaRootFile = os.path.join(env.privateInternalCertPath, self.globalSettings.get('kafkaCaRootFile'))
+			self.kafkaCertFile = os.path.join(env.privateInternalCertPath, self.globalSettings.get('kafkaCertificateFile'))
+			self.kafkaKeyFile = os.path.join(env.privateInternalCertPath, self.globalSettings.get('kafkaKeyFile'))
 			self.dbClient = None
 			if getDbClient:
 				self.getDbSession()
@@ -410,6 +410,7 @@ class CoreService():
 
 	def getKafkaResults(self, kafkaConsumer):
 		"""Process kafka messages if available, timeout and return if not."""
+		exitMessage = None
 		while kafkaConsumer is not None and not self.shutdownEvent.is_set() and not self.canceledEvent.is_set():
 			try:
 				msgs = kafkaConsumer.consume(num_messages=int(self.localSettings['kafkaPollMaxRecords']), timeout=int(self.localSettings['kafkaPollTimeOut']))

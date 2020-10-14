@@ -37,8 +37,8 @@ def generateSalt(saltFile):
 
 
 def main():
-	generateSalt(os.path.abspath(os.path.join(env.configPath, 'key.conf')))
-	generateSalt(os.path.abspath(os.path.join(env.configPath, 'client.conf')))
+	generateSalt(os.path.abspath(os.path.join(env.privateInternalKeyPath, 'key.conf')))
+	generateSalt(os.path.abspath(os.path.join(env.privateInternalKeyPath, 'client.conf')))
 	configureDatabase.main()
 	initializeDatabase.main()
 
