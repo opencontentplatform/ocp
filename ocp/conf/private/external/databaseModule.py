@@ -56,7 +56,7 @@ def missingContent(dbSettings):
 
 
 def getSettingsFromFile():
-	databaseSettingsFile = os.path.join(env.configPath, globalSettings['fileContainingDatabaseSettings'])
+	databaseSettingsFile = os.path.join(env.privateInternalPath, globalSettings['fileContainingDatabaseSettings'])
 	## Right now the file is stored in JSON form, but later we may obscure the
 	## entire file instead of just the sensitive part(s). Return a dict format.
 	newSettings = utils.loadSettings(databaseSettingsFile)
@@ -132,7 +132,7 @@ def updateSettingsFile(globalSettings, logger):
 
 	"""
 	## Settings will come from ../conf/databaseSettings.json by default
-	dbSettingsFile = os.path.join(env.configPath, globalSettings.get('fileContainingDatabaseSettings'))
+	dbSettingsFile = os.path.join(env.privateInternalPath, globalSettings.get('fileContainingDatabaseSettings'))
 	fileSettings = {}
 	updatedSettings = {}
 	try:
