@@ -26,7 +26,7 @@ from utils import jobParameterizedLogger, updateParameters
 class Runtime():
 	"""Provides workflow, I/O, status, and tracking of jobs during execution."""
 
-	def __init__(self, logger, env, packageName, jobName, endpoint, jobMetaData, sendToKafka, parameters, protocolType, protocols, shellConfig=None):
+	def __init__(self, logger, env, packageName, jobName, endpoint, jobMetaData, ocpCertFile, sendToKafka, parameters, protocolType, protocols, shellConfig=None):
 		"""Initialize supporting variables for job execution (I/O and status).
 
 		Arguments:
@@ -48,6 +48,7 @@ class Runtime():
 		self.endpoint = endpoint
 		self.env = env
 		self.jobMetaData = jobMetaData
+		self.ocpCertFile = ocpCertFile
 		self.parameters = parameters
 		self.protocolType = protocolType
 		self.protocols = protocols

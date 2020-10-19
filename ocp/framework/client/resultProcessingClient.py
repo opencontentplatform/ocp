@@ -308,7 +308,7 @@ class ResultProcessingClientFactory(coreClient.ServiceClientFactory):
 					if message is None:
 						continue
 					elif message.error():
-						self.logger.debug('processKafkaResults: Kafka error: {error!r}', error=msgs.error())
+						self.logger.debug('processKafkaResults: Kafka error: {error!r}', error=message.error())
 						continue
 					thisMsg = json.loads(message.value().decode('utf-8'))
 					if 'nested' not in thisMsg.keys():

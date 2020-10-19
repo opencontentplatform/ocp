@@ -31,7 +31,7 @@ from utils import setupJobExecutionLoggger
 class RemoteThread(ThreadInstance):
 	"""Wraps job invocation with a common framework."""
 
-	def __init__(self, dStatusLogger, dDetailLogger, env, jobName, packageName, scriptName, jobMetaData, protocolType, inputParameters, protocols, shellConfig, jobEndpoints, jobStatistics, kafkaProducer, kafkaTopic, kafkaLogForJobsTopic):
+	def __init__(self, dStatusLogger, dDetailLogger, env, jobName, packageName, scriptName, jobMetaData, protocolType, inputParameters, protocols, shellConfig, jobEndpoints, jobStatistics, ocpCertFile, kafkaProducer, kafkaTopic, kafkaLogForJobsTopic):
 		"""Constructor for the RemoteThread.
 
 		Arguments:
@@ -57,6 +57,7 @@ class RemoteThread(ThreadInstance):
 		self.scriptName = scriptName
 		self.jobEndpoints = jobEndpoints
 		self.jobStatistics = jobStatistics
+		self.ocpCertFile = ocpCertFile
 		self.kafkaProducer = kafkaProducer
 		self.kafkaTopic = kafkaTopic
 		self.kafkaLogForJobsTopic = kafkaLogForJobsTopic
@@ -204,7 +205,7 @@ class RemoteThread(ThreadInstance):
 					## Reset count when we run multiple endpoints in same thread
 					self.resultCount = {}
 					## Initialize runtime container
-					self.runtime = Runtime(jobExecutionLogger, self.env, self.packageName, self.jobName, endpoint, self.jobMetaData, self.sendToKafka, self.parameters, self.protocolType, self.protocols, self.shellConfig)
+					self.runtime = Runtime(jobExecutionLogger, self.env, self.packageName, self.jobName, endpoint, self.jobMetaData, self.ocpCertFile, self.sendToKafka, self.parameters, self.protocolType, self.protocols, self.shellConfig)
 					if not self.runtime.setupComplete:
 						raise EnvironmentError('Runtime was not initialized properly!')
 
