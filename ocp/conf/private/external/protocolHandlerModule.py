@@ -226,6 +226,8 @@ def doExtract(encodedSalt, protocol):
 	protocolEntry = {}
 	## This part decrypts the protocol object as a whole
 	decodedProtocolStr = externalEncryptionLibrary.decode(protocol, encodedSalt)
+	if decodedProtocolStr is None:
+		raise EnvironmentError('Protocol reference not found')
 	decodedProtocol = json.loads(decodedProtocolStr)
 	for attribute,value in decodedProtocol.items():
 		protocolEntry[attribute] = value

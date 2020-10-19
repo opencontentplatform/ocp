@@ -16,8 +16,8 @@ multiprocessing_logging
 
 
 ## Required when running on Windows
-pywin32==224   # 227 breaks win32file, needed by portalocker and concurrent_log_handler
-
+#pywin32==224   # 225-227 breaks win32file, needed by portalocker and concurrent_log_handler, but 228 works again
+pywin32
 
 ## Specific modules follow; not required for the base platform
 ## Protocol specific

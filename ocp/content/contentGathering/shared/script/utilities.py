@@ -953,7 +953,7 @@ def requestsRetrySession(retries=5, backoff_factor=0.3, status_forcelist=(500, 5
 	return session
 
 
-def getApiResult(runtime, resourcePath, method, customHeaders=None, customPayload=None):
+def getApiResult(runtime, resourcePath, method, customHeaders=None, customPayload=None, verify=False):
 	"""Get API result set.
 
 	Services will have the API data in the runtime.jobSettings location, whereas
@@ -993,13 +993,13 @@ def getApiResult(runtime, resourcePath, method, customHeaders=None, customPayloa
 	## Execute the query
 	runtime.logger.report(' Sending {method!r} to URL {url!r}', method=str(method).upper(), url=url)
 	if method.lower() == 'get':
-		apiResponse = requestsRetrySession().get(url, data=payload, headers=headers, verify=False)
+		apiResponse = requestsRetrySession().get(url, data=payload, headers=headers, verify=verify)
 	elif method.lower() == 'post':
-		apiResponse = requestsRetrySession().post(url, data=payload, headers=headers, verify=False)
+		apiResponse = requestsRetrySession().post(url, data=payload, headers=headers, verify=verify)
 	elif method.lower() == 'put':
-		apiResponse = requestsRetrySession().put(url, data=payload, headers=headers, verify=False)
+		apiResponse = requestsRetrySession().put(url, data=payload, headers=headers, verify=verify)
 	elif method.lower() == 'delete':
-		apiResponse = requestsRetrySession().delete(url, data=payload, headers=headers, verify=False)
+		apiResponse = requestsRetrySession().delete(url, data=payload, headers=headers, verify=verify)
 	else:
 		raise NotImplementedError('getApiResult works with get/post/delete, but not {}'.format(method))
 
@@ -1007,14 +1007,14 @@ def getApiResult(runtime, resourcePath, method, customHeaders=None, customPayloa
 	return apiResponse
 
 
-def loopThroughApiQueryResults(runtime, queryId, totalChunks, queryResults):
+def loopThroughApiQueryResults(runtime, queryId, totalChunks, queryResults, verify=False):
 	## Loop through the chunks and build the full dataset
 	try:
 		for chunkId in range(1, totalChunks+1):
 			resourcePath = 'query/cache/{}/{}'.format(queryId, chunkId)
 			method = 'get'
 			responseAsJson = None
-			apiResponse = getApiResult(runtime, resourcePath, method)
+			apiResponse = getApiResult(runtime, resourcePath, method, verify=verify)
 			with suppress(Exception):
 				responseCode = apiResponse.status_code
 				responseAsJson = json.loads(apiResponse.text)
@@ -1039,7 +1039,7 @@ def loopThroughApiQueryResults(runtime, queryId, totalChunks, queryResults):
 	return queryResults
 
 
-def waitForApiQueryResults(runtime, queryId, maxAttempts=10, waitSecondsBetweenAttempts=3):
+def waitForApiQueryResults(runtime, queryId, maxAttempts=10, waitSecondsBetweenAttempts=3, verify=False):
 	queryResults = {}
 	## Loop through hitting /<root>/query/cache/id, waiting for the full result set
 	resourcePath = 'query/cache/{}'.format(queryId)
@@ -1052,7 +1052,7 @@ def waitForApiQueryResults(runtime, queryId, maxAttempts=10, waitSecondsBetweenA
 		## Issue an API query to check status on the cached result
 		responseAsJson = None
 		responseCode = None
-		apiResponse = getApiResult(runtime, resourcePath, method)
+		apiResponse = getApiResult(runtime, resourcePath, method, verify=verify)
 		with suppress(Exception):
 			responseCode = apiResponse.status_code
 			responseAsJson = json.loads(apiResponse.text)
@@ -1072,13 +1072,13 @@ def waitForApiQueryResults(runtime, queryId, maxAttempts=10, waitSecondsBetweenA
 
 	## Cleanup the cached result set
 	runtime.logger.report('Cleaning up cached query results for: {queryId!r}', queryId=queryId)
-	apiResponse = getApiResult(runtime, resourcePath, 'delete')
+	apiResponse = getApiResult(runtime, resourcePath, 'delete', verify=verify)
 
 	## end waitForApiQueryResults
 	return queryResults
 
 
-def getApiQueryResultsInChunks(runtime, queryContent, resultsFormat='Flat', headers=None):
+def getApiQueryResultsInChunks(runtime, queryContent, resultsFormat='Flat', headers=None, verify=False):
 	"""Request an API query to be cached/chunked and then retrieved."""
 	queryResults = None
 	if len(str(queryContent)) <= 1:
@@ -1097,7 +1097,7 @@ def getApiQueryResultsInChunks(runtime, queryContent, resultsFormat='Flat', head
 	customPayload = {}
 	customPayload['content'] = queryContent
 	## Now issue the query
-	apiResponse = getApiResult(runtime, resourcePath, method, customHeaders, customPayload)
+	apiResponse = getApiResult(runtime, resourcePath, method, customHeaders, customPayload, verify=verify)
 
 	responseCode = None
 	responseAsJson = {}
@@ -1117,7 +1117,7 @@ def getApiQueryResultsInChunks(runtime, queryContent, resultsFormat='Flat', head
 	return queryResults
 
 
-def getApiQueryResultsFull(runtime, queryContent, resultsFormat='Flat', headers=None):
+def getApiQueryResultsFull(runtime, queryContent, resultsFormat='Flat', headers=None, verify=False):
 	"""Retrieve a complete API query result set."""
 	queryResults = None
 	if len(str(queryContent)) <= 1:
@@ -1134,7 +1134,7 @@ def getApiQueryResultsFull(runtime, queryContent, resultsFormat='Flat', headers=
 	customPayload = {}
 	customPayload['content'] = queryContent
 	## Now issue the query
-	apiResponse = getApiResult(runtime, resourcePath, method, customHeaders, customPayload)
+	apiResponse = getApiResult(runtime, resourcePath, method, customHeaders, customPayload, verify=verify)
 
 	responseCode = None
 	responseAsJson = {}
@@ -1158,6 +1158,7 @@ class RealmUtility:
 		self.runtime = runtime
 		self.configuredRealmOnly = configuredRealmOnly
 		self.scopes = None
+		self.ocpCertFile = runtime.ocpCertFile
 		self.networkStrings = []
 		self.networkObjects = []
 		self.getRealmNetworksFromApi()
@@ -1167,7 +1168,7 @@ class RealmUtility:
 		"""Retrieve all realms from the API."""
 		responseCode = None
 		## Customize the request and query the API
-		apiResponse = getApiResult(self.runtime, 'config/RealmScope', 'get', {}, {})
+		apiResponse = getApiResult(self.runtime, 'config/RealmScope', 'get', {}, {}, verify=self.ocpCertFile)
 		with suppress(Exception):
 			responseCode = apiResponse.status_code
 		if str(apiResponse.status_code) == '200':

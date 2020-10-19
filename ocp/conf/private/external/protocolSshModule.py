@@ -11,15 +11,30 @@ provides easier access to internals and so we intentionally avoid encapsulation
 with individual functions.
 
 """
-from fabric import Connection
+import os
 import utils
 externalProtocolHandler = utils.loadExternalLibrary('externalProtocolHandler')
+from fabric import Connection
 
 def connection(runtime, protocol, endpoint, connectTimeout=3):
-	"""Extract user & password from protocol, and call wmi.WMI()."""
+	"""Extract protocol and call fabric.Connection."""
 	protocol = externalProtocolHandler.extractProtocol(runtime, protocol)
 	user = protocol['user']
-	password = protocol['password']
 	args = {}
-	args['password'] = password
+
+	useKey = protocol.get('use_key', False)
+	if useKey:
+		keyFileName = protocol.get('key_filename')
+		passPhrase = protocol.get('key_passphrase')
+		## Construct fully qualified path for keys in ./conf/private/content/keys
+		keyFile = os.path.join(runtime.env.privateContentKeyPath, keyFileName)
+		args['key_filename'] = keyFile
+		## Handle empty pass phrases to avoid errors downstream
+		if passPhrase is not None and len(passPhrase.strip()) > 0:
+			args['passphrase'] = passPhrase
+
+	else:
+		password = protocol['password']
+		args['password'] = password
+
 	return Connection(host=endpoint, user=user, connect_timeout=connectTimeout, connect_kwargs=args)

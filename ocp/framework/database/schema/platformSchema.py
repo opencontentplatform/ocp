@@ -230,7 +230,9 @@ class ProtocolSsh(ProtocolShell):
 	object_id = Column(None, ForeignKey(ProtocolShell.object_id), primary_key=True)
 	user = Column(String(256), nullable=False)
 	password = Column(String(256), nullable=False)
-	token = Column(String(256), nullable=True)
+	use_key = Column(Boolean, default=False)
+	key_filename = Column(String(256), nullable=True)
+	key_passphrase = Column(String(256), nullable=True)
 
 
 class ProtocolPowerShell(ProtocolShell):

@@ -17,10 +17,6 @@ import re
 
 ## From openContentPlatform
 from protocolWrapper import getClient
-from osProcesses import getProcesses
-from osSoftwarePackages import getSoftwarePackages
-from osStartTasks import getStartTasks
-from utilities import loadConfigGroupFile, compareFilter, getApiResult
 from utilities import getApiQueryResultsFull
 
 ## Global for ease of future change
@@ -62,7 +58,7 @@ def issueApiCall(runtime):
 		thisQuery = thisQuery.replace('<VALUE1>', '"{}"'.format(shellType))
 		thisQuery = thisQuery.replace('<VALUE2>', '"{}"'.format(targetIp))
 
-		queryResults = getApiQueryResultsFull(runtime, thisQuery, resultsFormat='Nested', headers={'removeEmptyAttributes': False})
+		queryResults = getApiQueryResultsFull(runtime, thisQuery, resultsFormat='Nested', headers={'removeEmptyAttributes': False}, verify=runtime.ocpCertFile)
 		if queryResults is not None and len(queryResults[shellType]) > 0:
 			break
 
