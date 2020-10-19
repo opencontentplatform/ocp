@@ -55,7 +55,7 @@ def getTokenConfigured(tokenType):
 		fileName = 'client.conf'
 	else:
 		raise IOError('Unknown token type requested')
-	tokenFile = os.path.join(env.configPath, fileName)
+	tokenFile = os.path.join(env.privateInternalKeyPath, fileName)
 	with open(tokenFile, 'r') as f:
 		thisToken = f.read()
 	if thisToken is None:

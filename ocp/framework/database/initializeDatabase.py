@@ -297,7 +297,7 @@ def createApiAccess(dbClient, logger):
 
 	"""
 	try:
-		myKey = utils.getServiceKey(env.configPath)
+		myKey = utils.getServiceKey(env.privateInternalKeyPath)
 		if myKey is not None:
 			apiObject = ApiAccess(key=myKey, name='serviceClient')
 			dbClient.session.add(apiObject)

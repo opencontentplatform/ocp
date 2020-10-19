@@ -462,9 +462,9 @@ def getKafkaProducer(request, response):
 	"""Simple wrapper to get the parameters and connect the kafka producer."""
 	kafkaEndpoint = request.context['kafkaEndpoint']
 	useCertsWithKafka = request.context['useCertificatesWithKafka']
-	kafkaCaRootFile = os.path.join(request.context['envConfigPath'], request.context['kafkaCaRootFile'])
-	kafkaCertFile = os.path.join(request.context['envConfigPath'], request.context['kafkaCertificateFile'])
-	kafkaKeyFile = os.path.join(request.context['envConfigPath'], request.context['kafkaKeyFile'])
+	kafkaCaRootFile = os.path.join(request.context['envCertPath'], request.context['kafkaCaRootFile'])
+	kafkaCertFile = os.path.join(request.context['envCertPath'], request.context['kafkaCertificateFile'])
+	kafkaKeyFile = os.path.join(request.context['envCertPath'], request.context['kafkaKeyFile'])
 	## Connect to the producer
 	kafkaProducer = utils.createKafkaProducer(request.context['logger'], kafkaEndpoint, useCertsWithKafka, kafkaCaRootFile, kafkaCertFile, kafkaKeyFile)
 	if kafkaProducer is None:
