@@ -2,10 +2,14 @@
 	"jobName" : "ssh_app_components_vocal_test",
 	"realm" : "default",
 	"clientGroup" : "default",
+	"credentialGroup": "default",
 	"protocolType" : "ProtocolSsh",
 	"numberOfJobThreads" : 1,
+	"endpointPipeline": "service",
+	"endpointChunkSize": 20,
+	"endpointQueueSize": 40,
 	"jobScript" : "shell_app_components_vocal",
-	"endpointQuery" : "ssh_with_node_process_ips_test",
+	"endpointQuery" : "ssh_with_node_process_ips",
 	"endpointIdColumn" : "ipaddress",
 	"endpointAttrForRealmCheck": "ipaddress",
 	"createExecutionLog": false,
@@ -19,7 +23,8 @@
 		"maxCommandTime" : 60
 	},
 	"inputParameters" : {
-		"printDebug" : false
+		"printDebug" : false,
+		"showCommandParsing" : false
 	},
 	"triggerType" : "cron",
 	"triggerArgs" : {

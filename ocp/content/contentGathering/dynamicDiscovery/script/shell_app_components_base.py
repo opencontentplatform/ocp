@@ -45,7 +45,8 @@ def standardBaseSetup(runtime, data):
 
 	## Get Processes
 	runtime.logger.report(' retrieving Processes...')
-	runtime.logger.setFlag(False)
+	showCommandParsing = runtime.parameters.get('showCommandParsing', False)
+	runtime.logger.setFlag(showCommandParsing)
 	shellAppComponentsUtils.getRawProcesses(runtime, data)
 	runtime.logger.setFlag(data.savedPrintDebug)
 
