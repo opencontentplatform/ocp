@@ -525,13 +525,14 @@ def standardVocalSetup(runtime, data):
 
 	## Get Processes
 	runtime.logger.report(' retrieving Processes...')
-	runtime.logger.setFlag(False)
+	showCommandParsing = runtime.parameters.get('showCommandParsing', False)
+	runtime.logger.setFlag(showCommandParsing)
 	shellAppComponentsUtils.getRawProcesses(runtime, data)
 	runtime.logger.setFlag(data.savedPrintDebug)
 
 	## Get Network activity
 	runtime.logger.report(' retrieving Network...')
-	runtime.logger.setFlag(False)
+	runtime.logger.setFlag(showCommandParsing)
 	(data.udpListenerList, data.tcpListenerList, data.tcpEstablishedList) = osNetworkStack.getNetworkStack(runtime, data.client, data.protocolIp, localIpList=data.ipList, trackResults=False, hostname=data.nodeName, domain=data.nodeDomain)
 	runtime.logger.setFlag(data.savedPrintDebug)
 

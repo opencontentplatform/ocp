@@ -2,8 +2,12 @@
 	"jobName" : "powershell_app_components_vocal_test",
 	"realm" : "default",
 	"clientGroup" : "default",
+	"credentialGroup": "default",
 	"protocolType" : "ProtocolPowerShell",
 	"numberOfJobThreads" : 1,
+	"endpointPipeline": "service",
+	"endpointChunkSize": 20,
+	"endpointQueueSize": 40,
 	"jobScript" : "shell_app_components_vocal",
 	"endpointQuery" : "powershell_with_node_process_ips",
 	"endpointIdColumn" : "ipaddress",
@@ -19,7 +23,8 @@
 		"maxCommandTime" : 60
 	},
 	"inputParameters" : {
-		"printDebug" : true
+		"printDebug" : true,
+		"showCommandParsing" : false
 	},
 	"triggerType" : "cron",
 	"triggerArgs" : {

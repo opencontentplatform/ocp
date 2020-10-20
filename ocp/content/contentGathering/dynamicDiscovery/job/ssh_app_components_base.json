@@ -2,8 +2,12 @@
 	"jobName" : "ssh_app_components_base",
 	"realm" : "default",
 	"clientGroup" : "default",
+	"credentialGroup": "default",
 	"protocolType" : "ProtocolSsh",
-	"numberOfJobThreads" : 20	,
+	"numberOfJobThreads" : 20,
+	"endpointPipeline": "service",
+	"endpointChunkSize": 20,
+	"endpointQueueSize": 40,
 	"jobScript" : "shell_app_components_base",
 	"endpointQuery" : "ssh_with_node_process",
 	"endpointIdColumn" : "ipaddress",
@@ -18,7 +22,8 @@
 		"maxCommandTime" : 60
 	},
 	"inputParameters" : {
-		"printDebug" : false
+		"printDebug" : false,
+		"showCommandParsing" : false
 	},
 	"triggerType" : "cron",
 	"triggerArgs" : {
@@ -28,7 +33,7 @@
 		"week" : null,
 		"day_of_week" : null,
 		"hour" : "4,9,14,19",
-		"minute" : 3,
+		"minute" : 33,
 		"second" : null,
 		"start_date" : "",
 		"end_date" : ""

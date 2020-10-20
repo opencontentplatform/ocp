@@ -931,9 +931,9 @@ def discoverEstablishedConnections(runtime, client, outputString, osType, localI
 	## If most the lines returned with empty values for proc; report to the GUI
 	if (errorCount > 2 and errorCount / (len(outputLines)) > .75):
 		runtime.logger.info(' Number of outputLines: {establishedLineCount!r} and number of errors: {establishedLineErrors!r}', establishedLineCount=str(len(outputLines)), establishedLineErrors=str(errorCount))
-		runtime.logger.info(' Gathering established network connections returned partial data, which suggests limited access. Should this be run with elevated rights?')
+		runtime.logger.info(' Gathering established network connections returned partial data, which suggests limited access. Was this run with elevated rights?')
 		## Don't just warn; abort the run
-		raise EnvironmentError('Gathering established network connections returned partial data, which suggests limited access. Should this be run with elevated rights?')
+		raise EnvironmentError('Gathering established network connections returned partial data, which suggests limited access. Was this run with elevated rights?')
 
 	## Memory management for large queries
 	outputString = None
