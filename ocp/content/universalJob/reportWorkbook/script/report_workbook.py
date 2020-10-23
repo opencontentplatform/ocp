@@ -148,7 +148,7 @@ def startJob(runtime):
 					queryContent = json.load(fp)
 
 				runtime.logger.report(' Requesting queryName {queryName!r}', queryName=queryName)
-				queryResults = getApiQueryResultsFull(runtime, queryContent, resultsFormat='Nested-Simple', headers={'removeEmptyAttributes': False})
+				queryResults = getApiQueryResultsFull(runtime, queryContent, resultsFormat='Nested-Simple', headers={'removeEmptyAttributes': False}, verify=runtime.ocpCertFile)
 				if queryResults is None or len(queryResults) <= 0:
 					runtime.logger.debug('No results found for queryName {queryName!r}', queryName=queryName)
 					continue
