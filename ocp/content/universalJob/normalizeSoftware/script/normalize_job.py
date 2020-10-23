@@ -277,7 +277,7 @@ def startJob(runtime):
 				inputFile = loadJsonFile(os.path.join(inputPath, inputName + '.json'), 'input')
 				transformFile = loadJsonFile(os.path.join(transformPath, transformName + '.json'), 'transform')
 				## Query API for the query result
-				queryResults = getApiQueryResultsFull(runtime, inputFile, resultsFormat='Nested-Simple', headers={'removeEmptyAttributes': False})
+				queryResults = getApiQueryResultsFull(runtime, inputFile, resultsFormat='Nested-Simple', headers={'removeEmptyAttributes': False}, verify=runtime.ocpCertFile)
 				if queryResults is None or len(queryResults) <= 0:
 					runtime.logger.report('No results found for input query {inputName!r}; skipping.', inputName=inputName)
 					continue
