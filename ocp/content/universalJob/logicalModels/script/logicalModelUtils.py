@@ -27,7 +27,7 @@ def getQueryResults(runtime, queryName, resultsFormat):
 	queryContent = None
 	with open(queryFile) as fp:
 		queryContent = json.load(fp)
-	queryResults = getApiQueryResultsFull(runtime, queryContent, resultsFormat=resultsFormat)
+	queryResults = getApiQueryResultsFull(runtime, queryContent, resultsFormat=resultsFormat, verify=runtime.ocpCertFile)
 
 	## end getQueryResults
 	return queryResults
