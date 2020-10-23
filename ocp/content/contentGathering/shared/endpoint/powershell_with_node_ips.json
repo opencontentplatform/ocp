@@ -12,7 +12,8 @@
 			"attributes": ["hostname", "domain"],
 			"minimum": "1",
 			"maximum": "1"
-		}, {
+		},
+		{
 			"class_name": "IpAddress",
 			"attributes": ["address", "is_ipv4"],
 			"minimum": "1",
