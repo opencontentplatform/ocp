@@ -1,0 +1,47 @@
+{
+	"jobName" : "powershell_mssql_detection",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup": "default",
+	"protocolType" : "ProtocolPowerShell",
+	"numberOfJobThreads" : 20,
+	"endpointPipeline": "service",
+	"endpointChunkSize": 20,
+	"endpointQueueSize": 40,
+	"jobScript" : "powershell_mssql_detection",
+	"endpointQuery" : "powershell_with_node_ips",
+	"endpointIdColumn" : "ipaddress",
+	"endpointAttrForRealmCheck": "ipaddress",
+	"createExecutionLog": false,
+	"loadConfigGroups" : true,
+	"updateParameters" : true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"printDebug" : false,
+		"showCommandParsing" : false
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : 2,
+		"minute" : 23,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

@@ -38,7 +38,7 @@ class Runtime():
 
 		"""
 		self.jobStatus = 'UNKNOWN'  ## value in statusEnums
-		self.statusEnums = { 1 : 'SUCCESS', 2 : 'WARNING', 3 : 'FAILURE', 4 : 'UNKNOWN' }
+		self.statusEnums = { 1 : 'SUCCESS', 2 : 'WARNING', 3 : 'FAILURE', 4 : 'UNKNOWN', 5 : 'INFO' }
 		self.jobMessages = set()  ## set instead of list, avoids duplicate msgs
 		self.setupComplete = False
 		self.startTime = datetime.datetime.now()
@@ -147,6 +147,17 @@ class Runtime():
 		"""Send a custom warning message and set the status to warning."""
 		self.logger.warn('{msg!r}', msg=msg)
 		self.status(2)
+		self.message(str(msg))
+
+	def setInfo(self, msg):
+		"""Send a custom message and set the status to info.
+
+		This is especially useful when the job ran successfully, but didn't find
+		something that the job was intending to find (e.g. specific software).
+		While the job execution passed, we want to avoid being misleading to the
+		user by suggesting it found what the job was looking for. """
+		self.logger.info('{msg!r}', msg=msg)
+		self.status(5)
 		self.message(str(msg))
 
 	def setParameters(self):
