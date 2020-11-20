@@ -1,0 +1,40 @@
+{
+	"jobName" : "itdm_to_opsview_fingerprints",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolRestApi",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "send_fingerprints",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 3600,
+		"maxProtocolTime" : 3600,
+		"maxCommandTime" : 600
+	},
+	"inputParameters" : {
+		"opsviewRestEndpoint" : "http://ld-ocp3.cmsconstruct.com/rest",
+		"credentialDescriptor": "OpsView",
+		"targetQuery" : "node_fingerprints",
+		"skipNodeRegExList": ["[Tt]est[Mm]e", "test.*2"],
+		"printDebug" : false
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}
