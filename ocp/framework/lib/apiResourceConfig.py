@@ -71,7 +71,11 @@ credTypes = {
 	'wmi' : platformSchema.ProtocolWmi,
 	'ssh' : platformSchema.ProtocolSsh,
 	'powershell' : platformSchema.ProtocolPowerShell,
-	'rest' : platformSchema.ProtocolRestApi
+	'rest' : platformSchema.ProtocolRestApi,
+	'postgres' : platformSchema.ProtocolPostgreSql,
+	'mssql' : platformSchema.ProtocolMsSql,
+	'oracle' : platformSchema.ProtocolOracleSql,
+	'db2' : platformSchema.ProtocolIbmDb2
 }
 
 

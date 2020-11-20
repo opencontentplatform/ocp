@@ -1,8 +1,10 @@
 """Software elements.
 
-Software elements are instance-based CIs with a single execution environment
-(i.e. running on a single server or in a single container boundary). This
-category is slightly different from 'System elements', where the execution
+Software elements are instance-based CIs with a single environment. For example:
+  * Software running on a single server or in a single container boundary
+  * Software configured/installed/deployed into a single container
+
+This category is slightly different from 'System elements', where the execution
 environment is strongly tied to a single Node/OS instance. And is different
 from 'Software components', where the component (e.g. database) is shared by
 or represented across multiple instance-based CIs.
@@ -249,21 +251,6 @@ class AppServer(SoftwareElement):
 	__table_args__ = {'schema':'data'}
 	object_id =  Column(None, ForeignKey(SoftwareElement.object_id), primary_key=True)
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'app_server', 'inherit_condition': object_id == SoftwareElement.object_id}
-
-
-class Database(SoftwareElement):
-	"""Defines the database object for the database
-
-	Table :
-	  |  database
-	Column :
-	  |  object_id FK(software_element.object_id) PK
-	"""
-
-	__tablename__ = 'database'
-	__table_args__ = {'schema':'data'}
-	object_id =  Column(None, ForeignKey(SoftwareElement.object_id), primary_key=True)
-	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'database', 'inherit_condition': object_id == SoftwareElement.object_id}
 
 
 class Protocol(SoftwareElement):
@@ -672,6 +659,142 @@ class Twisted(AppServer):
 	@classmethod
 	def unique_filter(cls, query, **kwargs):
 		return query.filter(and_(Twisted.container == kwargs['container'], Twisted.path == kwargs['path']))
+
+
+
+class DatabaseContext(SoftwareElement):
+	"""Represents a configured or installed database object; may not be running
+
+	Table :
+	  |  database_context
+	Column :
+	  |  object_id FK(software_element.object_id) PK
+	"""
+
+	__tablename__ = 'database_context'
+	__table_args__ = {'schema':'data'}
+	object_id =  Column(None, ForeignKey(SoftwareElement.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'database_context', 'inherit_condition': object_id == SoftwareElement.object_id}
+
+
+class DBConnectionParameter(SoftwareElement):
+	"""Represents a connection parameter configured for a database context
+
+	Table :
+	  |  database_connection_parameter
+	Columns :
+	  |  object_id FK(database.object_id) PK
+	  |  container FK(node.object_id)
+	  |  ip_address [String(128)]
+	  |  name [String(128)]
+	  |  protocol [String(128)]
+	  |  port [Integer]
+	  |  name [String(128)]
+	  |  name [String(128)]
+	Constraints :
+	  |  database_connection_parameter_constraint(container, path)
+	"""
+
+	__tablename__ = 'database_connection_parameter'
+	_constraints = ['container', 'name', 'protocol', 'ip_address']
+	_captionRule = {"condition": [ "name" ]}
+	__table_args__ = (UniqueConstraint(*_constraints, name ='database_connection_parameter_constraint'), {'schema':'data'})
+	object_id = Column(None, ForeignKey(SoftwareElement.object_id), primary_key=True)
+	container = Column(None, ForeignKey(DatabaseContext.object_id), nullable=False)
+	name = Column(String(128), nullable=False)
+	protocol = Column(String(128), nullable=False)
+	ip_address = Column(String(128), nullable=True)
+	port = Column(Integer, nullable=True)
+	db_type = Column(String(128), nullable=True)
+	source = Column(String(128), nullable=True)
+	hostname = Column(String(128), nullable=True)
+	logical_context = Column(String(256), nullable=True)
+	container_relationship = relationship('DatabaseContext', backref = backref('database_connection_parameter_objects', cascade = 'all, delete'), foreign_keys = 'DBConnectionParameter.container')
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'database_connection_parameter', 'inherit_condition': object_id == SoftwareElement.object_id}
+
+	@classmethod
+	def unique_filter(cls, query, **kwargs):
+		return query.filter(and_(DBConnectionParameter.container == kwargs['container'], DBConnectionParameter.path == kwargs['path']))
+
+
+class SqlServerContext(DatabaseContext):
+	"""Represents a configured or installed Microsoft SQL Server database
+
+	Table :
+	  |  sqlserver_context
+	Columns :
+	  |  object_id FK(database.object_id) PK
+	  |  container FK(node.object_id)
+	  |  path [String(512)]
+	Constraints :
+	  |  sqlserver_context_constraint(container, path)
+	"""
+
+	__tablename__ = 'sqlserver_context'
+	_constraints = ['container', 'name', 'path']
+	_captionRule = {"condition": [ "name" ]}
+	__table_args__ = (UniqueConstraint(*_constraints, name ='sqlserver_context_constraint'), {'schema':'data'})
+	object_id = Column(None, ForeignKey(DatabaseContext.object_id), primary_key=True)
+	container = Column(None, ForeignKey(Node.object_id), nullable=False)
+	name = Column(String(128), nullable=False)
+	path = Column(String(512), nullable=False)
+	version = Column(String(128), nullable=True)
+	patch_level = Column(String(128), nullable=True)
+	edition = Column(String(128), nullable=True)
+	edition_type = Column(String(128), nullable=True)
+	program_dir = Column(String(512), nullable=True)
+	container_relationship = relationship('Node', backref = backref('sqlserver_context_objects', cascade = 'all, delete'), foreign_keys = 'SqlServerContext.container')
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'sqlserver_context', 'inherit_condition': object_id == DatabaseContext.object_id}
+
+	@classmethod
+	def unique_filter(cls, query, **kwargs):
+		return query.filter(and_(SqlServerContext.container == kwargs['container'], SqlServerContext.path == kwargs['path']))
+
+
+class OracleContext(DatabaseContext):
+	"""Represents a configured or installed Oracle database
+
+	Table :
+	  |  oracle_context
+	Columns :
+	  |  object_id FK(database.object_id) PK
+	  |  container FK(node.object_id)
+	  |  path [String(512)]
+	Constraints :
+	  |  oracle_context_constraint(container, path)
+	"""
+
+	__tablename__ = 'oracle_context'
+	_constraints = ['container', 'path']
+	_captionRule = {"condition": [ "name" ]}
+	__table_args__ = (UniqueConstraint(*_constraints, name ='oracle_context_constraint'), {'schema':'data'})
+	object_id = Column(None, ForeignKey(DatabaseContext.object_id), primary_key=True)
+	container = Column(None, ForeignKey(Node.object_id), nullable=False)
+	path = Column(String(512), nullable=False)
+	name = Column(String(128))
+	version = Column(String(128))
+	container_relationship = relationship('Node', backref = backref('oracle_context_objects', cascade = 'all, delete'), foreign_keys = 'OracleContext.container')
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'oracle_context', 'inherit_condition': object_id == DatabaseContext.object_id}
+
+	@classmethod
+	def unique_filter(cls, query, **kwargs):
+		return query.filter(and_(OracleContext.container == kwargs['container'], OracleContext.path == kwargs['path']))
+
+
+
+class Database(SoftwareElement):
+	"""Defines the database object for the database
+
+	Table :
+	  |  database
+	Column :
+	  |  object_id FK(software_element.object_id) PK
+	"""
+
+	__tablename__ = 'database'
+	__table_args__ = {'schema':'data'}
+	object_id =  Column(None, ForeignKey(SoftwareElement.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'database', 'inherit_condition': object_id == SoftwareElement.object_id}
 
 
 class Postgres(Database):
