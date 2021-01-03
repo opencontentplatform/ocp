@@ -1,0 +1,98 @@
+{
+	"objects": [{
+			"label": "SERVER_NODE",
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},
+		{
+			"label": "SERVER_PROCESS",
+			"class_name": "ProcessFingerprint",
+			"attributes": [
+				"name",
+				"process_owner",
+				"process_args",
+				"path_from_process",
+				"path_from_analysis",
+				"path_working_dir",
+				"process_hierarchy"
+			],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"condition": {
+					"attribute": "is_filtered_out",
+					"operator": "==",
+					"value": false
+				}
+			}]
+		},
+		{
+			"label": "CLIENT_PORT",
+			"class_name": "TcpIpPortClient",
+			"attributes": [
+				"name",
+				"ip",
+				"port_type"
+			],
+			"minimum": "1",
+			"maximum": ""
+		},
+		{
+			"label": "CLIENT_PROCESS",
+			"class_name": "ProcessFingerprint",
+			"attributes": [
+				"name",
+				"process_owner",
+				"process_args",
+				"path_from_process",
+				"path_from_analysis",
+				"path_working_dir",
+				"process_hierarchy"
+			],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"condition": {
+					"attribute": "is_filtered_out",
+					"operator": "==",
+					"value": false
+				}
+			}]
+		},
+		{
+			"label": "CLIENT_NODE",
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "1",
+			"maximum": ""
+		}
+	],
+	"links": [{
+			"label": "SERVER_NODE_TO_PROCESS",
+			"class_name": "Enclosed",
+			"first_id": "SERVER_NODE",
+			"second_id": "SERVER_PROCESS"
+		},
+		{
+			"label": "SERVER_PROCESS_TO_PORT",
+			"class_name": "ServerClient",
+			"first_id": "SERVER_PROCESS",
+			"second_id": "CLIENT_PORT"
+		},
+		{
+			"label": "CLIENT_PORT_TO_PROCESS",
+			"class_name": "Usage",
+			"first_id": "CLIENT_PROCESS",
+			"second_id": "CLIENT_PORT"
+		},
+		{
+			"label": "CLIENT_NODE_TO_PROCESS",
+			"class_name": "Enclosed",
+			"first_id": "CLIENT_NODE",
+			"second_id": "CLIENT_PROCESS"
+		}
+	]
+}

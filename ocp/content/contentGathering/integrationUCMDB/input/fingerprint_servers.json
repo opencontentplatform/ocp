@@ -1,0 +1,51 @@
+{
+	"objects": [{
+		"label": "SERVER",
+		"class_name": "Node",
+		"attributes": ["hostname", "domain"],
+		"minimum": "1",
+		"maximum": "",
+		"linchpin": true
+	}, {
+		"label": "PROCESS",
+		"class_name": "ProcessFingerprint",
+		"attributes": ["name", "process_owner", "process_hierarchy", "path_from_process", "path_from_filesystem", "path_from_analysis", "path_working_dir", "process_args"],
+		"minimum": "1",
+		"maximum": ""
+	}, {
+		"label": "PORT",
+		"class_name": "TcpIpPort",
+		"attributes": ["port", "ip", "port_type"],
+		"minimum": "1",
+		"maximum": "",
+		"filter": [{
+			"operator": "or",
+			"negation": "True",
+			"expression": [{
+				"condition": {
+				 "attribute": "ip",
+				 "operator": "==",
+				 "value": "127.0.0.1"
+				}
+			 },
+			 {
+				"condition": {
+				 "attribute": "ip",
+				 "operator": "regex",
+				 "value": ":"
+				}
+			 }
+			]}]
+	}],
+	"links": [{
+		"label": "SERVER_TO_PROCESS",
+		"class_name": "Enclosed",
+		"first_id": "SERVER",
+		"second_id": "PROCESS"
+	}, {
+		"label": "PROCESS1_TO_PORT",
+		"class_name": "Usage",
+		"first_id": "PROCESS",
+		"second_id": "PORT"
+	}]
+}

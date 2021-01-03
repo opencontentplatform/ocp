@@ -1,0 +1,39 @@
+{
+	"jobName" : "itdm_to_ucmdb_fingerprints",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolRestApi",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "send_fingerprints",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 3600,
+		"maxProtocolTime" : 3600,
+		"maxCommandTime" : 600
+	},
+	"inputParameters" : {
+		"ucmdbRestEndpoint" : "https://192.168.121.221:8443/rest-api",
+		"credentialDescriptor": "UCMDB",
+		"targetQuery" : "node_fingerprints",
+		"printDebug" : false
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}
