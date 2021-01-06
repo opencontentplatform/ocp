@@ -1193,7 +1193,7 @@ class JobServiceFactory(networkService.ServiceFactory):
 					fileId = moduleFile.object_id
 					## Some files are not used on clients, eg. jobs & endpoints
 					path = moduleFile.path
-					ignoreList = ['job', 'endpoint']
+					ignoreList = ['job', 'endpoint', 'doc', 'external']
 					if path.endswith(tuple(ignoreList)):
 						continue
 					self.moduleFilesToTransfer.append(fileId)
