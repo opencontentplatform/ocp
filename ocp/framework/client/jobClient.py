@@ -145,7 +145,7 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 				if data[remainingSize:remainingSize+delimiterSize] != self.delimiter:
 					self.factory.logger.error('rawDataReceived: Problem downloading file {fileName!r}; length of data was NOT followed by the expected delimiter.', fileName=fileName)
 					## Reset the client (pause/re-initialize)
-					self.disconnectClient()
+					self.factory.disconnectClient()
 
 				else:
 					## Store the updated file hash and contents

@@ -51,6 +51,7 @@
 	"externalProtocolSqlPostgres": "protocolSqlPostgresModule",
 	"externalProtocolPowerShell" : "protocolPowerShellModule",
 	"startServerSideService": false,
+	"checkForUpdatesOnClientContent": false,
 	"waitSecondsBeforeStartingNextService" : 2,
 	"waitSecondsBetweenForcedTokenRefreshes" : 43200,
 	"waitSecondsBeforeExiting" : 5,

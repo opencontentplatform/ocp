@@ -1,7 +1,7 @@
 """External utility to work with WMI connections.
 
 Externally referenced function:
-  |  connection  : called by protocolWrapperWmi to get make a WMI connection
+  |  connection  : called by protocolWrapperWmi to make a WMI connection
 
 
 The intention with an external wrapper, is to move responsibility of protecting

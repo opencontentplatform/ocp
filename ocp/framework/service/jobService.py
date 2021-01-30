@@ -159,9 +159,10 @@ class JobServiceFactory(networkService.ServiceFactory):
 		## do something similar here since the scheduler needs notified
 		if self.shutdownEvent.is_set() or self.canceledEvent.is_set():
 			self.logger.info('mainServiceLoop: shutting down scheduler.')
+			## Moved away from apscheduler's deprecated method
 			# shutdownArgs = { 'shutdown_threadpool': False }
 			# reactor.callFromThread(self.scheduler.shutdown, **shutdownArgs)
-			self.scheduler.shutdown(shutdown_threadpool=False)
+			self.scheduler.shutdown(wait=False)
 			self.logger.info('mainServiceLoop: finished.')
 
 
@@ -189,8 +190,9 @@ class JobServiceFactory(networkService.ServiceFactory):
 				self.loopingMainService = None
 			if self.scheduler is not None:
 				self.logger.debug(' stopFactory: stopping scheduler')
-				#self.scheduler.shutdown(wait=False)
-				self.scheduler.shutdown(shutdown_threadpool=False)
+				## Moved away from apscheduler's deprecated method
+				#self.scheduler.shutdown(shutdown_threadpool=False)
+				self.scheduler.shutdown(wait=False)
 				self.scheduler = None
 			if self.loopingCheckSchedules is not None:
 				self.logger.debug(' stopFactory: stopping loopingCheckSchedules')
@@ -1042,27 +1044,31 @@ class JobServiceFactory(networkService.ServiceFactory):
 					self.constructAndSendData('connectionResponse', {'Response' : 'Not authorized to use this service'})
 					return
 			###########################################################
+
 			self.logger.debug('doCheckModules: ...starting work... {endpointName!r}', endpointName=endpointName)
 			moduleSnapshots = {}
-			modules = self.dbClient.session.query(platformSchema.ContentPackage).filter(platformSchema.ContentPackage.system==self.moduleType).all()
-			self.dbClient.session.commit()
-			for module in modules:
-				moduleName = module.name
-				snapshot = module.snapshot
-				moduleSnapshots[moduleName] = snapshot
-
-			## Ensure we also include the 'shared' package; it would have been
-			## included if it was a ContentGathering client request, but other
-			## clients need it too (e.g. universalJob).
-			if self.moduleType != 'contentGathering':
-				self.logger.debug('doCheckModules: need to add shared')
-				sharedModule = self.dbClient.session.query(platformSchema.ContentPackage).filter(platformSchema.ContentPackage.name=='shared').first()
+			## This setting determines whether we check for and send content
+			## updates from the server to the connected job-based clients
+			if self.globalSettings.get('checkForUpdatesOnClientContent', False):
+				modules = self.dbClient.session.query(platformSchema.ContentPackage).filter(platformSchema.ContentPackage.system==self.moduleType).all()
 				self.dbClient.session.commit()
-				if sharedModule:
-					moduleName = sharedModule.name
-					snapshot = sharedModule.snapshot
+				for module in modules:
+					moduleName = module.name
+					snapshot = module.snapshot
 					moduleSnapshots[moduleName] = snapshot
-					self.logger.debug('doCheckModules: added shared {}'.format(snapshot))
+
+				## Ensure we also include the 'shared' package; it would have been
+				## included if it was a ContentGathering client request, but other
+				## clients need it too (e.g. universalJob).
+				if self.moduleType != 'contentGathering':
+					self.logger.debug('doCheckModules: need to add shared')
+					sharedModule = self.dbClient.session.query(platformSchema.ContentPackage).filter(platformSchema.ContentPackage.name=='shared').first()
+					self.dbClient.session.commit()
+					if sharedModule:
+						moduleName = sharedModule.name
+						snapshot = sharedModule.snapshot
+						moduleSnapshots[moduleName] = snapshot
+						self.logger.debug('doCheckModules: added shared {}'.format(snapshot))
 
 			## Provide the client with the current module snapshot (UUID) values
 			content = {}
@@ -1128,8 +1134,12 @@ class JobServiceFactory(networkService.ServiceFactory):
 				if (dataSize%chunkSize):
 					chunkCount += 1
 				content['contentLength'] = dataSize
-				self.logger.debug('Client requesting file: {fileName!r}', fileName=content)
+				self.logger.debug('Client to receive file: {fileName!r}', fileName=content)
 				client.constructAndSendData('moduleFile', content)
+				## Ensure sync between client and this flow; also remove from
+				## active client comms - like health updates.
+				## TODO
+
 				## Change communication type to Raw before sending file
 				self.logger.debug('  setting to Raw mode')
 				client.setRawMode()

@@ -1,7 +1,7 @@
 """External utility to work with SSH connections.
 
 Externally referenced function:
-  |  connection  : called by protocolWrapperSSH to get make an SSH connection
+  |  connection  : called by protocolWrapperSSH to make an SSH connection
 
 
 The intention with an external wrapper, is to move responsibility of protecting
