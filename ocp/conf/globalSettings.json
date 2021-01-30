@@ -48,6 +48,7 @@
 	"externalProtocolWmi" : "protocolWmiModule",
 	"externalProtocolSnmp" : "protocolSnmpModule",
 	"externalProtocolSsh" : "protocolSshModule",
+	"externalProtocolSqlPostgres": "protocolSqlPostgresModule",
 	"externalProtocolPowerShell" : "protocolPowerShellModule",
 	"startServerSideService": false,
 	"waitSecondsBeforeStartingNextService" : 2,

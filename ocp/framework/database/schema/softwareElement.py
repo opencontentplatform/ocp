@@ -853,7 +853,7 @@ class DB2(Database):
 		return query.filter(and_(DB2.container == kwargs['container'], DB2.path == kwargs['path']))
 
 
-class MYSQL(Database):
+class MySQL(Database):
 	"""Defines the mysql object for the database
 
 	Table :
@@ -873,12 +873,40 @@ class MYSQL(Database):
 	object_id = Column(None, ForeignKey(Database.object_id), primary_key=True)
 	container = Column(None, ForeignKey(Node.object_id), nullable=False)
 	path = Column(String(512), nullable=False)
-	container_relationship = relationship('Node', backref = backref('mysql_objects', cascade = 'all, delete'), foreign_keys = 'MYSQL.container')
+	container_relationship = relationship('Node', backref = backref('mysql_objects', cascade = 'all, delete'), foreign_keys = 'MySQL.container')
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'mysql', 'inherit_condition': object_id == Database.object_id}
 
 	@classmethod
 	def unique_filter(cls, query, **kwargs):
-		return query.filter(and_(MYSQL.container == kwargs['container'], MYSQL.path == kwargs['path']))
+		return query.filter(and_(MySQL.container == kwargs['container'], MySQL.path == kwargs['path']))
+
+
+class MariaDB(Database):
+	"""Defines the mariadb object for the database
+
+	Table :
+	  |  mariadb
+	Columns :
+	  |  object_id FK(database.object_id) PK
+	  |  container FK(node.object_id)
+	  |  path [String(512)]
+	Constraints :
+	  |  mariadb_constraint(container, path)
+	"""
+
+	__tablename__ = 'mariadb'
+	_constraints = ['container', 'path']
+	_captionRule = {"condition": [ "path" ]}
+	__table_args__ = (UniqueConstraint(*_constraints, name ='mariadb_constraint'), {'schema':'data'})
+	object_id = Column(None, ForeignKey(Database.object_id), primary_key=True)
+	container = Column(None, ForeignKey(Node.object_id), nullable=False)
+	path = Column(String(512), nullable=False)
+	container_relationship = relationship('Node', backref = backref('mariadb_objects', cascade = 'all, delete'), foreign_keys = 'MariaDB.container')
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'mariadb', 'inherit_condition': object_id == Database.object_id}
+
+	@classmethod
+	def unique_filter(cls, query, **kwargs):
+		return query.filter(and_(MariaDB.container == kwargs['container'], MariaDB.path == kwargs['path']))
 
 
 class SqlServer(Database):

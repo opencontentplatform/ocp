@@ -1531,10 +1531,11 @@ class RealmUtility:
 		"""Determine if an IP falls within the boundary of the realm networks."""
 		if realmName not in self.realms:
 			raise EnvironmentError('Unknown realm: {}'.format(realmName))
-		ipAsNetwork = ipaddress.ip_network(ipAsString)
-		for network in self.realms[realmName]:
-			if network.overlaps(ipAsNetwork):
-				return True
+		if ipAsString is not None:
+			ipAsNetwork = ipaddress.ip_network(ipAsString)
+			for network in self.realms[realmName]:
+				if network.overlaps(ipAsNetwork):
+					return True
 		## end isIpInRealm
 		return False
 
