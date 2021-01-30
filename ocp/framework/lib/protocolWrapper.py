@@ -36,6 +36,15 @@ from protocolWrapperPwshLocal import PwshLocal
 from protocolWrapperSnmp import Snmp
 from protocolWrapperSSH import SSH
 from protocolWrapperPowerShell import PowerShell
+
+## Remote SQL database adapter wrappers
+from protocolWrapperSqlPostgres import SqlPostgres
+# from protocolWrapperSqlOracle import SqlOracle
+# from protocolWrapperSqlIbmDb2 import SqlIbmDb2
+# from protocolWrapperSqlMicrosoft import SqlMicrosoft
+# from protocolWrapperSqlMariaDb import SqlMariaDb
+# from protocolWrapperSqlMySql import SqlMySql
+
 ## The Pymi wmi module is not supported on Linux, and went through a build
 ## change that made it unavailable for several Python builds. So don't assume
 ## it's there; check for it and handle appropriately...
@@ -48,16 +57,27 @@ except ImportError:
 	## This stubbed function handles calls from active jobs
 	def Wmi(logger, endpoint, three, four, **kwargs):
 		## This message is for the local client's job level (if monitored)
-		logger.error('Trying to use WMI, but the PyMi module is not installed. PyMi is not supported on Linux or on some newer Python versions; see here for  details: https://github.com/cloudbase/PyMI.  Endpoint: {endpoint!r}', endpoint=endpoint)
+		logger.error('Trying to use WMI, but the PyMi module is not installed. PyMi is not supported on Linux or on some newer Python versions; see here for details: https://github.com/cloudbase/PyMI.  Endpoint: {endpoint!r}', endpoint=endpoint)
 		## This EnvironmentError will reflect in the returned job status.
 		raise EnvironmentError('Trying to use WMI, but the PyMi module is not installed. PyMi is not supported on Linux or on some newer Python versions; see here for details: https://github.com/cloudbase/PyMI.')
 
+
 ## Globals for ease of update
-remoteProtocolTypes = ['protocolsnmp', 'protocolwmi', 'protocolssh', 'protocolpowershell']
+remoteProtocolTypes = ['protocolsnmp', 'protocolwmi', 'protocolssh',
+					   'protocolpowershell', 'protocolsqlpostgres',
+					   'protocolsqloracle', 'protocolsqldb2',
+					   'protocolsqlmicrosoft', 'protocolsqlmaria',
+					   'protocolsqlmy']
 clientToProtocolTable = {'snmp': 'protocolsnmp',
 						 'wmi': 'protocolwmi',
 						 'ssh': 'protocolssh',
-						 'powershell': 'protocolpowershell'}
+						 'powershell': 'protocolpowershell',
+						 'postgres': 'protocolsqlpostgres',
+						 'oracle': 'protocolsqloracle',
+						 'sqlserver': 'protocolsqlmicrosoft',
+						 'mariadb': 'protocolsqlmaria',
+						 'mysql': 'protocolsqlmy',
+						 'db2': 'protocolsqldb2'}
 localProtocolTypes = {'powershell': PowerShellLocal,
 					  'cmd': CmdLocal,
 					  'pwsh': PwshLocal}
@@ -135,6 +155,26 @@ def thisClient(runtime, endpointString, protocolReference, protocolType, connect
 	elif protocolType == 'protocolssh':
 		endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 		client = SSH(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
+
+	## SQL types
+	elif protocolType == 'protocolsqlpostgres':
+		endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+		client = SqlPostgres(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
+	# elif protocolType == 'protocolsqloracle':
+	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+	# 	client = SqlOracle(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
+	# elif protocolType == 'protocolsqldb2':
+	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+	# 	client = SqlIbmDb2(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
+	# elif protocolType == 'protocolsqlmicrosoft':
+	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+	# 	client = SqlMicrosoft(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
+	# elif protocolType == 'protocolsqlmaria':
+	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+	# 	client = SqlMariaDb(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
+	# elif protocolType == 'protocolsqlmy':
+	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+	# 	client = SqlMySql(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 
 	## end thisClient
 	return client

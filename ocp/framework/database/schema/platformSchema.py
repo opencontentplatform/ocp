@@ -258,88 +258,191 @@ class ProtocolPowerShell(ProtocolShell):
 	password = Column(String(256), nullable=False)
 
 
-class ProtocolPostgreSql(ProtocolBase):
+class ProtocolSql(ProtocolBase):
+	"""Defines an abstract SQL protocol object (parent for database protocols).
+
+	Table :
+	  |  protocol_sql
+	Columns :
+	  |  user [String(256)]
+	  |  password [String(256)]
+	  |  db_type [String(64)]
+	  |  connect_timeout [Integer]
+	  |  use_cert [Boolean]
+	  |  cert_filename [String(256)]
+	  |  ssl_mode [String(64)]
+	  |  cert_password [String(256)]
+	  |  context [String(256)]
+	"""
+
+	__tablename__ = 'protocol_sql'
+	__table_args__ = {"schema":"platform"}
+	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
+	user = Column(String(256), nullable=False)
+	password = Column(String(256), nullable=False)
+	connect_timeout = Column(Integer, default=10)
+	use_cert = Column(Boolean, default=False)
+	cert_filename = Column(String(256), nullable=True)
+	ssl_mode = Column(String(64), nullable=True)
+	cert_password = Column(String(256), nullable=True)
+	cert_key = Column(String(256), nullable=True)
+	## This won't normally be used; should come from discovery, but allow it;
+	## enables a generic attr (schema/instance/alias) for the connection string
+	context = Column(String(256), nullable=True)
+
+
+class ProtocolSqlPostgres(ProtocolSql):
 	"""Defines a SQL protocol for Postgres.
 
 	Table :
-	  |  protocol_postgres
-	Columns :
-	  |  user [String(256)]
-	  |  password [String(256)]
-	  |  use_cert [Boolean]
-	  |  cert_filename [String(256)]
+	  |  protocol_sql_postgres
 	"""
 
-	__tablename__ = 'protocol_postgres'
+	__tablename__ = 'protocol_sql_postgres'
 	__table_args__ = {"schema":"platform"}
-	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
-	user = Column(String(256), nullable=False)
-	password = Column(String(256), nullable=False)
-	use_cert = Column(Boolean, default=False)
-	cert_filename = Column(String(256), nullable=True)
+	object_id = Column(None, ForeignKey(ProtocolSql.object_id), primary_key=True)
 
 
-class ProtocolMsSql(ProtocolBase):
+class ProtocolSqlMicrosoft(ProtocolSql):
 	"""Defines a SQL protocol for Microsoft SQL Server.
 
 	Table :
-	  |  protocol_ms_sql
-	Columns :
-	  |  user [String(256)]
-	  |  password [String(256)]
-	  |  use_cert [Boolean]
-	  |  cert_filename [String(256)]
+	  |  protocol_sql_microsoft
 	"""
 
-	__tablename__ = 'protocol_ms_sql'
+	__tablename__ = 'protocol_sql_microsoft'
 	__table_args__ = {"schema":"platform"}
-	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
-	user = Column(String(256), nullable=False)
-	password = Column(String(256), nullable=False)
-	use_cert = Column(Boolean, default=False)
-	cert_filename = Column(String(256), nullable=True)
+	object_id = Column(None, ForeignKey(ProtocolSql.object_id), primary_key=True)
 
 
-class ProtocolOracleSql(ProtocolBase):
+class ProtocolSqlOracle(ProtocolSql):
 	"""Defines a SQL protocol for Oracle.
 
 	Table :
-	  |  protocol_oracle_sql
-	Columns :
-	  |  user [String(256)]
-	  |  password [String(256)]
-	  |  use_cert [Boolean]
-	  |  cert_filename [String(256)]
+	  |  protocol_sql_oracle
 	"""
 
-	__tablename__ = 'protocol_oracle_sql'
+	__tablename__ = 'protocol_sql_oracle'
 	__table_args__ = {"schema":"platform"}
-	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
-	user = Column(String(256), nullable=False)
-	password = Column(String(256), nullable=False)
-	use_cert = Column(Boolean, default=False)
-	cert_filename = Column(String(256), nullable=True)
+	object_id = Column(None, ForeignKey(ProtocolSql.object_id), primary_key=True)
 
 
-class ProtocolIbmDb2(ProtocolBase):
+class ProtocolSqlDb2(ProtocolSql):
 	"""Defines a SQL protocol for IBM DB2.
 
 	Table :
-	  |  protocol_db2_sql
-	Columns :
-	  |  user [String(256)]
-	  |  password [String(256)]
-	  |  use_cert [Boolean]
-	  |  cert_filename [String(256)]
+	  |  protocol_sql_db2
 	"""
 
-	__tablename__ = 'protocol_db2_sql'
+	__tablename__ = 'protocol_sql_db2'
 	__table_args__ = {"schema":"platform"}
-	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
-	user = Column(String(256), nullable=False)
-	password = Column(String(256), nullable=False)
-	use_cert = Column(Boolean, default=False)
-	cert_filename = Column(String(256), nullable=True)
+	object_id = Column(None, ForeignKey(ProtocolSql.object_id), primary_key=True)
+
+
+class ProtocolSqlMaria(ProtocolSql):
+	"""Defines a SQL protocol for MariaDB.
+
+	Table :
+	  |  protocol_sql_maria
+	"""
+
+	__tablename__ = 'protocol_sql_maria'
+	__table_args__ = {"schema":"platform"}
+	object_id = Column(None, ForeignKey(ProtocolSql.object_id), primary_key=True)
+
+class ProtocolSqlMy(ProtocolSql):
+	"""Defines a SQL protocol for MySQL.
+
+	Table :
+	  |  protocol_sql_my
+	"""
+
+	__tablename__ = 'protocol_sql_my'
+	__table_args__ = {"schema":"platform"}
+	object_id = Column(None, ForeignKey(ProtocolSql.object_id), primary_key=True)
+#
+# class ProtocolPostgreSql(ProtocolBase):
+# 	"""Defines a SQL protocol for Postgres.
+#
+# 	Table :
+# 	  |  protocol_postgres
+# 	Columns :
+# 	  |  user [String(256)]
+# 	  |  password [String(256)]
+# 	  |  use_cert [Boolean]
+# 	  |  cert_filename [String(256)]
+# 	"""
+#
+# 	__tablename__ = 'protocol_postgres'
+# 	__table_args__ = {"schema":"platform"}
+# 	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
+# 	user = Column(String(256), nullable=False)
+# 	password = Column(String(256), nullable=False)
+# 	use_cert = Column(Boolean, default=False)
+# 	cert_filename = Column(String(256), nullable=True)
+#
+#
+# class ProtocolMsSql(ProtocolBase):
+# 	"""Defines a SQL protocol for Microsoft SQL Server.
+#
+# 	Table :
+# 	  |  protocol_ms_sql
+# 	Columns :
+# 	  |  user [String(256)]
+# 	  |  password [String(256)]
+# 	  |  use_cert [Boolean]
+# 	  |  cert_filename [String(256)]
+# 	"""
+#
+# 	__tablename__ = 'protocol_ms_sql'
+# 	__table_args__ = {"schema":"platform"}
+# 	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
+# 	user = Column(String(256), nullable=False)
+# 	password = Column(String(256), nullable=False)
+# 	use_cert = Column(Boolean, default=False)
+# 	cert_filename = Column(String(256), nullable=True)
+#
+#
+# class ProtocolOracleSql(ProtocolBase):
+# 	"""Defines a SQL protocol for Oracle.
+#
+# 	Table :
+# 	  |  protocol_oracle_sql
+# 	Columns :
+# 	  |  user [String(256)]
+# 	  |  password [String(256)]
+# 	  |  use_cert [Boolean]
+# 	  |  cert_filename [String(256)]
+# 	"""
+#
+# 	__tablename__ = 'protocol_oracle_sql'
+# 	__table_args__ = {"schema":"platform"}
+# 	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
+# 	user = Column(String(256), nullable=False)
+# 	password = Column(String(256), nullable=False)
+# 	use_cert = Column(Boolean, default=False)
+# 	cert_filename = Column(String(256), nullable=True)
+#
+#
+# class ProtocolIbmDb2(ProtocolBase):
+# 	"""Defines a SQL protocol for IBM DB2.
+#
+# 	Table :
+# 	  |  protocol_db2_sql
+# 	Columns :
+# 	  |  user [String(256)]
+# 	  |  password [String(256)]
+# 	  |  use_cert [Boolean]
+# 	  |  cert_filename [String(256)]
+# 	"""
+#
+# 	__tablename__ = 'protocol_db2_sql'
+# 	__table_args__ = {"schema":"platform"}
+# 	object_id = Column(None, ForeignKey(ProtocolBase.object_id), primary_key=True)
+# 	user = Column(String(256), nullable=False)
+# 	password = Column(String(256), nullable=False)
+# 	use_cert = Column(Boolean, default=False)
+# 	cert_filename = Column(String(256), nullable=True)
 
 
 class ProtocolRestApi(ProtocolBase):
