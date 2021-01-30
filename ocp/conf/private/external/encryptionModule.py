@@ -151,6 +151,9 @@ def decode(value, thisToken=None, generateToken=False, tokenType=None, returnRaw
 	## The provided value is most likely a string, but may be bytes
 	decodedValue = None
 	if value is not None:
+		## If this is of type dict, it's probably a non-wrapped protocol,
+		## meaning it's already been decoded and is now already readable...
+		## in which case it throws a TypeError: encoding without string argument
 		if not isinstance(value, bytes):
 			value = bytes(value, 'utf-8')
 		decodedValue = decodingUtility.decrypt(value)

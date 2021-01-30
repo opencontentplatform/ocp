@@ -33,8 +33,8 @@ import env
 externalEncryptionLibrary = utils.loadExternalLibrary('externalEncryptionLibrary', env)
 
 ## Global for ease of update
-managedProtocols = ['ProtocolSnmp', 'ProtocolWmi', 'ProtocolSsh', 'ProtocolPowerShell']
-sensitiveAttributes = ['password', 'community_string', 'token']
+managedProtocols = ['ProtocolSnmp', 'ProtocolWmi', 'ProtocolSsh', 'ProtocolPowerShell', 'ProtocolSqlPostgres']
+sensitiveAttributes = ['password', 'community_string', 'token', 'cert_password', 'cert_key', 'key_passphrase']
 ignoredAttributes = ['time_created', 'time_updated', 'object_created_by', 'object_updated_by']
 
 
