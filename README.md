@@ -8,6 +8,7 @@ IT Service Management (ITSM) is well established with proprietary tool coverage 
 
 So why create an open-source offering for IT discovery and integration activities?
 
+  * Software discovery and dependency mapping across servers, without having to create software signatures.
   * Modernize the underlying platform to enable horizontal, on-demand scalability in the discovery framework.
   * Add new methodologies into the discovery framework; more than just the 1-to-1 model of job-to-technology.
   * Jobs could be vendor agnostic; develop once and send to any ITSM product.
@@ -15,20 +16,14 @@ So why create an open-source offering for IT discovery and integration activitie
   * Crowd-sourcing jobs; enable individual developers to compete with big vendors and their partner ecosystems.
   * Expand ITSM customer base to companies with less than 5,000 servers; everyone can afford open-source!
 
-Website
--------
-  * https://www.opencontentplatform.org/
- 
-Installation
-------------
-  * Install: https://www.opencontentplatform.org/install/
-  * Getting Started: https://www.opencontentplatform.org/get-started/
-
-Community Forum
----------------
-  * https://www.opencontentplatform.org/forums/forum/public/
+References
+----------
+  * [Official Website](https://www.opencontentplatform.org/)
+  * [Installation](https://www.opencontentplatform.org/install/)
+  * [Getting Started](https://www.opencontentplatform.org/get-started/)
+  * [Community Forum](https://www.opencontentplatform.org/forums/forum/public/)
 
 License
 -------
-  * GNU Lesser General Public License: https://github.com/opencontentplatform/ocp/blob/master/LICENSE
+  * [GNU Lesser General Public License](https://github.com/opencontentplatform/ocp/blob/master/LICENSE)
 
