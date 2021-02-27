@@ -1136,25 +1136,27 @@ class JobServiceFactory(networkService.ServiceFactory):
 				content['contentLength'] = dataSize
 				self.logger.debug('Client to receive file: {fileName!r}', fileName=content)
 				client.constructAndSendData('moduleFile', content)
-				## Ensure sync between client and this flow; also remove from
-				## active client comms - like health updates.
-				## TODO
 
+				## The raw mode writting needs to be synchronous, just like with
+				## constructAndSendData; if it's not, the first raw file chunk
+				## can arrive at clients before moduleFile instructions above.
+				## Twisted import here to avoid issues with epoll on Linux
+				from twisted.internet import reactor
 				## Change communication type to Raw before sending file
 				self.logger.debug('  setting to Raw mode')
-				client.setRawMode()
+				reactor.callFromThread(client.setRawMode)
 				## Send the file in chunks
 				self.logger.debug('  sending file contents...')
 				for chunkId in range(chunkCount):
 					self.logger.debug('  sending chunk #{chunkId!r} of {chunkCount!r}', chunkId=chunkId+1, chunkCount=chunkCount)
 					chunk = fileContent[:chunkSize]
-					client.transport.write(chunk)
+					reactor.callFromThread(client.transport.write, chunk)
 					with suppress(Exception):
 						fileContent = fileContent[chunkSize:]
 				## Mark the end of file
-				client.transport.write(b':==:')
+				reactor.callFromThread(client.transport.write, b':==:')
 				## Set back to LineReceiver mode
-				client.setLineMode()
+				reactor.callFromThread(client.setLineMode)
 				self.logger.debug('  resetting to LineReceiver mode')
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
