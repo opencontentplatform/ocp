@@ -83,7 +83,7 @@ class JobClientListener(coreClient.ServiceClientProtocol):
 		self.factory.doModuleComplete(content)
 
 	def requestAuthorization(self):
-		"""Custom entry for content gathering client; redirects to checkModules."""
+		"""Custom entry for job-based clients; redirects to checkModules."""
 		self.factory.logger.debug('Requesting connection --> redirect to checkModules')
 		content = {}
 		content['endpointName'] = self.factory.endpointName
@@ -1020,17 +1020,19 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 				os.mkdir(directory)
 		filePath = directory
 		os.path.join(filePath, content.get('fileName'))
-		self.logger.info('Requesting file: {thisFile!r}', thisFile=os.path.abspath(os.path.join(filePath, content.get('fileName'))))
+		self.logger.info('Receiving file: {thisFile!r}', thisFile=os.path.abspath(os.path.join(filePath, content.get('fileName'))))
 		self.moduleFileContext['filePath'] = directory
 		self.moduleFileContext['fileHandle'] = None
 		self.moduleFileContext['partialContent'] = bytearray()
 		self.logger.debug('---> setting mode to Raw Mode')
 		self.connectedClient.setRawMode()
 
+		## end doModuleFile
+		return
+
 
 	def requestModuleContents(self, moduleName, moduleSnapshot):
 		try:
-			self.logger.debug('Requesting module: {moduleName!r}', moduleName=moduleName)
 			self.moduleContext['module'] = moduleName
 			self.moduleContext['snapshot'] = moduleSnapshot
 			content = {}
@@ -1099,28 +1101,23 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 					os.makedirs(self.pkgPath)
 
 			for moduleName,serverSnapshot in serverSnapshots.items():
+				needToTransfer = True
 				if moduleName in clientSnapshots:
 					## Module already present on client; check snapshot value
 					clientSnapshot = clientSnapshots[moduleName]
 					if clientSnapshot == serverSnapshot:
 						self.logger.info(' module data is current: {moduleName!r}', moduleName=moduleName)
+						needToTransfer = False
 					else:
-						self.logger.info(' module requires update: {moduleName!r}', moduleName=moduleName)
-						updateSnapshotsFile = True
-						self.requiresRestart = True
-						self.modulesToTransfer[moduleName] = serverSnapshot
 						## Remove client module directory and recreate
 						self.removeOldModulePath(moduleName)
 					## Remove the processed module from the remaining snapshots
 					clientSnapshots.pop(moduleName)
-				else:
+				if needToTransfer:
 					self.logger.info(' module requires update: {moduleName!r}', moduleName=moduleName)
 					updateSnapshotsFile = True
 					self.requiresRestart = True
 					self.modulesToTransfer[moduleName] = serverSnapshot
-
-			## Start the first module transfer
-			self.doModuleComplete({})
 
 			## Now go through any remaining modules on the client that were
 			## not in the server listing, and remove the old/unknown content.
@@ -1136,6 +1133,9 @@ class JobClientFactory(coreClient.ServiceClientFactory):
 				self.logger.debug('Writing a new moduleSnapshots.json file')
 				with open(snapshotFile, 'w') as fh:
 					json.dump(serverSnapshots, fh, indent=4)
+
+			## Start the first module transfer
+			self.doModuleComplete({})
 
 			## Wait on these updates to finish before activating the client; this
 			## occurs after doModuleComplete() has been called enough times by the
