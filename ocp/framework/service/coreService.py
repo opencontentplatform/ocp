@@ -15,7 +15,7 @@ Services without clients simply inherit this class.
 
 To illustrate the point:
 ContentGatheringService (a horizontally scalable/micro-service) MRO:
-  remoteService.RemoteServiceFactory -> networkService.ServiceFactory ->
+  jobService.JobServiceFactory -> networkService.ServiceFactory ->
   coreService.CoreService -> twisted.internet.protocol.ServerFactory
 
 LogCollectionService (a local service that runs on server) MRO:

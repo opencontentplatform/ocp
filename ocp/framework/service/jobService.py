@@ -1198,7 +1198,7 @@ class JobServiceFactory(networkService.ServiceFactory):
 			if snapshot != requestedSnapshot:
 				self.logger.error('Client requested module {requestedModule!r} but the snapshot did not match; ignoring request.', requestedModule=requestedModule)
 			else:
-				## Construct the list of moduleFiles that need transfered
+				## Construct the list of moduleFiles that need transferred
 				moduleFiles = self.dbClient.session.query(platformSchema.ContentPackageFile).filter(platformSchema.ContentPackageFile.package == requestedModule).all()
 				self.dbClient.session.commit()
 				for moduleFile in moduleFiles:
