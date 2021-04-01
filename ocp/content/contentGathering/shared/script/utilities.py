@@ -1249,7 +1249,8 @@ def cleanupJobRuntimePath(thisFile):
 def runPortTest(runtime, endpoint, ports=[], timeoutOnAttempt=.5, maxAttempts=2):
 	"""Test for specified listener port(s) on target endpoint."""
 	for port in ports:
-		runtime.logger.report('runPortTest: endpoint {endpoint!r}:{port!r}', endpoint=endpoint, port=port)
+		listener = '{}:{}'.format(endpoint, port)
+		runtime.logger.report('runPortTest: endpoint {listener!r}', listener=listener)
 		attemptCount = 1
 		## Try multiple times in case
 		while attemptCount <= maxAttempts:
@@ -1260,7 +1261,7 @@ def runPortTest(runtime, endpoint, ports=[], timeoutOnAttempt=.5, maxAttempts=2)
 			with suppress(Exception):
 				sock.close()
 			if result == 0:
-				runtime.logger.report('runPortTest: endpoint {endpoint!r}:{port!r} is active', endpoint=endpoint, port=port)
+				runtime.logger.report('runPortTest: endpoint {listener!r} is active', listener=listener)
 				return True
 
 	## end runPortTest

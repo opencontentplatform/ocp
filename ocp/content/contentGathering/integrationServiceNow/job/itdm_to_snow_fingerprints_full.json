@@ -1,0 +1,47 @@
+{
+	"jobName" : "itdm_to_snow_fingerprints_full",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"protocolType" : "ProtocolRestApi",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "send_fingerprints",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : false,
+	"runTimeValues" : {
+		"maxJobRunTime" : 3600,
+		"maxProtocolTime" : 3600,
+		"maxCommandTime" : 600
+	},
+	"inputParameters" : {
+		"restEndpoint" : "https://dev81982.service-now.com",
+		"userDescriptor": "ServiceNow",
+		"fullQuery" : "node_fingerprints_full",
+		"deltaQuery" : "node_fingerprints_delta",
+		"runDeltaSync": false,
+		"deltaSyncExpirationInDays": 30,
+		"workerScript" : "threadFingerprints",
+		"numberOfThreads" : 5,
+		"printDebug" : false
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : 1,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : 6,
+		"minute" : 1,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}
