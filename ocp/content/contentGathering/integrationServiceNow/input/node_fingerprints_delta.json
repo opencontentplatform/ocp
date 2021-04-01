@@ -1,0 +1,50 @@
+{
+	"objects": [{
+			"class_name": "Node",
+			"attributes": ["hostname", "domain", "platform", "version"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},
+		{
+			"class_name": "ProcessFingerprint",
+			"attributes": ["name", "process_owner", "process_hierarchy", "path_from_process", "path_from_filesystem", "path_from_analysis", "path_working_dir", "process_args"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"negation": "False",
+				"operator": "and",
+				"expression": [{
+					"condition": {
+						"attribute": "time_created",
+						"operator": "betweendate",
+						"value": [<VALUE1>, <VALUE2>]
+					}
+					},{
+					"condition": {
+						"attribute": "is_filtered_out",
+						"operator": "==",
+						"value": false
+					}
+				}]
+			}]
+		},
+		{
+			"class_name": "SoftwareFingerprint",
+			"attributes": ["name", "software_version", "software_info", "software_id", "software_source"],
+			"minimum": "0",
+			"maximum": ""
+		}
+	],
+	"links": [{
+		"label": "NODE_TO_PROCESS",
+		"class_name": "Enclosed",
+		"first_id": "Node",
+		"second_id": "ProcessFingerprint"
+	}, {
+		"label": "SOFTWARE_TO_PROCESS",
+		"class_name": "Usage",
+		"first_id": "SoftwareFingerprint",
+		"second_id": "ProcessFingerprint"
+	}]
+}
