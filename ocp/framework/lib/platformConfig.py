@@ -98,7 +98,7 @@ def main():
 
 		## Are we intending to use certificates and encrypt traffic?
 		useCertificates = globalSettings.get('useCertificates')
-		useCerts = getInputOrReturnDefault('Encrypt ITDM client/service traffic with certificates', useCertificates)
+		useCerts = getInputOrReturnDefault('Encrypt OCP client/service traffic with certificates', useCertificates)
 		useCerts = utils.valueToBoolean(useCerts)
 		if useCertificates != useCerts:
 			globalSettings['useCertificates'] = useCerts

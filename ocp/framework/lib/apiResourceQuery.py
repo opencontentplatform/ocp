@@ -1,4 +1,4 @@
-"""Query resource for the IT Discovery Machine REST API.
+"""Query resource for the Open Content Platform REST API.
 
 This module defines the Application Programming Interface (API) methods for the
 /<root>/query endpoint. Available resources follow::

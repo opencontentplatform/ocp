@@ -1,4 +1,4 @@
-"""Data resource for the IT Discovery Machine REST API.
+"""Data resource for the Open Content Platform REST API.
 
 This module defines the Application Programming Interface (API) methods for the
 /<root>/data endpoint. Available resources follow::

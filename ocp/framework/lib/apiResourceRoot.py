@@ -1,4 +1,4 @@
-"""Root resource for the IT Discovery Machine REST API.
+"""Root resource for the Open Content Platform REST API.
 
 This module does the setup required for API resources to be hosted through the
 selected technologies. We use Twisted Web for our WSGI (Python web server), Hug
@@ -51,7 +51,7 @@ import utils
 from apiHugWrapper import hugWrapper
 globalSettings = utils.loadSettings(os.path.join(env.configPath, "globalSettings.json"))
 ## Set root context (base path) for the API, as directed by the global setting
-root = '/{}'.format(globalSettings.get('apiContextRoot', 'itdm'))
+root = '/{}'.format(globalSettings.get('apiContextRoot', 'ocp'))
 
 ## Setup the logger
 ## Note: the default Python logger and the Twisted logger both had problems with
@@ -195,7 +195,7 @@ def getOCP(response):
 					root+"/config",
 					root+"/task",
 					root+"/archive"]
-	payload = {"IT Discovery Machine REST API Endpoints" : apiResources}
+	payload = {"Open Content Platform REST API Endpoints" : apiResources}
 
 	## end getOCP
 	return payload
