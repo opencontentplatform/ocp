@@ -1,4 +1,4 @@
-"""Archive resource for the IT Discovery Machine REST API.
+"""Archive resource for the Open Content Platform REST API.
 
 This module defines the Application Programming Interface (API) methods for the
 /<root>/archive endpoint. Available resources follow::

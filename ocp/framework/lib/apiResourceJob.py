@@ -1,4 +1,4 @@
-"""Job resource for the IT Discovery Machine REST API.
+"""Job resource for the Open Content Platform REST API.
 
 This module defines the Application Programming Interface (API) methods for the
 /<root>/job endpoint. Available resources follow::

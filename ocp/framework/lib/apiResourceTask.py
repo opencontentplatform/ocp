@@ -1,4 +1,4 @@
-"""Task resource for the IT Discovery Machine REST API.
+"""Task resource for the Open Content Platform REST API.
 
 This module defines the Application Programming Interface (API) methods for the
 /<root>/task endpoint. Available resources follow::
