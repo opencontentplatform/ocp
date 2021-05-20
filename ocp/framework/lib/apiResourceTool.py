@@ -209,8 +209,8 @@ def getLinkedObjects(object_id:text, request, response):
 def referenceAndMergeObject(weakId:text, strongId:text, request, response):
 	"""Merge a weak object into a strong object, includes attributes and links."""
 	try:
-		objectCache = ObjectCache(request.context['logger'], apiUtils.dbClient)
-		resultProcessingUtility = ResultProcessing(request.context['logger'], apiUtils.dbClient, cacheData=objectCache.constraintCache, referenceCacheData=objectCache.referenceCache)
+		objectCache = ObjectCache(request.context['logger'], request.context['dbSession'])
+		resultProcessingUtility = ResultProcessing(request.context['logger'], request.context['dbSession'], cacheData=objectCache.constraintCache, referenceCacheData=objectCache.referenceCache)
 		resultProcessingUtility.referenceAndMergeObjectById(weakId, strongId)
 		request.context['logger'].debug('Sucessfully merged weakId {} to strongId {}.'.format(weakId, strongId))
 		request.context['payload']['Response'] = 'Success'

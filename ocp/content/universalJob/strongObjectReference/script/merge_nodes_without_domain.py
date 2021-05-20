@@ -4,9 +4,7 @@ Functions:
   startJob : standard job entry point
   getNodesWithoutDomains : get the first set of nodes (less qualified)
   getNodesWithDomains : get the second set of nodes (more qualified)
-  getQueryResults : get query results for the node type
   processResults : loop through weak/strong objects and look for matches
-  mergeObjects : issue an API call to merge the weak/strong objects
 
 Author: Chris Satterthwaite (CS)
 Contributors:
@@ -24,21 +22,10 @@ import os
 import json
 from contextlib import suppress
 
+## From this package
+from merge_nodes_utils import mergeObjects, getQueryResults
 ## From openContentPlatform
 from utilities import getApiQueryResultsFull, getApiResult
-
-
-def mergeObjects(runtime, weakId, strongId):
-	"""Issue an API call to merge the objects."""
-	apiResponse = getApiResult(runtime, 'tool/mergeObject', 'post', customPayload={'weakId': weakId, 'strongId': strongId})
-	responseCode = None
-	responseAsJson = {}
-	with suppress(Exception):
-		responseCode = apiResponse.status_code
-	with suppress(Exception):
-		responseAsJson = json.loads(apiResponse.text)
-	if responseCode is None or str(responseCode) != '200':
-		raise EnvironmentError('Unexpected response from API. Code: {}. Payload: {}'.format(responseCode, responseAsJson))
 
 
 def processResults(runtime, weakNodes, strongNodes):
@@ -63,25 +50,10 @@ def processResults(runtime, weakNodes, strongNodes):
 					mergeObjects(runtime, weakId, strongId)
 
 	except:
-		stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-		runtime.logger.error('Failure in processResults: {stacktrace!r}', stacktrace=stacktrace)
+		runtime.setError(__name__)
 
 	## end processResults
 	return
-
-
-def getQueryResults(runtime, queryName, resultsFormat):
-	"""Run a query to get all matching objects."""
-	queryFile = os.path.join(runtime.env.universalJobPkgPath, 'strongObjectReference', 'input', queryName + '.json')
-	if not os.path.isfile(queryFile):
-		raise EnvironmentError('Missing query file specified in the parameters: {queryFile!r}', queryFile=queryFile)
-	queryContent = None
-	with open(queryFile) as fp:
-		queryContent = json.load(fp)
-	queryResults = getApiQueryResultsFull(runtime, queryContent, resultsFormat=resultsFormat, verify=runtime.ocpCertFile)
-
-	## end getQueryResults
-	return queryResults
 
 
 def getNodesWithoutDomains(runtime, weakNodes):
@@ -107,8 +79,7 @@ def getNodesWithoutDomains(runtime, weakNodes):
 			runtime.logger.report('Found weak Node: {nodeName!r}', nodeName=hostname)
 
 	except:
-		stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-		runtime.logger.error('Failure in getNodesWithoutDomains: {stacktrace!r}', stacktrace=stacktrace)
+		runtime.setError(__name__)
 
 	## end getNodesWithoutDomains
 	return foundWeakNodes
@@ -126,8 +97,7 @@ def getNodesWithDomains(runtime, strongNodes):
 			strongNodes.append((hostname, domain, identifier))
 
 	except:
-		stacktrace = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-		runtime.logger.error('Failure in getNodesWithDomains: {stacktrace!r}', stacktrace=stacktrace)
+		runtime.setError(__name__)
 
 	## end getNodesWithDomains
 	return

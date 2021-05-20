@@ -25,8 +25,9 @@ from contextlib import suppress
 from sqlalchemy.orm import noload
 from sqlalchemy import and_
 from sqlalchemy import inspect
-from results import Results
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.scoping import scoped_session as sqlAlchemyScopedSession
+from sqlalchemy.orm.session import Session as sqlAlchemySession
 
 ## Add openContentPlatform directories onto the sys path
 thisPath = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +40,8 @@ env.addLibPath()
 ## From openContentPlatform
 import utils
 import database.connectionPool as tableMapping
+from results import Results
+#from database.connectionPool import DatabaseClient
 
 
 class ResultProcessing:
@@ -60,7 +63,18 @@ class ResultProcessing:
 			self.validWeakLinks = dict()
 			self.validStrongLinks = dict()
 			self.resultJson = Results('resultProcessingDefault', True)
-			self.dbClient = dbClient
+			
+			## Normalize when passed both of these two db client types:
+			##   database.connectionPool.DatabaseClient 
+			##   sqlalchemy.orm.scoping.scoped_session 
+			self.dbSession = None
+			if isinstance(dbClient, sqlAlchemySession) or isinstance(dbClient, sqlAlchemyScopedSession):
+				self.dbSession = dbClient
+			elif isinstance(dbClient, tableMapping.DatabaseClient):
+				self.dbSession = dbClient.session
+			else:
+				raise EnvironmentError('The dbClient passed to ResultProcessing must be either a database.connectionPool.DatabaseClient or a sqlalchemy.orm.scoping.scoped_session.')
+			
 			utils.getValidStrongLinks(self.validStrongLinks)
 			utils.getValidWeakLinks(self.validWeakLinks)
 			utils.getValidClassObjects(self.validClassObjects)
@@ -72,7 +86,7 @@ class ResultProcessing:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			print('Exception in ResultProcessing constructor: {}'.format(str(exception)))
 			with suppress(Exception):
-				self.logger.error('Exception in ResultProcessing: {exception!r}', exception=exception)
+				self.logger.error('Exception in ResultProcessing: {}'.format(str(exception)))
 
 
 	##def referenceAndMergeObjectById(self, dbClient, logger, weakId, strongId):
@@ -86,33 +100,33 @@ class ResultProcessing:
 		  strongId (str)				   : 32 bit hex
 		"""
 		try:
-			weakObject = self.dbClient.session.query(tableMapping.BaseObject).filter(tableMapping.BaseObject.object_id==weakId).first()
+			weakObject = self.dbSession.query(tableMapping.BaseObject).filter(tableMapping.BaseObject.object_id==weakId).first()
 
-			self.logger.debug('referenceAndMergeObjectById: Weak object:')
+			self.logger.debug('referenceAndMergeObjectById: Weak object =================')
 			self.logger.debug('  referenceAndMergeObjectById: Attributes:')
 			for item in inspect(weakObject).mapper.c.keys():
-				self.logger.info('  referenceAndMergeObjectById:   {item!r} = {value!r}', item=item, value=getattr(weakObject,item))
+				self.logger.debug('  referenceAndMergeObjectById:   {} = {}'.format(item, getattr(weakObject,item)))
 
 			self.logger.info('  referenceAndMergeObjectById: Relationships:')
 			for item in ['weak_first_objects', 'weak_second_objects', 'strong_first_objects', 'strong_second_objects', 'base_object_children']:
-				self.logger.info('  referenceAndMergeObjectById:   {item!r} = {value!r}', item=item, value=getattr(weakObject,item))
+				self.logger.debug('  referenceAndMergeObjectById:   {} = {}'.format(item, getattr(weakObject,item)))
 
-			strongObject = self.dbClient.session.query(tableMapping.BaseObject).filter(tableMapping.BaseObject.object_id==strongId).first()
+			strongObject = self.dbSession.query(tableMapping.BaseObject).filter(tableMapping.BaseObject.object_id==strongId).first()
 
-			self.logger.debug('referenceAndMergeObjectById: Strong object:')
+			self.logger.debug('referenceAndMergeObjectById: Strong object ===============')
 			self.logger.debug('  referenceAndMergeObjectById: Attributes:')
 			for item in inspect(strongObject).mapper.c.keys():
-				self.logger.info('  referenceAndMergeObjectById:   {item!r} = {value!r}', item=item, value=getattr(strongObject,item))
+				self.logger.debug('  referenceAndMergeObjectById:   {} = {}'.format(item, getattr(strongObject,item)))
 
 			self.logger.info('  referenceAndMergeObjectById: Relationships:')
 			for item in ['weak_first_objects', 'weak_second_objects', 'strong_first_objects', 'strong_second_objects', 'base_object_children']:
-				self.logger.info('  referenceAndMergeObjectById:   {item!r} = {value!r}', item=item, value=getattr(strongObject,item))
+				self.logger.debug('  referenceAndMergeObjectById:   {} = {}'.format(item, getattr(strongObject,item)))
 
 			self.referenceAndMergeObject(weakObject, strongObject)
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.self.logger.error('Exception in referenceAndMergeObjectById: {exception!r}', exception=exception)
+			self.logger.error('Exception in referenceAndMergeObjectById: {}'.format(str(exception)))
 
 		## end referenceAndMergeObjectById
 		return
@@ -133,36 +147,36 @@ class ResultProcessing:
 		"""
 		## cleaning the JSON structure before storing
 		try:
-			self.logger.info('Received {weakEntry!r},{strongEntry!r} for referenceAndMergeObject method.', weakEntry=weakEntry, strongEntry=strongEntry)
+			self.logger.info('Received {},{} for referenceAndMergeObject method.'.format(weakEntry, strongEntry))
 			self.resultJson.clearJson()
 			tempThisEntryDict = dict()
 			## The expression below copies values from the ORM instance
 			##  by filtering out the 'reference_id', 'container', 'object_id',
 			## 'time_updated', and 'time_created' attributes.
-			tempThisEntryDict = {col : getattr(weakEntry, col) for col in inspect(weakEntry).mapper.c.keys() if col not in ['reference_id', 'container', 'object_id', 'time_updated', 'time_created']}
+			tempThisEntryDict = {col : getattr(weakEntry, col) for col in inspect(weakEntry).mapper.c.keys() if col not in ['reference_id', 'container', 'object_id', 'time_updated', 'time_created', 'partial']}
 			weakBaseObjectClassName = inspect(weakEntry).class_.__name__
 			self.recreateMappingSubtype(weakEntry, className=inspect(strongEntry).class_.__name__, strongEntry=strongEntry)
-			self.logger.info('The created JSON {data} for weak object {weak!r}', data=self.resultJson.getJson(), weak=weakEntry)
-			self.dbClient.session.delete(weakEntry)
-			self.dbClient.session.commit()
+			self.logger.info('The created JSON {} for weak object {}'.format(self.resultJson.getJson(), weakEntry))
+			self.dbSession.delete(weakEntry)
+			self.dbSession.commit()
 			tempJson = self.resultJson.getJson()
 			tempJson['source'] = 'internal.referenceAndMergeObject'
 			self.processResult(tempJson, deleteInsertFlag=False)
-			self.logger.info('Recreating the weak one without any links {temp!r} and reference id: {reference_id!r}', temp=tempThisEntryDict, reference_id=strongEntry.object_id)
+			self.logger.info('Recreating the weak one without any links {} or reference id: {}'.format(tempThisEntryDict, strongEntry.object_id))
 			weakEntry = self.validClassObjects[weakBaseObjectClassName]['classObject'](**tempThisEntryDict, reference_id=strongEntry.object_id)
-			weakEntry = self.dbClient.session.merge(weakEntry)
-			self.dbClient.session.commit()
+			weakEntry = self.dbSession.merge(weakEntry)
+			self.dbSession.commit()
 
 			## Inserts an entry in the referenceCache table.
 			if weakEntry:
 
 				self.logger.info("Inserting a new entry into the ReferenceCache db")
 				ReferenceCacheInstance = tableMapping.ReferenceCache(object_id=weakEntry.object_id,reference_id=weakEntry.reference_id)
-				ReferenceCacheInstance = self.dbClient.session.merge(ReferenceCacheInstance)
-				self.dbClient.session.commit()
+				ReferenceCacheInstance = self.dbSession.merge(ReferenceCacheInstance)
+				self.dbSession.commit()
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in referenceAndMergeObject: {exception!r}', exception=exception)
+			self.logger.error('Exception in referenceAndMergeObject: {}'.format(str(exception)))
 
 		## end referenceAndMergeObject
 		return weakEntry
@@ -180,9 +194,9 @@ class ResultProcessing:
 		self.logger.debug("Inside the replaceReferenceIdObject")
 		referenceId = getattr(thisEntry, 'reference_id')
 		if referenceId is not None:
-			self.logger.info('Querying the {className!r} with reference_id: {referenceId!r}', className=inspect(thisEntry).class_.__name__, referenceId=referenceId)
-			thisEntry = self.dbClient.session.query(self.validClassObjects['BaseObject']['classObject']).filter(self.validClassObjects['BaseObject']['classObject'].object_id==referenceId).first()
-			self.logger.info('Returning Stronger object {thisEntry!r} frot the class {className!r}', thisEntry=thisEntry, className=inspect(thisEntry).class_.__name__)
+			self.logger.info('Querying the {} with reference_id: {}'.format(inspect(thisEntry).class_.__name__, referenceId))
+			thisEntry = self.dbSession.query(self.validClassObjects['BaseObject']['classObject']).filter(self.validClassObjects['BaseObject']['classObject'].object_id==referenceId).first()
+			self.logger.info('Returning Stronger object {} from the class {}'.format(thisEntry, inspect(thisEntry).class_.__name__))
 
 		self.logger.debug("Exiting the replaceReferenceIdObject")
 
@@ -199,12 +213,12 @@ class ResultProcessing:
 		weakObjects = {}
 		entry = set(getattr(thisEntry, 'base_object_children'))
 		if entry:
-			self.logger.info('Copying the weak uncertain Baseobjects connected to the current object {entry!r}')
+			self.logger.info('Copying the weak uncertain BaseObjects connected to the current object')
 			weakObjects['objects'] = []
 			for obj in entry:
 				classObject = {}
 				classObject['class_name'] = inspect(obj).mapper.class_.__name__
-				self.logger.info('Adding old class object type entry into the result JSON {Name!r}', Name=inspect(obj).mapper.class_.__name__)
+				self.logger.info('Adding old class object type entry into the result JSON {}'.format(inspect(obj).mapper.class_.__name__))
 				## The dictionary expression below copies values from ORM
 				## instance by filtering out the 'time_created' and 'reference_id'
 				data = {col : getattr(obj, col) for col in inspect(obj).mapper.c.keys() if col not in ['time_created', 'reference_id']}
@@ -227,13 +241,13 @@ class ResultProcessing:
 		"""
 		try:
 			for item in inputDict['objects']:
-				self.logger.info('Reinserting the weak BaseObject {classname!r} type into the database', classname=item['class_name'])
+				self.logger.info('Reinserting the weak BaseObject {} type into the database'.format(item['class_name']))
 				thisEntry = self.validClassObjects[item['class_name']]['classObject'](**item['data'], reference_id=reference_id)
-				thisEntry = self.dbClient.session.merge(thisEntry)
-			self.dbClient.session.commit()
+				thisEntry = self.dbSession.merge(thisEntry)
+			self.dbSession.commit()
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in recreatingReferenceIdObject: {exception!r}', exception=exception)
+			self.logger.error('Exception in recreatingReferenceIdObject: {}'.format(str(exception)))
 
 		## end recreatingReferenceIdObject
 		return
@@ -259,7 +273,7 @@ class ResultProcessing:
 			## same object type (sqlalchemy.orm.collections.InstrumentedList)
 			entry = set(getattr(thisEntry, relation))
 			weakLinkObjects = weakLinkObjects.union(entry)
-		self.logger.info('Weak link objects added to the set {weakLinkObjects!r}', weakLinkObjects=weakLinkObjects)
+		self.logger.info('Weak link objects added to the set {}'.format(weakLinkObjects))
 
 		for relation in ['strong_first_objects', 'strong_second_objects']:
 			## But since the strong first/second can be either a list or a
@@ -271,7 +285,7 @@ class ResultProcessing:
 				if getattr(thisEntry, relation) is not None:
 					entry = getattr(thisEntry, relation)
 					StrongLinkObjects.add(entry)
-		self.logger.info('Strong Link objects added to the set {StrongLinkObjects!r}', StrongLinkObjects=StrongLinkObjects)
+		self.logger.info('Strong Link objects added to the set {}'.format(StrongLinkObjects))
 
 		## Add BaseObject types into objects to be reconstructed as a dictionary
 		objects = set()
@@ -291,7 +305,7 @@ class ResultProcessing:
 		## BaseObject type information is stored in JSON
 		for obj in objects:
 			if obj is not thisEntry:
-				self.logger.info('Add old class entry into the result JSON {Name!r}', Name=inspect(obj).mapper.class_.__name__)
+				self.logger.info('Add old class entry into the result JSON {}'.format(inspect(obj).mapper.class_.__name__))
 				## The dictionary expression below copies values from ORM
 				## instance by filtering out the 'container', 'object_id',
 				## 'time_updated', 'time_created' attribues.
@@ -303,23 +317,23 @@ class ResultProcessing:
 				## (parent) with new BaseObject type (child) received from JSON.
 				if strongEntry is None:
 					onceFlag = True
-					self.logger.info('Adding new class entry into the result JSON {Name!r}, by deleting {oldName!r}', Name=className, oldName=inspect(obj).mapper.class_.__name__)
+					self.logger.info('Adding new class entry into the result JSON {}, by deleting {}'.format(className, inspect(obj).mapper.class_.__name__))
 					identifier, exists = self.resultJson.addObject(className, **newData)
 					objectList.append(((obj, inspect(obj).mapper.class_.__name__), identifier))
 				## Replaces the weak BaseObject type with strong BaseObject
 				else:
 					onceFlag = True
-					self.logger.info('Adding Strong class entry into the result JSON {Name!r}, by deleting {oldName!r}', Name=inspect(strongEntry).class_.__name__, oldName=inspect(obj).mapper.class_.__name__)
+					self.logger.info('Adding Strong class entry into the result JSON {}, by deleting {}'.format(inspect(strongEntry).class_.__name__, inspect(obj).mapper.class_.__name__))
 					## The dictionary expression below copies values from ORM
 					## instance (BaseObject) by filtering out the
 					# 'time_created', 'container', and 'object_id'.
 					data = {col : getattr(strongEntry, col) for col in inspect(strongEntry).mapper.c.keys() if col not in ['container', 'object_id', 'time_updated', 'time_created']}
 					## Copy the missing db columns from the weak BaseObject
 					## type to strong BaseObject type
-					self.logger.info('Copying the missing db columns in {className!r} from {className1!r}', className=inspect(strongEntry).class_.__name__, className1=inspect(strongEntry).class_.__name__)
+					self.logger.info('Copying the missing db columns in {} from {}'.format(inspect(strongEntry).class_.__name__, inspect(strongEntry).class_.__name__))
 					for thisCol in inspect(thisEntry).mapper.c.keys():
 						## Add reference_id to avoid self reference FKs in table
-						if thisCol not in ['container', 'object_id', 'time_updated', 'time_created', 'reference_id'] and data[thisCol] is None:
+						if thisCol not in ['container', 'object_id', 'time_updated', 'time_created', 'reference_id', 'partial'] and data[thisCol] is None:
 							data[thisCol] = getattr(thisEntry, thisCol)
 					## Pass StrongEntry.object_id to avoid recreation
 					identifier, exists = self.resultJson.addObject(inspect(strongEntry).mapper.class_.__name__, uniqueId=strongEntry.object_id, **data)
@@ -328,15 +342,15 @@ class ResultProcessing:
 		## Ensure that we create a JSON entry for the standalone condition, the
 		## objects with no strong or weak link connected to it in DB.
 		if not onceFlag:
-			self.logger.info('Adding new class entry into the result JSON {Name!r}, by deleting {oldName!r}', Name=className, oldName=inspect(thisEntry).mapper.class_.__name__)
+			self.logger.info('Adding new class entry into the result JSON {}, by deleting {}'.format(className, inspect(thisEntry).mapper.class_.__name__))
 			identifier, exists = self.resultJson.addObject(className, **newData)
 			objectList.append(((thisEntry, inspect(thisEntry).mapper.class_.__name__), identifier))
 		objectsDict = dict(objectList)
-		self.logger.debug('The new recreated dictionary: {dictionary!r}', dictionary=objectsDict)
+		self.logger.debug('The new recreated dictionary: {}'.format(objectsDict))
 
 		## Recreating strong link connection
 		for item in StrongLinkObjects:
-			self.logger.info('Adding Strong link of type {name!r}, into the result JSON', name=inspect(item).mapper.class_.__name__)
+			self.logger.info('Adding Strong link of type {}, into the result JSON'.format(inspect(item).mapper.class_.__name__))
 			first_id = objectsDict[(item.strong_first_object, inspect(item.strong_first_object).mapper.class_.__name__)]
 			second_id = objectsDict[(item.strong_second_object, inspect(item.strong_second_object).mapper.class_.__name__)]
 			self.resultJson.addLink(inspect(item).mapper.class_.__name__, firstId=first_id, secondId=second_id)
@@ -344,7 +358,7 @@ class ResultProcessing:
 		## Recreating weak link connection
 		for item in weakLinkObjects:
 			if item.weak_first_object is thisEntry:
-				self.logger.info('Adding weak link of type {name!r}, into the result JSON', name=inspect(item).mapper.class_.__name__)
+				self.logger.info('Adding weak link of type {}, into the result JSON'.format(inspect(item).mapper.class_.__name__))
 				first_id = objectsDict[(item.weak_first_object, inspect(item.weak_first_object).mapper.class_.__name__)]
 				self.resultJson.addTempWeak(inspect(item).mapper.class_.__name__, firstId=first_id, secondId=item.weak_second_object.object_id)
 			if item.weak_second_object is thisEntry:
@@ -377,20 +391,20 @@ class ResultProcessing:
 		  deleteInsertFlag (Boolean) : Flag to avoid spiraling recursion
 		"""
 		try:
-			self.logger.info('Received a sub class type {className!r}, but found parent class type in DB,  {thisEntry!r}', className=className, thisEntry=inspect(thisEntry).class_.__name__)
-			self.logger.info('Initiating a delete and recreate for {name!r} to {newName}', name=inspect(thisEntry).class_.__name__, newName=className)
+			self.logger.info('Received a sub class type {}, but found parent class type in DB: {}'.format(className, inspect(thisEntry).class_.__name__))
+			self.logger.info('Initiating a delete and recreate for {} to {}'.format(inspect(thisEntry).class_.__name__, className))
 			if deleteInsertFlag:
 				## Copy columns before deleting the DB object
 				tempDict = dict()
 				colSet = set(['object_id', 'time_updated', 'time_created', 'object_type', 'object_created_by', 'object_updated_by'])
-				self.logger.debug('Data before copying {data!r}', data=data)
+				#self.logger.debug('Data before copying: {}'.format(str(data).strip('{}[]')))
 				for i in inspect(thisEntry).mapper.c.keys():
 					if i not in colSet and getattr(thisEntry,i) is not None:
 						tempDict[i] = getattr(thisEntry,i)
 				for i in tempDict:
 					if i not in data.keys():
 						data[i] = tempDict[i]
-				self.logger.debug('Data after copying {data!r}', data=data)
+				#self.logger.debug('Data after copying: {}'.format(str(data).strip('{}[]')))
 
 				## Copies all connected objects into resultJson and delete.
 				self.recreateMappingSubtype(thisEntry, className, data)
@@ -399,27 +413,27 @@ class ResultProcessing:
 				## Begins the storingReferenceIdObjectConnections
 				## to store the weak BaseOject type before deletion.
 				weakObjects = self.storingReferenceIdObjectConnections(thisEntry)
-				self.logger.info('BaseObjects connected to the current object {value}', value=weakObjects)
+				self.logger.info('BaseObjects connected to the current object {}'.format(weakObjects))
 				if isinstance(callingFomCache, tuple):
 					## Remove cache before delete, to avoid cache update anomoly
 					del self.constraintCacheData[callingFomCache[0]][callingFomCache[1]]
-				self.dbClient.session.delete(thisEntry)
-				self.dbClient.session.commit()
+				self.dbSession.delete(thisEntry)
+				self.dbSession.commit()
 
 				tempJson = self.resultJson.getJson()
 				tempJson['source'] = 'internal.subTyping'
 				## Begins recreation with the newly created resultJson
 				self.processResult(tempJson, deleteInsertFlag=False)
-				self.logger.info('The JSON that is to be inserted after delete, {data}', data=self.resultJson.getJson())
+				self.logger.info('The JSON that is to be inserted after delete: {}'.format(self.resultJson.getJson()))
 				constraints = self.validClassObjects[className]['classObject'].constraints()
-				thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
+				thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 
 				## This is to handle standalone BaseObject type in the DB
 				if thisEntry is None and len(tempJson['objects'])==1:
-					self.logger.info('Attemting to create standalone BaseObject class: {className!r}', className=tempJson['objects'][0]['class_name'])
+					self.logger.info('Attempting to create standalone BaseObject class: {}'.format(tempJson['objects'][0]['class_name']))
 					thisEntry = self.validClassObjects[tempJson['objects'][0]['class_name']]['classObject'](**tempJson['objects'][0]['data'])
-					thisEntry = self.dbClient.session.merge(thisEntry)
-					self.dbClient.session.commit()
+					thisEntry = self.dbSession.merge(thisEntry)
+					self.dbSession.commit()
 				## Begins the recreatingReferenceIdObject
 				if 'objects' in weakObjects.keys():
 					self.logger.info('Initiating recreating reference id object creation')
@@ -427,10 +441,10 @@ class ResultProcessing:
 
 				## Cleanup for next run.
 				self.resultJson.clearJson()
-				self.logger.debug('checking the content in received JSON data: {data!r}', data=data)
+				#self.logger.debug('checking the content in received JSON data: {}'.format(str(data).strip('{}[]')))
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in deleteAndRecreate: {exception!r}', exception=exception)
+			self.logger.error('Exception in deleteAndRecreate: {}'.format(str(exception)))
 
 		## end deleteAndRecreate
 		return thisEntry
@@ -454,24 +468,26 @@ class ResultProcessing:
 		## Check if the class name of the object returned equals the class name
 		## defined in the JSON result. If so, update the instance.
 		if classNameInMemory == className:
-			self.logger.info('There is an entry in the database for {thisEntry!r}', thisEntry=thisEntry)
-			self.logger.info('Attempting update on the instance {thisEntry!r}', thisEntry=thisEntry)
+			self.logger.info('There is an entry in the database for {}'.format(thisEntry))
+			self.logger.info('Attempting update on the instance {}'.format(thisEntry))
 			for attribute, value in data.items():
 				if attribute not in thisEntry.constraints():
 					setattr(thisEntry, attribute, value)
-			self.logger.debug('Updated the attribute without the constraint check for columns {thisEntry!r} with data {data!r}', thisEntry=inspect(thisEntry).mapper.c.keys(), data=data)
+			#self.logger.debug('Updated the attribute without the constraint check for columns {} with data {}'.format(inspect(thisEntry).mapper.c.keys(), data))
+			self.logger.debug('Updated the attribute without the constraint check for columns {}'.format(inspect(thisEntry).mapper.c.keys()))
 
 		## The class name of the object returned does NOT equal the class name
 		## defined in JSON. Check if the class name is in the list of children.
 		## If so, update the instance. (given general base class, but received
 		## specific child)
 		elif classNameInMemory in self.validClassObjects[className]['children'] and classNameInMemory != className:
-			self.logger.info('There has been a type mismatch expected {className!r} but have a child in DB {received!r}', className=className, received=classNameInMemory)
-			self.logger.info('Attempting an update with {received!r} patrent attributes', received= className)
+			self.logger.info('There has been a type mismatch expected {} but have a child in DB {}'.format(className, classNameInMemory))
+			self.logger.info('Attempting an update with {} parent attributes'.format(className))
 			for attribute, value in data.items():
 				if attribute not in thisEntry.constraints():
 					setattr(thisEntry, attribute, value)
-			self.logger.debug('Updated the attributes for columns {thisEntry!r} with data {data!r}', thisEntry=inspect(thisEntry).mapper.c.keys(), data=data)
+			#self.logger.debug('Updated the attributes for columns {} with data {}'.format(inspect(thisEntry).mapper.c.keys(), data))
+			self.logger.debug('Updated the attributes for columns {}'.format(inspect(thisEntry).mapper.c.keys()))
 
 		## Now check if the class in DB is a super type of the class defined in
 		## JSON. If so, then delete and recreate the object without loosing the
@@ -485,8 +501,8 @@ class ResultProcessing:
 		## If the class name is a completely different object, (e.g. IP instead
 		## of a Node), then that's a problem... track appropriately.
 		elif classNameInMemory not in self.validClassObjects[className]['children'] and classNameInMemory not in reverseList:
-			self.logger.warn('There has been a type mismatch expected {className!r} but received a different class {received!r}', className=className, received=thisEntry.__class__.__name__)
-			self.logger.warn('Cannot insert an object of the type {received!r} using the object id: {object_id!r} because {className!r} and {data!r}', received=thisEntry.__class__.__name__, object_id=object_id, className=className, data=data)
+			self.logger.warn('There has been a type mismatch expected {} but received a different class {}'.format(className, thisEntry.__class__.__name__))
+			self.logger.warn('Cannot insert an object of the type {} using the object id: {} because {} and {}'.format(thisEntry.__class__.__name__, object_id, className, data))
 			thisEntry = None
 
 		## end handlingDbObject
@@ -505,11 +521,11 @@ class ResultProcessing:
 		thisEntry = None
 		try:
 			if className not in self.validClassObjects.keys():
-				self.logger.error('Received unrecognized object class_name: {className!r}', className=className)
+				self.logger.error('Received unrecognized object class_name: {}'.format(className))
 			else:
-				self.logger.debug('Query the database to see if the object_id exists {object_id!r}', object_id=object_id)
+				self.logger.debug('Query the database to see if the object_id exists {}'.format(object_id))
 				## Query database for the object id from the baseObject
-				thisEntry = self.dbClient.session.query(self.validClassObjects['BaseObject']['classObject']).filter(self.validClassObjects['BaseObject']['classObject'].object_id == object_id).first()
+				thisEntry = self.dbSession.query(self.validClassObjects['BaseObject']['classObject']).filter(self.validClassObjects['BaseObject']['classObject'].object_id == object_id).first()
 				## Result found in database, from the object_id query.
 				if thisEntry is not None:
 					## Check for reference_id and replace with stronger object
@@ -518,13 +534,13 @@ class ResultProcessing:
 					## This handles the special 3 cases
 					## the below condition will handle id the data dictionary is empty.
 					if data:
-						self.logger.debug("Printing data before handlingDbObject {data!r}", data=data)
+						#self.logger.debug("Printing data before handlingDbObject: {}".format(str(data).strip('{}[]')))
 						thisEntry = self.handlingDbObject(className, thisEntry, classNameInMemory, data, deleteInsertFlag)
 
 				## Not able to leverage object returned by object_id, now
 				## turn to the constraint method for database lookup.
 				else:
-					self.logger.debug('There is no entry in the database with the object_id {object_id!r}', object_id=object_id)
+					self.logger.debug('There is no entry in the database with the object_id {}'.format(object_id))
 					constraints = self.validClassObjects[className]['classObject'].constraints()
 					## This checks that all required constraints are valid keys
 					## in the data section from our JSON result.
@@ -534,20 +550,20 @@ class ResultProcessing:
 						if key in constraints and data[key] is None:
 							del data[key]
 					if constraints and all(col in data.keys() for col in constraints):
-						self.logger.debug('Querying the database with the constraints {constraints!r}', constraints=constraints)
-						thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_( (getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints) )).options([noload('weak_first_objects'), noload('weak_second_objects')]).first()
+						self.logger.debug('Querying the database with the constraints {}'.format(constraints))
+						thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_( (getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints) )).options([noload('weak_first_objects'), noload('weak_second_objects')]).first()
 						## Result found in database from the constraint query,
 						## and NOT from the object_id query, even though the
 						## object_id was a 32bit hex... so message that in logs.
 						if thisEntry:
 							## Check for reference_id and replace with stronger object
 							thisEntry = self.replaceReferenceIdObject(thisEntry)
-							self.logger.warn('There is an entry in DB with this constraints at {db_object_id} so cannot update the object id with {object_id!r}', className=className, object_id=object_id, db_object_id=thisEntry.object_id)
+							self.logger.warn('There is an entry in DB with this constraints at {} so cannot update the object id {} with {}'.format(className, object_id, thisEntry.object_id))
 							self.logger.warn('Updating the object')
 							for attribute, value in data.items():
 								if attribute not in thisEntry.constraints():
 									setattr(thisEntry, attribute, value)
-							self.logger.debug('Updated the attributes {thisEntry!r} with {data!r}', thisEntry=inspect(thisEntry).mapper.c.keys(), data=data)
+							self.logger.debug('Updated the attributes {} with {}'.format(inspect(thisEntry).mapper.c.keys(), data))
 
 						## Result NOT found in the database by querying on
 						## the constraints; do an insert into the database
@@ -555,15 +571,14 @@ class ResultProcessing:
 						## identifier value given in the JSON result.
 						else:
 							object_id = uuid.uuid4().hex
-							self.logger.info('Inserting {className} {object_id!r}', className=className, object_id=object_id)
+							self.logger.info('Inserting {} {}'.format(className, object_id))
 							data['object_created_by'] = data['object_updated_by']
 							thisEntry = self.validClassObjects[className]['classObject'](**data, object_id=object_id)
-							thisEntry = self.dbClient.session.merge(thisEntry)
+							thisEntry = self.dbSession.merge(thisEntry)
 					else:
 						mandatory_clos = []
 						nullable_cols = []
 						for column in constraints:
-							# self.logger.warn('objectIdUpdateOrInsert ====> {text!r}', text=getattr(getattr(self.validClassObjects[className]['classObject'], column),'nullable'))
 							if hasattr(getattr(self.validClassObjects[className]['classObject'], column),'nullable'):
 								if getattr(getattr(self.validClassObjects[className]['classObject'], column),'nullable') is True:
 									nullable_cols.append(column)
@@ -574,25 +589,25 @@ class ResultProcessing:
 								val = data.get(col, -2)
 								if val==-2:
 									data[col] = None
-							thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_( (getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).options([noload('weak_first_objects'), noload('weak_second_objects')]).first()
+							thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_( (getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).options([noload('weak_first_objects'), noload('weak_second_objects')]).first()
 							## Result found in database from the constraint query,
 							## and NOT from the object_id query, even though the
 							## object_id was a 32bit hex... so message that in logs.
 							if thisEntry:
 								## Check for reference_id and replace with stronger object
 								thisEntry = self.replaceReferenceIdObject(thisEntry)
-								self.logger.warn('There is an entry in DB with this constraints at {db_object_id} so cannot update the object id with {object_id!r}', className=className, object_id=object_id, db_object_id=thisEntry.object_id)
+								self.logger.warn('There is an entry in DB with this constraints at {} so cannot update the object id {} with {}'.format(className, object_id, thisEntry.object_id))
 								self.logger.warn('Updating the object')
 								for attribute, value in data.items():
 									if attribute not in thisEntry.constraints():
 										setattr(thisEntry, attribute, value)
-								self.logger.debug('Updated the attributes {thisEntry!r} with {data!r}', thisEntry=inspect(thisEntry).mapper.c.keys(), data=data)
+								self.logger.debug('Updated the attributes {} with {}'.format(inspect(thisEntry).mapper.c.keys(), data))
 						else:
-							self.logger.warn('JSON class {expectedClassName!r} missing constraint field in the received data, {data!r}', expectedClassName=self.validClassObjects[className]['classObject'], data=data)
+							self.logger.warn('JSON class {} missing constraint field in the received data, {}'.format(self.validClassObjects[className]['classObject'], data))
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in objectIdUpdateOrInsert: {exception!r}', exception=exception)
+			self.logger.error('Exception in objectIdUpdateOrInsert: {}'.format(str(exception)))
 
 		## end objectIdUpdateOrInsert
 		return thisEntry
@@ -617,15 +632,15 @@ class ResultProcessing:
 				if key in constraints and data[key] is None:
 					del data[key]
 			if constraints and all(col in data.keys() for col in constraints):
-				self.logger.debug('Initating an insert or an update based on constraints: {constraints!r}', constraints=constraints)
-				thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
+				self.logger.debug('Initating an insert or an update based on constraints: {}'.format(constraints))
+				thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 
 				if thisEntry is None:
 					object_id = uuid.uuid4().hex
-					self.logger.debug('Inserting {expectedClassName} {object_id!r}', expectedClassName=expectedClassName, object_id=object_id)
+					self.logger.debug('Inserting {} {}'.format(expectedClassName, object_id))
 					data['object_created_by'] = data['object_updated_by']
 					thisEntry = self.validClassObjects[expectedClassName]['classObject'](**data, object_id=object_id)
-					thisEntry = self.dbClient.session.merge(thisEntry)
+					thisEntry = self.dbSession.merge(thisEntry)
 
 				else:
 					## Check for reference_id and replace with stronger object
@@ -647,14 +662,14 @@ class ResultProcessing:
 						val = data.get(col, -2)
 						if val==-2:
 							data[col] = None
-					self.logger.debug('Initating an insert or an update based on constraints: {constraints!r}', constraints=constraints)
-					thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
+					self.logger.debug('Initating an insert or an update based on constraints: {}'.format(constraints))
+					thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 					if thisEntry is None:
 						object_id = uuid.uuid4().hex
-						self.logger.debug('Inserting {expectedClassName} {object_id!r}', expectedClassName=expectedClassName, object_id=object_id)
+						self.logger.debug('Inserting {} {}'.format(expectedClassName, object_id))
 						data['object_created_by'] = data['object_updated_by']
 						thisEntry = self.validClassObjects[expectedClassName]['classObject'](**data, object_id=object_id)
-						thisEntry = self.dbClient.session.merge(thisEntry)
+						thisEntry = self.dbSession.merge(thisEntry)
 
 					else:
 						## Check for reference_id and replace with stronger object
@@ -663,11 +678,11 @@ class ResultProcessing:
 						className = expectedClassName
 						thisEntry = self.handlingDbObject(className, thisEntry, classNameInMemory, data, deleteInsertFlag)
 				else:
-					self.logger.warn('JSON class {expectedClassName!r} missing constraint field in the received data, {data!r}', expectedClassName=self.validClassObjects[className]['classObject'], data=data)
+					self.logger.warn('JSON class {} missing constraint field in the received data, {}'.format(self.validClassObjects[className]['classObject'], data))
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in specialConstraintInsertOrUpdate: {exception!r}', exception=exception)
+			self.logger.error('Exception in specialConstraintInsertOrUpdate: {}'.format(str(exception)))
 
 		## end of specialConstraintInsertOrUpdate
 		return thisEntry
@@ -688,26 +703,26 @@ class ResultProcessing:
 				if key in constraints and data[key] is None:
 					del data[key]
 			if constraints and all(col in data.keys() for col in constraints):
-				#self.logger.debug('Initating an insert or an update based on constraints: {constraints!r}', constraints=constraints)
-				self.logger.debug('Initiating an insert or an update on class {className!r} based on constraints: {constraints!r}. Data: {data!r}', className=className, constraints=constraints, data=data)
-				thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
+				#self.logger.debug('Initiating an insert or an update on class {} based on constraints: {}. Data: {}'.format(className, constraints, str(data).strip('{}[]')))
+				self.logger.debug('Initiating an insert or an update on class {} based on constraints: {}.'.format(className, constraints))
+				thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 				## INSERT
 				if thisEntry is None:
 					object_id = uuid.uuid4().hex
-					self.logger.debug('Inserting {className} {object_id!r}', className=className, object_id=object_id)
+					self.logger.debug('Inserting {} {}'.format(className, object_id))
 					data['object_created_by'] = data['object_updated_by']
 					thisEntry = self.validClassObjects[className]['classObject'](**data, object_id=object_id)
-					thisEntry = self.dbClient.session.merge(thisEntry)
+					thisEntry = self.dbSession.merge(thisEntry)
 				## UPDATE
 				else:
 					## Check for reference_id and replace with stronger object
 					thisEntry = self.replaceReferenceIdObject(thisEntry)
-					self.logger.debug('There is an entry in the database with the constraint:{constraints!r} = {thisEntry!r}', constraints=constraints, thisEntry=thisEntry)
-					self.logger.debug('Attempting update on the instance {thisEntry!r}', thisEntry = thisEntry)
+					self.logger.debug('There is an entry in the database with the constraint: {} = {}'.format(constraints, thisEntry))
+					self.logger.debug('Attempting update on the instance {}'.format(thisEntry))
 					for attribute, value in data.items():
 						if attribute not in thisEntry.constraints():
 							setattr(thisEntry, attribute, value)
-					thisEntry = self.dbClient.session.merge(thisEntry)
+					thisEntry = self.dbSession.merge(thisEntry)
 			else:
 				mandatory_clos = []
 				nullable_cols = []
@@ -722,31 +737,31 @@ class ResultProcessing:
 						val = data.get(col, -2)
 						if val==-2:
 							data[col] = None
-					self.logger.debug('Initating an insert or an update based on constraints: {constraints!r}', constraints=constraints)
-					thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
+					self.logger.debug('Initating an insert or an update based on constraints: {}'.format(constraints))
+					thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 					## INSERT
 					if thisEntry is None:
 						object_id = uuid.uuid4().hex
-						self.logger.debug('Inserting {className} {object_id!r}', className=className, object_id=object_id)
+						self.logger.debug('Inserting {} {}'.format(className, object_id))
 						data['object_created_by'] = data['object_updated_by']
 						thisEntry = self.validClassObjects[className]['classObject'](**data, object_id=object_id)
-						thisEntry = self.dbClient.session.merge(thisEntry)
+						thisEntry = self.dbSession.merge(thisEntry)
 					## UPDATE
 					else:
 						## Check for reference_id and replace with stronger object
 						thisEntry = self.replaceReferenceIdObject(thisEntry)
-						self.logger.debug('There is an entry in the database with the constraint:{constraints!r} = {thisEntry!r}', constraints=constraints, thisEntry=thisEntry)
-						self.logger.debug('Attempting update on the instance {thisEntry!r}', thisEntry = thisEntry)
+						self.logger.debug('There is an entry in the database with the constraint: {} = {}'.format(constraints, thisEntry))
+						self.logger.debug('Attempting update on the instance {}'.format(thisEntry))
 						for attribute, value in data.items():
 							if attribute not in thisEntry.constraints():
 								setattr(thisEntry, attribute, value)
-						thisEntry = self.dbClient.session.merge(thisEntry)
+						thisEntry = self.dbSession.merge(thisEntry)
 				else:
-					self.logger.warn('JSON class {className!r} missing constraint field in the received data, {data!r}', className=className, data=data)
+					self.logger.warn('JSON class {} missing constraint field in the received data: {}'.format(className, data))
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in constraintInsertOrUpdate: {exception!r}', exception=exception)
+			self.logger.error('Exception in constraintInsertOrUpdate: {}'.format(str(exception)))
 
 		## end constraintInsertOrUpdate
 		return thisEntry
@@ -760,10 +775,10 @@ class ResultProcessing:
 		  data (dict)     : Dictionary Containing the class relevent information
 		"""
 		thisEntry = None
-		self.logger.debug('Received a JSON entry for the class {className}', className=className)
+		self.logger.debug('Received a JSON entry for the class {}'.format(className))
 		try:
 			if className not in self.validClassObjects.keys():
-				self.logger.error('Received unrecognized object class_name: {className!r}', className=className)
+				self.logger.error('Received unrecognized object class_name: {}'.format(className))
 			else:
 				if className in self.validNodeSubtypes:
 					thisEntry = self.specialConstraintInsertOrUpdate('Node', className, data, deleteInsertFlag)
@@ -775,7 +790,7 @@ class ResultProcessing:
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in constraintHandler: {exception!r}', exception=exception)
+			self.logger.error('Exception in constraintInsertOrUpdate: {}'.format(str(exception)))
 
 		## end constraintHandler
 		return thisEntry
@@ -800,12 +815,12 @@ class ResultProcessing:
 			## The object_id is defined for this next block, meaning we have a
 			## 32 bit hex from the 'identifier' attribute of the JSON result
 			else:
-				self.logger.info('Received a JSON entry with 32 bit hex object_id {object_id!r} for the class {className}', object_id=object_id, className=className)
+				self.logger.info('Received a JSON entry with 32 bit hex object_id {} for the class {}'.format(object_id, className))
 				thisEntry = self.objectIdUpdateOrInsert(className, data, object_id, deleteInsertFlag)
 				return thisEntry
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in getNewObject: {exception!r}', exception=exception)
+			self.logger.error('Exception in getNewObject: {}'.format(str(exception)))
 
 		## end getNewObject
 		return thisEntry
@@ -826,35 +841,35 @@ class ResultProcessing:
 			## INSERT
 			self.logger.info('Initiating an insert')
 			thisEntry = self.validClassObjects[className]['classObject'](**newData, object_id=newObject_id)
-			self.dbClient.session.add(thisEntry)
-			self.dbClient.session.commit()
-			self.logger.info('Inserted the entry in the database with class Name {className!r} and object_id {object_id!r}', data=data, className=className, object_id=newObject_id)
+			self.dbSession.add(thisEntry)
+			self.dbSession.commit()
+			self.logger.info('Inserted entry {} in the database with class Name {} and object_id {}'.format(data, className, newObject_id))
 
 		except IntegrityError:
 			## UPDATE
 			constraints= self.validClassObjects[className]['classObject'].constraints()
-			self.logger.info('There is an entry in the data base with the constraint:{constraints!r}',constraints=constraints)
+			self.logger.info('There is an entry in the data base with the constraint: {}'.format(constraints))
 			self.logger.info('Unique constraint violated')
 			self.logger.info('Issuing a DB rollback()')
-			self.dbClient.session.rollback()
+			self.dbSession.rollback()
 			if set(constraints).issubset(set(newData.keys())):
 				if object_id:
 					## We have the 32 bit hex for the merge to work
 					newData['object_id'] = object_id
 					thisEntry = self.validClassObjects[className]['classObject'](**newData)
 				else:
-					thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == newData[item] for item in constraints))).first()
-				self.logger.info('Issue a DB Update for the BaseObject type {thisEntry!r}',thisEntry=thisEntry)
+					thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == newData[item] for item in constraints))).first()
+				self.logger.info('Issue a DB Update for the BaseObject type {}'.format(thisEntry))
 				for attribute, value in newData.items():
 					if attribute not in thisEntry.constraints():
 						setattr(thisEntry, attribute, value)
-				thisEntry = self.dbClient.session.merge(thisEntry)
-				self.dbClient.session.commit()
+				thisEntry = self.dbSession.merge(thisEntry)
+				self.dbSession.commit()
 			else:
 				self.logger.warn('Check the input constraint received')
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in customUpsert: {exception!r}', exception=exception)
+			self.logger.error('Exception in customUpsert: {}'.format(str(exception)))
 
 		## end customUpsert
 		return thisEntry
@@ -880,7 +895,7 @@ class ResultProcessing:
 			## Check the reference Cache and replace the New Object id
 			newData = data
 			if object_id is not None and object_id in self.referenceCacheData.keys():
-				self.logger.info("Switching from the weak BaseObject type to strong BaseObject type. {object_id!r}--{newObject_id!r}", object_id=object_id, newObject_id=self.referenceCacheData[object_id])
+				self.logger.info("Switching from the weak BaseObject type to strong BaseObject type. {}--{}".format(object_id, self.referenceCacheData[object_id]))
 				object_id = self.referenceCacheData[object_id]
 				## The dictionary expression below copies values from ORM
 				## instance (BaseObject) by filtering out the constraints.
@@ -889,47 +904,46 @@ class ResultProcessing:
 			## Check if the class name of the object returned equals the class
 			## name defined in the JSON result. If so, update the instance.
 			if cacheRecordClassName == className:
-				self.logger.debug('Class name in the input data and the cache matches: {className!r}', className=className)
-				self.logger.info('Performing an upsert on {className!r}', className=className)
+				self.logger.debug('Class name in the input data and the cache matches: {}'.format(className))
+				self.logger.info('Performing an upsert on {}'.format(className))
 				## TODO: change the updated_by add logic
 				## Should we try an try except block wrap?
 				if newData:
 					del newData['object_updated_by']
 					thisEntry = self.validClassObjects[className]['classObject'](**newData, object_id=object_id, object_updated_by='internal.resultProcessing')
-					thisEntry = self.dbClient.session.merge(thisEntry)
-					self.dbClient.session.commit()
+					thisEntry = self.dbSession.merge(thisEntry)
+					self.dbSession.commit()
 				## data is {}
 				else:
-					self.logger.debug("The data fiend is empty, querying with just object_id {object_id!r}", object_id=object_id)
-					thisEntry = self.dbClient.session.query(self.validClassObjects[className]['classObject']).filter(self.validClassObjects[className]['classObject'].object_id == object_id).first()
+					self.logger.debug("The data fiend is empty, querying with just object_id {}".format(object_id))
+					thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(self.validClassObjects[className]['classObject'].object_id == object_id).first()
 
 			## The class name of the object returned does NOT equal the class name
 			## defined in JSON. Check if the class name is in the list of children.
 			## If so, update the instance. (given general base class, but received
 			## specific child)
 			elif cacheRecordClassName in self.validClassObjects[className]['children'] and cacheRecordClassName != className:
-				self.logger.debug('There has been a type mismatch expected {className!r} but have a child in DB-Cache {received!r}', className=className, received=cacheRecordClassName)
-				self.logger.info('Attempting an update with {className!r}', className=cacheRecordClassName)
+				self.logger.debug('There has been a type mismatch expected {} but have a child in DB-Cache {}'.format(className, cacheRecordClassName))
+				self.logger.info('Attempting an update with {}'.format(cacheRecordClassName))
 				## change the updated_by add logic
 				if 'object_updated_by' in newData.keys():
 					del newData['object_updated_by']
-				self.logger.debug("{newData!r}", newData=newData)
+				#self.logger.debug("{}".format(newData))
 				thisEntry = self.validClassObjects[cacheRecordClassName]['classObject'](**newData, object_id=object_id, object_updated_by='OCP.resultProcessing')
-				thisEntry = self.dbClient.session.merge(thisEntry)
-				self.dbClient.session.commit()
+				thisEntry = self.dbSession.merge(thisEntry)
+				self.dbSession.commit()
 			## Now check if the class in DB is a super type of the class defined in
 			## JSON. If so, then delete and recreate the object without loosing the
 			## relations in the object. Ex: received Linux specific fields in the
 			## JSON but only have Node. Recreate object from the parent to the child.
 			elif className in reverseList and cacheRecordClassName != className:
-				self.logger.info('Subtyping {received!r} to {className!r}', className=className, received=cacheRecordClassName)
+				self.logger.info('Subtyping {} to {}'.format(className, cacheRecordClassName))
 				if object_id:
-					self.logger.debug('Found entry in the DB with object_id {object_id!r}', object_id=object_id)
-					thisEntry = self.dbClient.session.query(self.validClassObjects[cacheRecordClassName]['classObject']).filter(self.validClassObjects[cacheRecordClassName]['classObject'].object_id == object_id).first()
-					#self.logger.info('Found entry in the DB with object_id {object_id!r}', object_id=thisEntry)
+					self.logger.debug('Found entry in the DB with object_id {}'.format(object_id))
+					thisEntry = self.dbSession.query(self.validClassObjects[cacheRecordClassName]['classObject']).filter(self.validClassObjects[cacheRecordClassName]['classObject'].object_id == object_id).first()
 				else:
-					self.logger.debug('Found entry in the DB with constraint {classConstraints!r}', classConstraints=classConstraints)
-					thisEntry = self.dbClient.session.query(self.validClassObjects[cacheRecordClassName]['classObject']).filter(and_((getattr(self.validClassObjects[cacheRecordClassName]['classObject'], item) == data[item] for item in classConstraints))).first()
+					self.logger.debug('Found entry in the DB with constraint {}'.format(classConstraints))
+					thisEntry = self.dbSession.query(self.validClassObjects[cacheRecordClassName]['classObject']).filter(and_((getattr(self.validClassObjects[cacheRecordClassName]['classObject'], item) == data[item] for item in classConstraints))).first()
 					## Switching the weak to Strong BaseObject type if had to query based on
 					thisEntry = self.replaceReferenceIdObject(thisEntry)
 				self.logger.debug('Deleting the cache entry')
@@ -937,15 +951,14 @@ class ResultProcessing:
 				cacheEntry = [className]
 				self.logger.debug('Inserted the cache entry')
 				cacheEntry.extend([getattr(thisEntry,col) for col in thisEntry.constraints()])
-				self.logger.debug('Inserted the cache entry {cacheEntry!r}', cacheEntry=cacheEntry)
+				self.logger.debug('Inserted the cache entry {}'.format(cacheEntry))
 				self.constraintCacheData[superClassName][thisEntry.object_id] = cacheEntry
 
 				return thisEntry
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in handlingCacheScenario: {exception!r}', exception=exception)
-
+			self.logger.error('Exception in handlingCacheScenario: {}'.format(str(exception)))
 
 		return thisEntry
 		## end handlingCacheScenario
@@ -972,8 +985,8 @@ class ResultProcessing:
 			if classConstraints and all(col in data.keys() for col in classConstraints):
 				## Create a list Containing the Constraint Values from the data
 				inputDataConstraintValues = [data[constCol] for constCol in classConstraints]
-				self.logger.debug('The content of the data before insert: {inputDataConstraintValues!r}', inputDataConstraintValues=inputDataConstraintValues)
-				self.logger.debug('Initiating an insert or an update based on constraints: {classConstraints!r}', classConstraints=classConstraints)
+				self.logger.debug('The content of the data before insert: {}'.format(inputDataConstraintValues))
+				self.logger.debug('Initiating an insert or an update based on constraints: {}'.format(classConstraints))
 				for key, item in self.constraintCacheData[superClassName].items():
 					if item[1:] == inputDataConstraintValues:
 						self.logger.info('Match in the cache with the constraint')
@@ -1001,8 +1014,8 @@ class ResultProcessing:
 						if val==-2:
 							data[col] = None
 				inputDataConstraintValues = [data[constCol] for constCol in classConstraints]
-				self.logger.debug('The content of the data before insert: {inputDataConstraintValues!r}', inputDataConstraintValues=inputDataConstraintValues)
-				self.logger.debug('Initiating insert or an update based on constraints: {classConstraints!r}', classConstraints=classConstraints)
+				self.logger.debug('The content of the data before insert: {}'.format(inputDataConstraintValues))
+				self.logger.debug('Initiating insert or an update based on constraints: {}'.format(classConstraints))
 				for key, item in self.constraintCacheData[superClassName].items():
 					if item[1:] == inputDataConstraintValues:
 						self.logger.info('Match in the cache with the constraint')
@@ -1016,10 +1029,10 @@ class ResultProcessing:
 				self.logger.debug('No entry in the cache to handle the changes by accessing the Database')
 				thisEntry = self.specialConstraintInsertOrUpdate(superClassName, className, data, deleteInsertFlag)
 
-				self.logger.error('Received invalid data, missing constraint {data!r}', data=data)
+				self.logger.error('Received invalid data, missing constraint: {}'.format(str(data).strip('{}[]')))
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in individualCacheConstraintScenario: {exception!r}', exception=exception)
+			self.logger.error('Exception in individualCacheConstraintScenario: {}'.format(str(exception)))
 
 		## end individualCacheConstraintScenario
 		return thisEntry
@@ -1041,7 +1054,7 @@ class ResultProcessing:
 		try:
 			if len(superClassConstraintList) > 0:
 				## Data found in the cache with the input object_id
-				self.logger.info('Found an entry in the cache matching the object_id {object_id!r} :{entry!r}', object_id=object_id, entry=superClassConstraintList)
+				self.logger.info('Found an entry in the cache matching the object_id {}: {}'.format(object_id, superClassConstraintList))
 				cacheRecordClassName = superClassConstraintList[0]
 				cacheConstraintsValue = superClassConstraintList[1:]
 				## Retrieve children of the Node subtype in the DB, for subtypes
@@ -1052,16 +1065,16 @@ class ResultProcessing:
 					## The special three scenarios are handled here.
 					thisEntry = self.handlingCacheScenario(cacheRecordClassName, className, superClassName, data, deleteInsertFlag, object_id)
 				elif not data:
-					self.logger.info("Querying with just the object id {object_id!r}",object_id=object_id)
+					self.logger.info("Querying with just the object id {}".format(object_id))
 					thisEntry = self.handlingCacheScenario(cacheRecordClassName, className, superClassName, data, deleteInsertFlag, object_id)
 				elif data and utils.uuidCheck(object_id):
-					self.logger.info("Querying with just the 32-bit hex object_id with insufficient {object_id!r}",object_id=object_id)
+					self.logger.info("Querying with just the 32-bit hex object_id with insufficient {}".format(object_id))
 					thisEntry = self.handlingCacheScenario(cacheRecordClassName, className, superClassName, data, deleteInsertFlag, object_id)
 				else:
 					thisEntry = None
-					self.logger.warn("Please check the cache Created or the data received from kafka for processing: {data!r}", data=data)
+					#self.logger.warn("Please check the cache created or the data received from kafka for processing: {}".format(str(data).strip('{}[]')))
 			else:
-				self.logger.info('There is no entry in the Cache with the object_id: {object_id}', object_id=object_id)
+				self.logger.info('There is no entry in the cache with the object_id: {}'.format(object_id))
 				self.logger.info('Check with Constraints in the Cache')
 				## CS: this is to see if the cached ID has changed (maybe by a
 				## universalJob job with the strongObjectReference)
@@ -1079,7 +1092,7 @@ class ResultProcessing:
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in individualCacheObjectIdScenario: {exception!r}', exception=exception)
+			self.logger.error('Exception in individualCacheObjectIdScenario: {}'.format(str(exception)))
 
 		## end individualCacheObjectIdScenario
 		return thisEntry
@@ -1104,7 +1117,7 @@ class ResultProcessing:
 				thisEntry = self.individualCacheObjectIdScenario(superClassName, className, data, object_id, deleteInsertFlag)
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in individualCacheProcessing: {exception!r}', exception=exception)
+			self.logger.error('Exception in individualCacheProcessing: {}'.format(str(exception)))
 
 		## end individualCacheProcessing
 		return thisEntry
@@ -1161,7 +1174,7 @@ class ResultProcessing:
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in cacheProcessing: {exception!r}', exception=exception)
+			self.logger.error('Exception in cacheProcessing: {}'.format(str(exception)))
 
 		## end cacheProcessing
 		return thisEntry
@@ -1178,18 +1191,18 @@ class ResultProcessing:
 			thisLink = None
 			## Parsing the adhoc JSON created for recreation of weak entries
 			if link['type'] == 'temp_weak':
-				self.logger.info('Handling special case of create link :temp_weak')
+				self.logger.info('Handling special case of create link: temp_weak')
 				weakLinkClass = self.validWeakLinks[link['class_name']]
 				object_type =  weakLinkClass.__tablename__
-				thisLink = weakLinkClass.as_unique(self.dbClient.session, first_id=link['first_id'], second_id=link['second_id'], object_id=uuid.uuid4().hex, object_type=object_type)
-				self.logger.info('Weak link recreated {link!r}', link=thisLink)
+				thisLink = weakLinkClass.as_unique(self.dbSession, first_id=link['first_id'], second_id=link['second_id'], object_id=uuid.uuid4().hex, object_type=object_type)
+				self.logger.info('Weak link recreated {}'.format(thisLink))
 				return
 
 			## firstObj and secondObj are only for link type 'strong' or 'weak'
 			firstObj = dbResults[link['first_id']]
-			self.logger.debug('First {firstObj!r}', firstObj=firstObj)
+			self.logger.debug('First {}'.format(firstObj))
 			secondobj = dbResults[link['second_id']]
-			self.logger.debug('Second {secondobj!r}', secondobj=secondobj)
+			self.logger.debug('Second {}'.format(secondobj))
 			first_id = firstObj.object_id
 			second_id = secondobj.object_id
 
@@ -1197,20 +1210,20 @@ class ResultProcessing:
 			if link['type'] == 'strong':
 				strongLinkClass = self.validStrongLinks[link['class_name']]
 				object_type = strongLinkClass.__tablename__
-				thisLink = strongLinkClass.as_unique(self.dbClient.session, first_id=first_id, second_id=second_id, object_id=uuid.uuid4().hex, object_type=object_type)
-				self.logger.debug('Strong link added to the session {thisLink!r}', thisLink=thisLink)
+				thisLink = strongLinkClass.as_unique(self.dbSession, first_id=first_id, second_id=second_id, object_id=uuid.uuid4().hex, object_type=object_type)
+				self.logger.debug('Strong link added to the session {}'.format(thisLink))
 			## Creates a weak link
 			elif link['type'] == 'weak':
 				weakLinkClass = self.validWeakLinks[link['class_name']]
 				object_type =  weakLinkClass.__tablename__
-				thisLink = weakLinkClass.as_unique(self.dbClient.session, first_id=first_id, second_id=second_id, object_id=uuid.uuid4().hex, object_type=object_type)
-				self.logger.debug('Weak link added to the session {thisLink!r}', thisLink=thisLink)
+				thisLink = weakLinkClass.as_unique(self.dbSession, first_id=first_id, second_id=second_id, object_id=uuid.uuid4().hex, object_type=object_type)
+				self.logger.debug('Weak link added to the session {}'.format(thisLink))
 			else:
-				self.logger.warn('Received unrecognized link class_name: {linkName!r} link_type : {link_type!r}', linkName=linkName, link_type=link['type'])
+				self.logger.warn('Received unrecognized link class_name: {} link_type : {}'.format(linkName, link['type']))
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in createLink: {exception!r}', exception=exception)
+			self.logger.error('Exception in createLink: {}'.format(str(exception)))
 
 		## end createLink
 		return
@@ -1226,7 +1239,7 @@ class ResultProcessing:
 		errMsg = None
 		try:
 			messageSource = message.get('source')
-			self.logger.info('Processing the result received from Kafka, from source {messageSource!r}, with number of objects: {numberOfObjects!r}.', messageSource=messageSource, numberOfObjects=len(message['objects']))
+			self.logger.info('Processing the result received from Kafka, from source {}, with number of objects: {}.'.format(messageSource, len(message['objects'])))
 			objectsDict = {}
 			dbResults = {}
 			invalidLink = False
@@ -1243,7 +1256,7 @@ class ResultProcessing:
 				identifier = str(identifier)
 				data = obj['data']
 				## Updated_by field gets message['source'] value
-				self.logger.debug("Printing the data before conditon check {data!r}", data = data)
+				#self.logger.debug("Printing the data before condition check: {}".format(str(data).strip('{}')))
 				if data:
 					data['object_updated_by'] = message['source']
 				constraints = self.validClassObjects[className]['classObject'].constraints()
@@ -1293,7 +1306,7 @@ class ResultProcessing:
 						newLinks['links'].append(link)
 
 					elif link["first_id"] in objectIdMap.keys() and link["second_id"] in objectIdMap.keys():
-						self.logger.debug("skipping duplicates ({first_id!r}, {second_id!r})", first_id=link["first_id"], second_id=link["second_id"])
+						self.logger.debug("skipping duplicates ({}, {})".format(link["first_id"], link["second_id"]))
 
 					elif link["first_id"] not in objectIdMap.keys() and link["second_id"] in objectIdMap.keys():
 						link["second_id"] = objectIdMap.get(link["second_id"])
@@ -1317,7 +1330,7 @@ class ResultProcessing:
 				linkName = link['class_name']
 				if linkName not in self.validStrongLinks.keys() and linkName not in self.validWeakLinks.keys():
 					invalidLink = True
-					self.logger.error("Invalid Link : {linkName!r}",linkName=linkName)
+					self.logger.error("Invalid Link : {}".format(linkName))
 					break
 
 			if invalidLink:
@@ -1347,22 +1360,20 @@ class ResultProcessing:
 						## container objects may have another required container
 						## object, needed before you can create the container
 						## listed by the first object processed from the JSON...
-						self.logger.debug("{data!r}", data=objectsDict[firstId])
+						#self.logger.debug("{}".format(objectsDict[firstId]))
 						[className, data, object_id] = objectsDict[firstId]
 						firstObj = self.cacheProcessing(className, data, object_id, deleteInsertFlag)
 						dbResults[firstId] = firstObj
 						del(objectsDict[firstId])
 					if secondId in dbResults:
-						# self.logger.debug("Testing Container cs-->test")
 						secondObj = dbResults[secondId]
 					else:
 						[className, data, object_id] = objectsDict[secondId]
 						data['container'] = firstObj.object_id
-						# self.logger.debug("Testing Container {container!r}",container=data['container'])
 						secondObj = self.cacheProcessing(className, data, object_id, deleteInsertFlag) #careful
 						dbResults[secondId] = secondObj
 						del(objectsDict[secondId])
-					self.logger.debug('Creating strong link {linkName!r}', linkName=linkName)
+					self.logger.debug('Creating strong link {}'.format(linkName))
 					link['type'] = 'strong'
 					self.createLink(dbResults, link)
 
@@ -1387,7 +1398,7 @@ class ResultProcessing:
 						firstObj = self.cacheProcessing(className, data, object_id, deleteInsertFlag)
 						dbResults[firstId] = firstObj
 						del(objectsDict[firstId])
-					self.logger.debug('First Object Weak{obj!r}', obj=firstObj)
+					self.logger.debug('First Object Weak {}'.format(firstObj))
 					if secondId in dbResults:
 						secondObj = dbResults[secondId]
 					else:
@@ -1395,7 +1406,7 @@ class ResultProcessing:
 						secondObj = self.cacheProcessing(className, data, object_id, deleteInsertFlag)
 						dbResults[secondId] = secondObj
 						del(objectsDict[secondId])
-					self.logger.debug('Creating weak link {linkName!r}', linkName=linkName)
+					self.logger.debug('Creating weak link {}'.format(linkName))
 					link['type'] = 'weak'
 					self.createLink(dbResults, link)
 
@@ -1421,7 +1432,7 @@ class ResultProcessing:
 										del(objectsDict[Id])
 							except:
 								exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-								self.logger.error('Exception in processResult: {exception!r}', exception=exception)
+								self.logger.error('Exception in processResult: {}'.format(str(exception)))
 
 						elif utils.uuidCheck(firstId):
 							## First is a 32bit hex; second is a temp. Need to
@@ -1451,7 +1462,7 @@ class ResultProcessing:
 								del(objectsDict[firstId])
 							dbResults[secondId] = None
 
-						self.logger.debug('Recreating  link {linkName!r}', linkName=linkName)
+						self.logger.debug('Recreating link {}'.format(linkName))
 						link['type'] = 'temp_weak'
 						self.createLink(dbResults, link)
 
@@ -1467,21 +1478,21 @@ class ResultProcessing:
 							thisObj = self.cacheProcessing(className, data, object_id, deleteInsertFlag)
 							dbResults[thisId] = thisObj
 						else:
-							self.logger.error("Invalid container_id {container!r} for the standalone class: {className!r}", className=className, container=data['container'])
+							self.logger.error("Invalid container_id {} for the standalone class: {}".format(className, data['container']))
 					else:
 						thisObj = self.cacheProcessing(className, data, object_id, deleteInsertFlag)
 						dbResults[thisId] = thisObj
-			self.dbClient.session.commit()
+			self.dbSession.commit()
 			self.logger.info('Finished processing objects.')
 
 		except:
 			## Get short exception to return back/send to LogCollectionService
 			errMsg = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
 			## Database rollback
-			self.dbClient.session.rollback()
+			self.dbSession.rollback()
 			## Get full exception to drop in the local log
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in processResult: {exception!r}', exception=exception)
+			self.logger.error('Exception in processResult: {}'.format(str(exception)))
 
 		## end processResult
 		return errMsg
@@ -1503,7 +1514,7 @@ class ResultProcessing:
 			self.logger.info("Converting the Nested to flat")
 			## calling the nested query.
 			convertedDictionary = self.processNestedResults(message, convertedDictionary)
-			self.logger.info("Converted result: {convertedDictionary!r}", convertedDictionary=convertedDictionary)
+			self.logger.info("Converted result: {}".format(convertedDictionary))
 			## calling the normal processResult method
 			errMsg = self.processResult(convertedDictionary)
 		except:
@@ -1511,9 +1522,9 @@ class ResultProcessing:
 			errMsg = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
 			## Get full exception to drop in the local log
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in initiateNest: {exception!r}', exception=exception)
+			self.logger.error('Exception in initiateNest: {}'.format(str(exception)))
 
-		## end processResult
+		## end initiateNest
 		return errMsg
 
 
