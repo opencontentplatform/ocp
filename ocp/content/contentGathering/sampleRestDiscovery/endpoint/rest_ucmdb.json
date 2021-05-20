@@ -1,0 +1,31 @@
+{
+	"objects": [{
+			"class_name": "REST",
+			"attributes": ["object_type", "ipaddress", "protocol_reference", "realm", "container", "node_type", "base_url", "auth_url"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"condition": {
+					"attribute": "node_type",
+					"operator": "regex",
+					"value": "[Uu][Cc][Mm][Dd][Bb]"
+				}
+			}],
+			"linchpin": true
+		},
+		{
+			"class_name": "Node",
+			"attributes": ["hostname", "domain"],
+			"minimum": "1",
+			"maximum": "1"
+		}
+	],
+	"links": [{
+			"label": "NODE_TO_REST",
+			"class_name": "Enclosed",
+			"attributes": [],
+			"first_id": "Node",
+			"second_id": "REST"
+		}
+	]
+}

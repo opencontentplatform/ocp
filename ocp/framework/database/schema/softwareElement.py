@@ -437,6 +437,30 @@ class SQL(Protocol):
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'sql', 'inherit_condition': object_id == Protocol.object_id}
 
 
+class REST(Protocol):
+	"""Defines the rest_api object for the database
+
+	Table :
+	  |  rest_api
+	Columns :
+	  |  object_id FK(protocol.object_id) PK
+	  |  container FK(node.object_id)
+	  |  protocol_reference [String(32)]
+	Constraints :
+	  |  rest_api_constraint(container)
+	"""
+
+	__tablename__ = 'rest_api'
+	_constraints = ['container']
+	__table_args__ = (UniqueConstraint(*_constraints, name='rest_api_constraint'), {'schema':'data'})
+	object_id = Column(None, ForeignKey(Protocol.object_id), primary_key=True)
+	container = Column(None, ForeignKey(Node.object_id), nullable=False)
+	container_relationship = relationship('Node', backref = backref('rest_api_objects', cascade = 'all, delete'), foreign_keys = 'REST.container')
+	base_url = Column(String(512), nullable=False)
+	auth_url = Column(String(512), nullable=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'rest_api', 'inherit_condition': object_id == Protocol.object_id}
+
+
 class Apache(WebServer):
 	"""Defines the apache object for the database
 

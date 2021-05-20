@@ -1,0 +1,46 @@
+{
+	"jobName" : "find_REST_OCP",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"protocolType" : "ProtocolRestApi",
+	"numberOfJobThreads" : 1,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 1,
+	"endpointQueueSize" : 10,
+	"jobScript" : "find_REST_OCP",
+	"endpointQuery" : "ipv4NoShell",
+	"endpointIdColumn" : "address",
+	"endpointAttrForRealmCheck": "address",
+	"createExecutionLog": false,
+	"singleEndpointTest" : false,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 600,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"credentialDescriptor": "[Oo][Cc][Pp]",
+		"restPath" : "/ocp",
+		"ports" : [52707],
+		"http_or_https" : "https",
+		"printDebug" : true
+	},
+	"triggerType" : "interval",
+	"triggerArgs" : {
+		"weeks" : null,
+		"days" : null,
+		"hours" : null,
+		"minutes" : null,
+		"seconds" : 15,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}
