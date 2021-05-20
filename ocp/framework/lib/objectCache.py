@@ -35,6 +35,8 @@ import traceback
 import time
 import datetime as dt
 from sqlalchemy import inspect
+from sqlalchemy.orm.scoping import scoped_session as sqlAlchemyScopedSession
+from sqlalchemy.orm.session import Session as sqlAlchemySession
 
 ## Add openContentPlatform directories onto the sys path
 thisPath = os.path.dirname(os.path.abspath(__file__))
@@ -44,8 +46,10 @@ if basePath not in sys.path:
 import env
 env.addLibPath()
 
+
 ## From openContentPlatform
 import database.connectionPool as tableMapping
+#from database.connectionPool import DatabaseClient
 
 
 class ObjectCache:
@@ -55,10 +59,21 @@ class ObjectCache:
 
 		Arguments:
 		  logger    : Logger handle
-		  dbClient  : Holds the global DB relevent information
+		  dbClient  : Either DatabaseClient or sqlalchemy.orm.scoping.scoped_session
 		"""
 		self.logger = logger
-		self.dbClient = dbClient
+		
+		## Normalize when passed both of these two db client types:
+		##   database.connectionPool.DatabaseClient 
+		##   sqlalchemy.orm.scoping.scoped_session 
+		self.dbSession = None
+		if isinstance(dbClient, sqlAlchemySession) or isinstance(dbClient, sqlAlchemyScopedSession):
+			self.dbSession = dbClient
+		elif isinstance(dbClient, tableMapping.DatabaseClient):
+			self.dbSession = dbClient.session
+		else:
+			raise EnvironmentError('The dbClient passed to ObjectCache must be either a database.connectionPool.DatabaseClient or a sqlalchemy.orm.scoping.scoped_session.')
+		
 		## Initialize dictionaries
 		self.constraintCache = dict()
 		self.constraintCache['Node'] = dict()
@@ -72,7 +87,7 @@ class ObjectCache:
 	def remove(self):
 		print(' ~~~~> removing objectCache')
 		self.logger = None
-		self.dbClient = None
+		self.dbSession = None
 		self.constraintCache = None
 		self.referenceCache = None
 		self.lastUpdateTime = None
@@ -82,22 +97,22 @@ class ObjectCache:
 		"""Build cache dictionaries."""
 		try:
 			## Constraint cache section; build for all desired types
-			nodeObjects = self.dbClient.session.query(tableMapping.Node).all()
+			nodeObjects = self.dbSession.query(tableMapping.Node).all()
 			self.updateConstraintCache(nodeObjects, self.constraintCache['Node'])
-			hardwareObjects = self.dbClient.session.query(tableMapping.Hardware).all()
+			hardwareObjects = self.dbSession.query(tableMapping.Hardware).all()
 			self.updateConstraintCache(hardwareObjects, self.constraintCache['Hardware'])
-			clusterObjects =  self.dbClient.session.query(tableMapping.Cluster).all()
+			clusterObjects =  self.dbSession.query(tableMapping.Cluster).all()
 			self.updateConstraintCache(clusterObjects, self.constraintCache['Cluster'])
 
 			## Reference cache section
-			referenceObjects = self.dbClient.session.query(tableMapping.ReferenceCache).all()
+			referenceObjects = self.dbSession.query(tableMapping.ReferenceCache).all()
 			self.updateReferenceCache(referenceObjects)
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in buildCache: {exception!r}', exception=exception)
+			self.logger.error('Exception in objectCache build: {}'.format(exception))
 
-		## end buildCache
+		## end build
 		return
 
 
@@ -108,16 +123,16 @@ class ObjectCache:
 			currentTime = time.time()
 
 			## Constraint cache section
-			nodeObjects = self.dbClient.session.query(tableMapping.Node).filter(tableMapping.Node.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
+			nodeObjects = self.dbSession.query(tableMapping.Node).filter(tableMapping.Node.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
 			self.updateConstraintCache(nodeObjects, self.constraintCache['Node'])
-			hardwareObjects = self.dbClient.session.query(tableMapping.Hardware).filter(tableMapping.Hardware.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
+			hardwareObjects = self.dbSession.query(tableMapping.Hardware).filter(tableMapping.Hardware.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
 			self.updateConstraintCache(hardwareObjects, self.constraintCache['Hardware'])
-			clusterObjects =  self.dbClient.session.query(tableMapping.Cluster).filter(tableMapping.Cluster.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
+			clusterObjects =  self.dbSession.query(tableMapping.Cluster).filter(tableMapping.Cluster.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
 			self.updateConstraintCache(clusterObjects, self.constraintCache['Cluster'])
 			self.logger.info("Update sucessful.")
 
 			## Reference cache section
-			referenceObjects = self.dbClient.session.query(tableMapping.ReferenceCache).filter(tableMapping.ReferenceCache.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
+			referenceObjects = self.dbSession.query(tableMapping.ReferenceCache).filter(tableMapping.ReferenceCache.time_created <= dt.datetime.fromtimestamp(self.lastUpdateTime)).all()
 			self.updateReferenceCache(referenceObjects)
 
 			## Update timestamp to reflect last successful execution
@@ -125,9 +140,9 @@ class ObjectCache:
 
 		except:
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
-			self.logger.error('Exception in updateCache: {exception!r}', exception=exception)
+			self.logger.error('Exception in objectCache update: {}'.format(exception))
 
-		## end updateCache
+		## end update
 		return
 
 

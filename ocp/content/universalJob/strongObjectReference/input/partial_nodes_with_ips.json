@@ -1,0 +1,64 @@
+{
+	"objects": [{
+			"label": "Qualified_Node",
+			"class_name": "Node",
+			"attributes": ["hostname","domain"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"operator": "or",
+				"expression": [{
+						"condition": {
+							"attribute": "partial",
+							"operator": "==",
+							"value": false
+						}
+					},
+					{
+						"condition": {
+							"attribute": "partial",
+							"operator": "isnull",
+							"value": true
+						}
+					}
+				]
+			}],
+			"linchpin": true
+		},
+		{
+			"label": "IP",
+			"class_name": "IpAddress",
+			"attributes": ["address","realm"],
+			"minimum": "1",
+			"maximum": ""
+		},
+		{
+			"label": "Partial_Node",
+			"class_name": "Node",
+			"attributes": ["hostname","domain"],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"condition": {
+					"attribute": "partial",
+					"operator": "==",
+					"value": true
+				}
+			}]
+		}
+	],
+	"links": [{
+			"label": "NODE_TO_IP",
+			"class_name": "Usage",
+			"attributes": [],
+			"first_id": "Qualified_Node",
+			"second_id": "IP"
+		},
+		{
+			"label": "IP_TO_PARTIALS",
+			"class_name": "Usage",
+			"first_id": "Partial_Node",
+			"second_id": "IP"
+		}
+	]
+}

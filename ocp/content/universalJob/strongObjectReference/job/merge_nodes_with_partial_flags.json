@@ -1,0 +1,34 @@
+{
+	"jobName" : "merge_nodes_with_partial_flags",
+	"realm" : "default",
+	"numberOfJobThreads" : 1,
+	"jobScript" : "merge_nodes_with_partial_flags",
+	"clientOnlyTrigger" : true,
+	"clientEndpoint" : "any",
+	"endpointIdColumn" : "value",
+	"isDisabled" : false,
+	"inputParameters" : {
+		"printDebug" : true,
+		"partialNodesQuery" : "partial_nodes_with_ips",
+		"weakNodesQuery" : "nodes_without_domains"
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : "8,18",
+		"minute" : 2,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

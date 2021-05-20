@@ -86,6 +86,8 @@ class Node(BaseObject):
 	version = Column(String(256), nullable=True)
 	hardware_is_virtual = Column(Boolean, nullable=True, default=False)
 	hardware_provider = Column(String(256), nullable=True)
+	partial = Column(Boolean, nullable=True, default=False)
+	
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'node', 'inherit_condition': object_id == BaseObject.object_id}
 
 	@classmethod
