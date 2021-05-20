@@ -215,6 +215,7 @@ class ServiceListener(CustomLineReceiverProtocol):
 		## Let the client know it's registered name
 		content = {}
 		content['clientName'] = self.clientName
+		content['clientIP'] = str(self.transport.getPeer())
 		self.constructAndSendData('connectionResponse', content)
 		## Get the first health update to seed the service_endpoint_health table
 		self.constructAndSendData('healthRequest', {})
@@ -265,6 +266,10 @@ class ServiceListener(CustomLineReceiverProtocol):
 		found = False
 		try:
 			self.factory.logger.debug('Attempting to update health entry for client [{clientName!r}]', clientName=self.clientName)
+			endpointIP = None
+			with suppress(Exception):
+				endpointIP = self.transport.getPeer().host
+			
 			ServiceEndpointHealth = self.factory.serviceHealthTable
 			clients = self.factory.dbClient.session.query(ServiceEndpointHealth).all()
 			self.factory.dbClient.session.commit()
@@ -273,6 +278,8 @@ class ServiceListener(CustomLineReceiverProtocol):
 				if thisName == self.clientName:
 					## Client exists; pull current record and update
 					clientObject = self.factory.dbClient.session.query(ServiceEndpointHealth).filter(ServiceEndpointHealth.name == thisName).first()
+					setattr(clientObject, 'endpoint_ip', endpointIP)
+					setattr(clientObject, 'endpoint_name', content.get('endpoint'))
 					setattr(clientObject, 'last_system_status', content.get('lastSystemStatus'))
 					setattr(clientObject, 'cpu_avg_utilization', content['cpuAvgUtilization'])
 					setattr(clientObject, 'memory_aprox_total', content['memoryAproxTotal'])
@@ -291,6 +298,8 @@ class ServiceListener(CustomLineReceiverProtocol):
 				## Client does not yet exist; create new
 				thisEntry = ServiceEndpointHealth(name=self.clientName,
 												  object_id=uuid.uuid4().hex,
+												  endpoint_ip=endpointIP,
+												  endpoint_name=content.get('endpoint'),
 												  last_system_status=content.get('lastSystemStatus'),
 												  cpu_avg_utilization=content['cpuAvgUtilization'],
 												  memory_aprox_total=content['memoryAproxTotal'],
@@ -674,13 +683,25 @@ class ServiceFactory(CoreService, ServerFactory):
 	@logExceptionWithSelfLogger()
 	def cleanClientHealthTable(self):
 		"""Remove any stale clients before establishing new connections."""
-		ServiceEndpointHealth = self.serviceHealthTable
-		clients = self.dbClient.session.query(ServiceEndpointHealth).all()
+		
+		## Remove client entry out of both DB tables
+		clients = self.dbClient.session.query(self.serviceHealthTable).all()
 		for serviceClient in clients:
 			self.logger.debug('Removing stale client health entry for {serviceClient_name!r}, last updated {serviceClient_last_sys_stat!r}.',
 							  serviceClient_name=serviceClient.name, serviceClient_last_sys_stat=serviceClient.last_system_status)
 			self.dbClient.session.delete(serviceClient)
 			self.dbClient.session.commit()
+		
+		## Also clean out the endpoint table ???
+		## Not at the moment. This entry is directly created by the client. If
+		## clients stay up over a server restart, clients need to recreate.
+		# clients = self.dbClient.session.query(self.clientEndpointTable).all()
+		# for serviceClient in clients:
+		# 	self.logger.debug('Removing stale client endpoint entry for {serviceClient_name!r}',
+		# 					  serviceClient_name=serviceClient.name)
+		# 	self.dbClient.session.delete(serviceClient)
+		# 	self.dbClient.session.commit()
+		
 		## Return underlying DBAPI connection
 		self.dbClient.session.commit()
 		self.dbClient.session.close()
@@ -716,18 +737,16 @@ class ServiceFactory(CoreService, ServerFactory):
 			exception = traceback.format_exception(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
 			self.logger.error('Exception in removeClient: {exception!r}', exception=exception)
 
-		## Remove client health entry out of the DB table
-		ServiceEndpointHealth = self.serviceHealthTable
 		## If this operation is hit during a shutdown or restart operation, and
 		## stopFactory is starting - we may not have a dbClient left around:
 		if self.dbClient is not None:
-			clients = self.dbClient.session.query(ServiceEndpointHealth).all()
+			clients = self.dbClient.session.query(self.serviceHealthTable).all()
 			for serviceClient in clients:
 				thisName = serviceClient.name
 				if thisName == clientName:
 					self.dbClient.session.delete(serviceClient)
 					self.dbClient.session.commit()
-
+	
 			## Return underlying DBAPI connection
 			self.dbClient.session.commit()
 			self.dbClient.session.close()

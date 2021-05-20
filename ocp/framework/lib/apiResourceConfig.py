@@ -20,6 +20,7 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/config/ApiConsumerAccess/{user}
 	/<root>/config/client
 	/<root>/config/client/{endpoint}
+	/<root>/config/runtime
 	/<root>/config/cred
 	/<root>/config/search/{class}
 
@@ -39,6 +40,7 @@ import traceback
 import os
 import json
 import uuid
+import platform
 import inspect as pythonInspect
 from hug.types import text, number
 from hug.types import json as hugJson
@@ -188,6 +190,11 @@ def getConfig(request, response):
 		'/config/client/{endpoint}' : {
 			'methods' : {
 				'GET' : 'Report details on the named endpoint.'
+			}
+		},
+		'/config/runtime' : {
+			'methods' : {
+				'GET' : 'Overview of the current platform runtime: server, db, kafka, clients.'
 			}
 		},
 		'/config/cred' : {
@@ -1345,11 +1352,12 @@ def getClientByName(endpointName, request, response):
 		matched = False
 		for tableName in clientToEndpointTableClass:
 			dbTable = clientToEndpointTableClass[tableName]
-			results = request.context['dbSession'].query(dbTable)
+
 			matchedEntry = request.context['dbSession'].query(dbTable).filter(dbTable.name == endpointName).first()
 			if matchedEntry:
 				request.context['logger'].debug('Key match found for [{}]'.format(matchedEntry.name))
 				request.context['payload']['endpointName'] = matchedEntry.name
+				request.context['payload']['pythonVersion'] = matchedEntry.python_version
 				request.context['payload']['platformType'] = matchedEntry.platform_type
 				request.context['payload']['platformSystem'] = matchedEntry.platform_system
 				request.context['payload']['platformMachine'] = matchedEntry.platform_machine
@@ -1379,6 +1387,91 @@ def getClientByName(endpointName, request, response):
 		errorMessage(request, response)
 
 	## end getClientByName
+	return cleanPayload(request)
+
+
+@hugWrapper.get('/runtime')
+def getRuntime(request, response):
+	"""Overview of the current platform runtime: server, db, kafka, clients."""
+	try:
+		request.context['logger'].debug('Running runtime ...')
+		## Use the globalSettings and falcon variables to get app info
+		serverSection = {}
+		serverSection['server'] = globalSettings.get('serviceIpAddress')
+		serverSection['installDir'] = env.basePath
+		serverSection['pythonVersion'] = platform.python_version()
+		serverSection['useCertificates'] = globalSettings.get('useCertificates')
+		serverSection['restApi'] = '{}://{}:{}/{}'.format(globalSettings.get('transportType'),
+														  globalSettings.get('apiIpAddress'),
+														  globalSettings.get('apiServicePort'),
+														  globalSettings.get('apiContextRoot'))
+		
+		## Open the database properties file to get DB server name/IP
+		databaseSection = {}
+		externalLibrary = utils.loadExternalLibrary('externalDatabaseLibrary', env, globalSettings)
+		dbSettings = externalLibrary.getSettingsFromFile()
+		databaseSection['server'] = dbSettings.get('databaseServer')
+		databaseSection['port'] = dbSettings.get('databasePort')
+		databaseSection['database'] = dbSettings.get('databaseName')
+		
+		## Use the globalSettings to get kafka info
+		kafkaSection = {}
+		kafkaEndpoint = globalSettings.get('kafkaEndpoint')
+		kafkaSection['server'] = kafkaEndpoint
+		m = re.search('(\S+):(\d+)', kafkaEndpoint)
+		if m:
+			kafkaSection['server'] = m.group(1)
+			kafkaSection['port'] = m.group(2)
+		kafkaSection['useCertificates'] = globalSettings.get('useCertificatesWithKafka')
+		kafkaSection['resultsTopic'] = globalSettings.get('kafkaTopic')
+		
+		## Get all active client name/IP/types
+		clientSection = {}
+		clients = []
+		## Get only the endpoints with active health entries
+		for tableName in clientToHealthTableClass:
+			dbTable = clientToHealthTableClass[tableName]
+			results = request.context['dbSession'].query(dbTable)
+			for entry in results:
+				thisClientName = entry.name
+				thisEndpointName = entry.endpoint_name
+				thisEndpointIP = entry.endpoint_ip
+				if not thisEndpointName in clients:
+					clientSection[thisEndpointName] = {}
+					clientSection[thisEndpointName]['endpointName'] = thisEndpointName
+					clientSection[thisEndpointName]['endpointIP'] = thisEndpointIP
+					clientSection[thisEndpointName]['running'] = {}
+					clients.append(thisEndpointName)
+				if not tableName in clientSection[thisEndpointName]['running']:
+					clientSection[thisEndpointName]['running'][tableName] = []
+				clientSection[thisEndpointName]['running'][tableName].append(thisClientName)
+		
+		## Now add the python version from the endpoint table
+		for tableName2 in clientToEndpointTableClass:
+			dbTable2 = clientToEndpointTableClass[tableName2]
+			results = request.context['dbSession'].query(dbTable2)
+			if results:
+				for entry in results:
+					endpointName = entry.name
+					if endpointName not in clientSection:
+						continue
+					clientSection[endpointName]['pythonVersion'] = entry.python_version
+		
+		## Convert the client dict over to a list of values
+		clientList = []
+		for key,value in clientSection.items():
+			clientList.append(value)
+		
+		## Construct the payload
+		request.context['payload']['server'] = serverSection
+		request.context['payload']['database'] = databaseSection
+		request.context['payload']['kafka'] = kafkaSection
+		request.context['payload']['clients'] = clientList
+
+	except:
+		errorMessage(request, response)
+
+	## end getRuntime
 	return cleanPayload(request)
 
 
