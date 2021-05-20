@@ -162,7 +162,7 @@ def not_found_handler():
 
 
 @hug.get('/ocpcore/authenticate')
-def authenticateServiceClient(endpointName:text, clientType:text, platformType:text, platformSystem:text, platformMachine:text, platformVersion:text, cpuType:text, cpuCount:text, memoryTotal:text, request, response):
+def authenticateServiceClient(endpointName:text, clientType:text, pythonVersion:text, platformType:text, platformSystem:text, platformMachine:text, platformVersion:text, cpuType:text, cpuCount:text, memoryTotal:text, request, response):
 	"""Validate OCP clients."""
 	try:
 		token = None
@@ -177,7 +177,7 @@ def authenticateServiceClient(endpointName:text, clientType:text, platformType:t
 		else:
 			## Create when the client does not exist
 			token = uuid.uuid4().hex
-			thisEntry = dbTable(name=endpointName, object_id=token, platform_type=platformType, platform_system=platformSystem, platform_machine=platformMachine, platform_version=platformVersion, cpu_type=cpuType, cpu_count=cpuCount, memory_total=memoryTotal)
+			thisEntry = dbTable(name=endpointName, object_id=token, python_version=pythonVersion, platform_type=platformType, platform_system=platformSystem, platform_machine=platformMachine, platform_version=platformVersion, cpu_type=cpuType, cpu_count=cpuCount, memory_total=memoryTotal)
 			request.context['dbSession'].add(thisEntry)
 			request.context['dbSession'].commit()
 			request.context['logger'].debug('New token created new for [{}]'.format(endpointName))

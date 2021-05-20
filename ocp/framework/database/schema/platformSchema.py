@@ -842,6 +842,8 @@ class EndpointPlatformAttributes():
 	  |  cpu_type [String(256)]
 	  |  cpu_count [String(256)]
 	  |  memory_total [String(256)]
+	  |  ip_address [String(128)]
+	  |  python_version [String(128)]
 	"""
 
 	platform_type = Column(String(256), nullable=True)
@@ -851,6 +853,8 @@ class EndpointPlatformAttributes():
 	cpu_type = Column(String(256), nullable=True)
 	cpu_count = Column(String(256), nullable=True)
 	memory_total = Column(String(256), nullable=True)
+	ip_address = Column(String(128), nullable=True)
+	python_version = Column(String(128), nullable=True)
 
 
 class ServiceContentGatheringEndpoint(EndpointPlatformAttributes, Base):
@@ -994,7 +998,10 @@ class ServiceContentGatheringHealth(EndpointHealthAttributes, Base):
 	__table_args__ = {"schema":"platform"}
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
-
+	#endpoint = Column(None, ForeignKey(ServiceContentGatheringEndpoint.name))
+	endpoint_name = Column(String(256), nullable=True)
+	endpoint_ip = Column(String(256), nullable=True)
+	
 
 class ServiceResultProcessingHealth(EndpointHealthAttributes, Base):
 	"""Defines a service_result_processing_health object for the database.
@@ -1019,6 +1026,9 @@ class ServiceResultProcessingHealth(EndpointHealthAttributes, Base):
 	__table_args__ = {"schema":"platform"}
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
+	#endpoint = Column(None, ForeignKey(ServiceResultProcessingEndpoint.name))
+	endpoint_name = Column(String(256), nullable=True)
+	endpoint_ip = Column(String(256), nullable=True)
 
 
 class ServiceUniversalJobHealth(EndpointHealthAttributes, Base):
@@ -1044,6 +1054,9 @@ class ServiceUniversalJobHealth(EndpointHealthAttributes, Base):
 	__table_args__ = {"schema":"platform"}
 	object_id = Column(CHAR(32), unique=True, default=lambda :uuid.uuid4().hex)
 	name = Column(String(256), primary_key=True)
+	#endpoint = Column(None, ForeignKey(ServiceUniversalJobEndpoint.name))
+	endpoint_name = Column(String(256), nullable=True)
+	endpoint_ip = Column(String(256), nullable=True)
 
 
 class ContentGatheringServiceResults(Base):

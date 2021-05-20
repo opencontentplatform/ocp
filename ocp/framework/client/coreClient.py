@@ -416,7 +416,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		self.executionEnvironment['platformSystem'] = platform.system()
 		self.executionEnvironment['platformMachine'] = platform.machine()
 		self.executionEnvironment['platformVersion'] = platform.version()
-		self.executionEnvironment['pythonVersion'] = platform.python_build()
+		self.executionEnvironment['pythonVersion'] = platform.python_version()
 		## CPUs
 		self.executionEnvironment['cpuType'] = platform.processor()
 		self.executionEnvironment['cpuCount'] = psutil.cpu_count()
@@ -451,6 +451,7 @@ class ServiceClientFactory(ReconnectingClientFactory):
 		"""Get regular execution environment updates for this client."""
 		data = {}
 		try:
+			data['endpoint'] = self.endpointName
 			currentTime = time.time()
 			data['lastSystemStatus'] = datetime.datetime.fromtimestamp(currentTime).strftime('%Y-%m-%d %H:%M:%S')
 			## Server wide CPU average (across all cores, threads, virtuals)
