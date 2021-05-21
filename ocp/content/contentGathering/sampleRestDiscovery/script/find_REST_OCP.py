@@ -13,7 +13,7 @@ Version info:
 import sys
 import traceback
 from contextlib import suppress
-from utilities import addObject, addLink
+from utilities import addObject, addLink, addIp
 from ocpRestAPI import OcpRestAPI
 
 
@@ -23,10 +23,12 @@ def createObjects(runtime, client, realm):
 	(endpoint, reference, port, url) = client.restDetails()
 	## Create the node
 	nodeId, exists = addObject(runtime, 'Node', hostname=endpoint, partial=True)
-	## Create a rest object to leverage for future connections
+	## Create a REST object to leverage for future connections
 	restId, exists = addObject(runtime, 'REST', container=nodeId, ipaddress=endpoint, protocol_reference=reference, realm=realm, port=port, base_url=url, node_type='OCP')
-	## And connect the node to the REST API object
+	ipId, exists = addIp(runtime, address=endpoint)
+	## And connect the objects
 	addLink(runtime, 'Enclosed', nodeId, restId)
+	addLink(runtime, 'Usage', nodeId, ipId)
 
 
 def startJob(runtime):
