@@ -1,0 +1,33 @@
+[
+	{
+		"deviceTypeForReferenceOnly": "QNAP Storage device",
+		"matchingSection": {
+			"snmpOID": "1.3.6.1.4.1.55062",
+			"compareType": "==",
+			"compareValue": "snmpOID"
+		},
+		"mappingSection": {
+			"type": "Storage",
+			"attributeValueOverrides": {},
+			"attributeValuesToUseWhenEmpty": {
+				"vendor": "QNAP Storage, Inc."
+			}
+		}
+	},
+	{
+		"deviceTypeForReferenceOnly": "HP printer - OfficeJet Pro",
+		"matchingSection": {
+			"snmpOID": "1.3.6.1.4.1.11.2.3.9.1",
+			"compareType": "regEx",
+			"compareValue": "^snmpOID.*"
+		},
+		"mappingSection": {
+			"type": "Printer",
+			"attributeValueOverrides": {},
+			"attributeValuesToUseWhenEmpty": {
+				"vendor": "HP",
+				"description": "HP printer"
+			}
+		}
+	}
+]

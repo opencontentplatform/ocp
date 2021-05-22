@@ -1,0 +1,36 @@
+{
+	"objects": [{
+			"class_name": "Node",
+			"attributes": [],
+			"minimum": "1",
+			"maximum": "",
+			"filter": [{
+				"operator": "and",
+				"expression": [{
+						"condition": {
+							"attribute": "object_type",
+							"operator": "==",
+							"value": "node"
+						}
+					},
+					{
+						"condition": {
+							"attribute": "reference_id",
+							"operator": "isnull",
+							"value": true
+						}
+					},
+					{
+						"condition": {
+							"attribute": "snmp_oid",
+							"operator": "!=",
+							"value": null
+						}
+					}
+				]
+			}],
+			"linchpin": true
+		}
+	],
+	"links": []
+}

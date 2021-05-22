@@ -2,13 +2,14 @@
 
 Functions:
   startJob : standard job entry point
+  detectSNMP : attempt to connect to the endpoint via SNMP
+  parseNameForDomain : split SNMP sysName into name/domain
   querySystemTable : query base system table
+  queryEntityTable : query the physical entity table
   queryHrDeviceDescr : query host device table
   queryIpTable : query ip table
   queryInternalStorageTable : query system device table
-  parseNameForDomain : split SNMP sysName into name/domain
-  detectSNMP : attempt to connect to the endpoint via SNMP
-  startJob : standard job entry point
+  createObjects : create objects and links 
 
 Author: Chris Satterthwaite (CS)
 Contributors:
@@ -26,11 +27,16 @@ from protocolWrapper import findClients
 from utilities import addObject, addIp, addLink
 
 
-def createObjects(runtime, shortname, domain, description, endpoint, ips, protocolId):
+def createObjects(runtime, shortname, domain, description, deviceOID, location, firmware, serialNumber, model, assetId, endpoint, ips, protocolId):
 	"""Create objects and links in our results."""
 	try:
 		## First create the node
-		nodeId, exists = addObject(runtime, 'Node', hostname=shortname, domain=domain, description=description)
+		nodeId, exists = addObject(runtime, 'Node', hostname=shortname, domain=domain, description=description, snmp_oid=deviceOID, location=location)
+		
+		## Now create the hardware
+		if serialNumber is not None:
+			hardwareId, exists = addObject(runtime, 'HardwareNode', serial_number=serialNumber, bios_info=firmware, model=model, asset_tag=assetId)
+			addLink(runtime, 'Usage', nodeId, hardwareId)
 
 		## Now create the IPs
 		for ip in ips:
@@ -57,16 +63,62 @@ def createObjects(runtime, shortname, domain, description, endpoint, ips, protoc
 	## end createObjects
 	return
 
+def queryEntityTable(client, runtime, description):
+	"""Query and parse the entity table."""
+	## OID dot notation: 1.3.6.1.2.1.47.1.1.1.1
+	## .iso.org.dod.internet.mgmt.mib-2.entityMIB == .1.3.6.1.2.1.47
+	##    .entityMIBObjects.entityPhysical == .1.1
+	##    .entPhysicalTable.entPhysicalEntry == .1.1
+	entityOid = '1.3.6.1.2.1.47.1.1.1.1'
+	physicalDescription = '1.3.6.1.2.1.47.1.1.1.1.2'
+	physicalFirmwareRev = '1.3.6.1.2.1.47.1.1.1.1.9'
+	physicalSerialNum   = '1.3.6.1.2.1.47.1.1.1.1.11'
+	physicalModelName   = '1.3.6.1.2.1.47.1.1.1.1.13'
+	physicalAssetID     = '1.3.6.1.2.1.47.1.1.1.1.15'
+	## Query the entityMIB
+	snmpResponse = {}
+	client.getNext(entityOid, snmpResponse)
+	firmware = None
+	serialNumber = None
+	model = None
+	assetId = None
+
+	## Parse response from the 'entity' table
+	if len(snmpResponse) > 0:
+		newDescription = snmpResponse.get(physicalDescription, None)
+		runtime.logger.debug('description: {description!r}', description=newDescription)
+		if newDescription is not None:
+			runtime.logger.info('Changing description from {description!r} to {newDescription!r}', description=description, newDescription=newDescription)
+			description = newDescription
+		firmware = snmpResponse.get(physicalFirmwareRev, None)
+		runtime.logger.debug('firmware: {firmware!r}', firmware=firmware)
+		serialNumber = snmpResponse.get(physicalSerialNum, None)
+		runtime.logger.debug('serialNumber: {serialNumber!r}', serialNumber=serialNumber)
+		model = snmpResponse.get(physicalModelName, None)
+		runtime.logger.debug('model: {model!r}', model=model)
+		assetId = snmpResponse.get(physicalAssetID, None)
+		runtime.logger.debug('assetId: {assetId!r}', assetId=assetId)
+		for oid, value in snmpResponse.items():
+			runtime.logger.debug('queryEntityTable SNMP response:  {oid!r} = {value!r}', oid=oid, value=value)
+
+	## end queryEntityTable
+	return (description, firmware, serialNumber, model, assetId)
+
 
 def querySystemTable(client, runtime):
 	"""Query and parse the base system table."""
 	## RFC1213-MIB
 	## .iso.org.dod.internet.mgmt.mib-2.system == .1.3.6.1.2.1.1
-	systemOid = '1.3.6.1.2.1.1'
-	sysDescr  = '1.3.6.1.2.1.1.1.0'
-	sysName   = '1.3.6.1.2.1.1.5.0'
-	name = None
+	systemOid   = '1.3.6.1.2.1.1'
+	sysDescr    = '1.3.6.1.2.1.1.1.0'
+	sysObjectID = '1.3.6.1.2.1.1.2.0'
+	sysName     = '1.3.6.1.2.1.1.5.0'
+	sysLocation = '1.3.6.1.2.1.1.6.0'
 	description = None
+	deviceOID = None
+	name = None
+	location = None
+	
 	## Query the 'system' table
 	snmpResponse = {}
 	client.getNext(systemOid, snmpResponse)
@@ -77,11 +129,15 @@ def querySystemTable(client, runtime):
 		runtime.logger.debug('description: {description!r}', description=description)
 		name = snmpResponse.get(sysName, None)
 		runtime.logger.debug('name: {name!r}', name=name)
+		deviceOID = snmpResponse.get(sysObjectID, None)
+		runtime.logger.debug('deviceOID: {deviceOID!r}', deviceOID=deviceOID)
+		location = snmpResponse.get(sysLocation, None)
+		runtime.logger.debug('location: {location!r}', location=location)
 		for oid, value in snmpResponse.items():
 			runtime.logger.debug('querySystemTable SNMP response:  {oid!r} = {value!r}', oid=oid, value=value)
 
 	## end querySystemTable
-	return (name, description)
+	return (name, description, deviceOID, location)
 
 
 def queryHrDeviceDescr(client, runtime, description):
@@ -103,7 +159,7 @@ def queryHrDeviceDescr(client, runtime, description):
 				## Remove the base OID, which won't have a value
 				del(snmpResponse['1.3.6.1.2.1.25.3.2.1.3'])
 				count = len(list(snmpResponse.keys()))
-				print('queryHrDeviceDescr has length of {} : {}'.format(count, snmpResponse))
+				runtime.logger.report('queryHrDeviceDescr has length of {} : {}'.format(count, snmpResponse))
 			if count == 1:
 				## Server type endpoints will have many entries in this table,
 				## but specialty device types may have just one. The specialty
@@ -228,13 +284,16 @@ def querySNMP(runtime, client, endpoint, protocolId):
 	"""
 	try:
 		## Query the base system table (in RFC1213-MIB)
-		(name, description) = querySystemTable(client, runtime)
+		(name, description, deviceOID, location) = querySystemTable(client, runtime)
 
 		## Only continue if the first query was successful
 		if name is not None:
 			## If connections failed before succeeding, remove false negatives
 			runtime.clearMessages()
 
+			## Query the entity table
+			(description, firmware, serialNumber, model, assetId) = queryEntityTable(client, runtime, description)
+			
 			## Query a specific entry from the host table (in HOST-RESOURCES-MIB)
 			description = queryHrDeviceDescr(client, runtime, description)
 
@@ -251,7 +310,7 @@ def querySNMP(runtime, client, endpoint, protocolId):
 
 			## Create the objects
 			protocolId = client.getId()
-			createObjects(runtime, shortname, domain, description, endpoint, ips, protocolId)
+			createObjects(runtime, shortname, domain, description, deviceOID, location, firmware, serialNumber, model, assetId, endpoint, ips, protocolId)
 
 	except:
 		runtime.setError(__name__)

@@ -25,6 +25,11 @@ Classes defined are part of 'data' schema (indentation represents inheritance)::
 				|  Solaris - node_solaris
 				|  Windows - node_windows
 			NodeDevice - node_device
+				|  Switch - node_switch
+				|  Firewall - node_firewall
+				|  LoadBalancer - node_loadbalancer
+				|  Printer - node_printer
+				|  Storage - node_storage
 
 """
 from functools import reduce
@@ -70,6 +75,9 @@ class Node(BaseObject):
 	  |  version [String(256)]
 	  |  hardware_is_virtual [Boolean]
 	  |  hardware_provider [String(256]
+	  |  partial [Boolean]
+	  |  snmp_oid [String(256]
+	  |  location [String(256]
 	Constraints :
 	  | node_constraint (hostname, domain)
 	"""
@@ -87,6 +95,8 @@ class Node(BaseObject):
 	hardware_is_virtual = Column(Boolean, nullable=True, default=False)
 	hardware_provider = Column(String(256), nullable=True)
 	partial = Column(Boolean, nullable=True, default=False)
+	snmp_oid = Column(String(256), nullable=True)
+	location = Column(String(256), nullable=True)
 	
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity': 'node', 'inherit_condition': object_id == BaseObject.object_id}
 
@@ -201,8 +211,8 @@ class NodeDevice(Node):
 	you are able to discover (or otherwise gather details on OS/firmware).
 
 	It is normal to have information about network devices... that they exist
-	and are a certain type of vendor platform/product, but it's not normal to be
-	able to get a protocol connection and talk to their firmware/OS for details
+	and are a certain type of vendor platform/product, but always normal to be
+	allowed a protocol connection and talk to their firmware/OS for details
 	about them.  Only create objects that you know about.  So if you do not have
 	information on the OS level, you would only create a hardware object for the
 	hardware (whether physical or virtual) and relate in other records like IP
@@ -221,3 +231,78 @@ class NodeDevice(Node):
 	__table_args__ = {"schema":"data"}
 	object_id = Column(None, ForeignKey(Node.object_id), primary_key=True)
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_device', 'inherit_condition': object_id == Node.object_id}
+
+
+class Switch(NodeDevice):
+	"""Defines a node_switch object for the database.
+
+	Table :
+	  |  node_switch
+	Columns:
+	  |  object_id [CHAR(32)] FK(node_server.object_id) PK
+	"""
+
+	__tablename__ = 'node_switch'
+	__table_args__ = {"schema":"data"}
+	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_switch', 'inherit_condition': object_id == NodeDevice.object_id}
+
+
+class Firewall(NodeDevice):
+	"""Defines a node_firewall object for the database.
+
+	Table :
+	  |  node_firewall
+	Columns:
+	  |  object_id [CHAR(32)] FK(node_server.object_id) PK
+	"""
+
+	__tablename__ = 'node_firewall'
+	__table_args__ = {"schema":"data"}
+	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_firewall', 'inherit_condition': object_id == NodeDevice.object_id}
+
+
+class LoadBalancer(NodeDevice):
+	"""Defines a node_loadbalancer object for the database.
+
+	Table :
+	  |  node_loadbalancer
+	Columns:
+	  |  object_id [CHAR(32)] FK(node_server.object_id) PK
+	"""
+
+	__tablename__ = 'node_loadbalancer'
+	__table_args__ = {"schema":"data"}
+	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_loadbalancer', 'inherit_condition': object_id == NodeDevice.object_id}
+
+
+class Printer(NodeDevice):
+	"""Defines a node_printer object for the database.
+
+	Table :
+	  |  node_printer
+	Columns:
+	  |  object_id [CHAR(32)] FK(node_server.object_id) PK
+	"""
+
+	__tablename__ = 'node_printer'
+	__table_args__ = {"schema":"data"}
+	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_printer', 'inherit_condition': object_id == NodeDevice.object_id}
+
+
+class Storage(NodeDevice):
+	"""Defines a node_storage object for the database.
+
+	Table :
+	  |  node_storage
+	Columns:
+	  |  object_id [CHAR(32)] FK(node_server.object_id) PK
+	"""
+
+	__tablename__ = 'node_storage'
+	__table_args__ = {"schema":"data"}
+	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_storage', 'inherit_condition': object_id == NodeDevice.object_id}
