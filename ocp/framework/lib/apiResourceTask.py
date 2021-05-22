@@ -30,6 +30,22 @@ import env
 globalSettings = utils.loadSettings(os.path.join(env.configPath, "globalSettings.json"))
 
 
+@hugWrapper.get('/')
+def getTaskContent(request, response):
+	"""Show available task resources."""
+	staticPayload = {'Available Resources' : {
+		'/task' : {
+			'methods' : {
+				'POST' : 'Validate and insert the provided JSON data set.',
+				'DELETE' : 'Remove all objects in the provided JSON data set.'
+			}
+		}
+	}}
+
+	## end getTaskContent
+	return staticPayload
+
+
 @hugWrapper.post('/')
 def insertTaskContent(content:hugJson, request, response):
 	"""Validate and insert the provided JSON result map."""
