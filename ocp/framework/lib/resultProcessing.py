@@ -273,7 +273,7 @@ class ResultProcessing:
 			## same object type (sqlalchemy.orm.collections.InstrumentedList)
 			entry = set(getattr(thisEntry, relation))
 			weakLinkObjects = weakLinkObjects.union(entry)
-		self.logger.info('Weak link objects added to the set {}'.format(weakLinkObjects))
+		#self.logger.info('Weak link objects added to the set {}'.format(weakLinkObjects))
 
 		for relation in ['strong_first_objects', 'strong_second_objects']:
 			## But since the strong first/second can be either a list or a
@@ -285,7 +285,7 @@ class ResultProcessing:
 				if getattr(thisEntry, relation) is not None:
 					entry = getattr(thisEntry, relation)
 					StrongLinkObjects.add(entry)
-		self.logger.info('Strong Link objects added to the set {}'.format(StrongLinkObjects))
+		#self.logger.info('Strong Link objects added to the set {}'.format(StrongLinkObjects))
 
 		## Add BaseObject types into objects to be reconstructed as a dictionary
 		objects = set()
@@ -346,7 +346,9 @@ class ResultProcessing:
 			identifier, exists = self.resultJson.addObject(className, **newData)
 			objectList.append(((thisEntry, inspect(thisEntry).mapper.class_.__name__), identifier))
 		objectsDict = dict(objectList)
-		self.logger.debug('The new recreated dictionary: {}'.format(objectsDict))
+		self.logger.debug('The new recreated dictionary:')
+		for a,b in objectsDict.items():
+			self.logger.debug('  {}: {}'.format(a,b))
 
 		## Recreating strong link connection
 		for item in StrongLinkObjects:
@@ -413,7 +415,7 @@ class ResultProcessing:
 				## Begins the storingReferenceIdObjectConnections
 				## to store the weak BaseOject type before deletion.
 				weakObjects = self.storingReferenceIdObjectConnections(thisEntry)
-				self.logger.info('BaseObjects connected to the current object {}'.format(weakObjects))
+				#self.logger.info('BaseObjects connected to the current object {}'.format(weakObjects))
 				if isinstance(callingFomCache, tuple):
 					## Remove cache before delete, to avoid cache update anomoly
 					del self.constraintCacheData[callingFomCache[0]][callingFomCache[1]]
@@ -424,7 +426,7 @@ class ResultProcessing:
 				tempJson['source'] = 'internal.subTyping'
 				## Begins recreation with the newly created resultJson
 				self.processResult(tempJson, deleteInsertFlag=False)
-				self.logger.info('The JSON that is to be inserted after delete: {}'.format(self.resultJson.getJson()))
+				#self.logger.info('The JSON that is to be inserted after delete: {}'.format(self.resultJson.getJson()))
 				constraints = self.validClassObjects[className]['classObject'].constraints()
 				thisEntry = self.dbSession.query(self.validClassObjects[className]['classObject']).filter(and_((getattr(self.validClassObjects[className]['classObject'], item) == data[item] for item in constraints))).first()
 

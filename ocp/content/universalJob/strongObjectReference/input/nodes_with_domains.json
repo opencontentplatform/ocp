@@ -17,7 +17,8 @@
 				},{
 					"condition": {
 						"attribute": "reference_id",
-						"operator": "is null"
+						"operator": "isnull",
+						"value": true
 					}
 				}
 			]

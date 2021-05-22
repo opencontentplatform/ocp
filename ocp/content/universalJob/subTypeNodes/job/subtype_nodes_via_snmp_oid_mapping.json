@@ -1,15 +1,16 @@
 {
-	"jobName" : "merge_nodes_with_partial_flags",
+	"jobName" : "subtype_nodes_via_snmp_oid_mapping",
 	"realm" : "default",
 	"numberOfJobThreads" : 1,
-	"jobScript" : "merge_nodes_with_partial_flags",
+	"jobScript" : "subtype_nodes_via_snmp_oid_mapping",
 	"clientOnlyTrigger" : true,
 	"clientEndpoint" : "any",
 	"endpointIdColumn" : "value",
 	"isDisabled" : false,
 	"inputParameters" : {
 		"printDebug" : true,
-		"partialNodesQuery" : "partial_nodes_with_ips"
+		"inputFileForTargetNodes": "baseNodeObjects",
+		"confFileWithMapping" : "snmpOidToNodeSubTypes"
 	},
 	"triggerType" : "cron",
 	"triggerArgs" : {
@@ -18,7 +19,7 @@
 		"day" : null,
 		"week" : null,
 		"day_of_week" : null,
-		"hour" : "8,18",
+		"hour" : "7,17",
 		"minute" : 2,
 		"second" : null,
 		"start_date" : "",
