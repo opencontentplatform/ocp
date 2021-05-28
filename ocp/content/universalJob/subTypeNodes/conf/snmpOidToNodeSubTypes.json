@@ -1,6 +1,22 @@
 [
 	{
-		"deviceTypeForReferenceOnly": "QNAP Storage device",
+		"deviceTypeForReferenceOnly": "Management Card - HP iLO",
+		"matchingSection": {
+			"snmpOID": "1.3.6.1.4.1.232.9.4.10",
+			"compareType": "regEx",
+			"compareValue": "^snmpOID.*"
+		},
+		"mappingSection": {
+			"type": "ManagementInterface",
+			"attributeValueOverrides": {},
+			"attributeValuesToUseWhenEmpty": {
+				"vendor": "HP",
+				"description": "HP iLO management card"
+			}
+		}
+	},
+	{
+		"deviceTypeForReferenceOnly": "Storage - QNAP",
 		"matchingSection": {
 			"snmpOID": "1.3.6.1.4.1.55062",
 			"compareType": "==",
@@ -10,12 +26,29 @@
 			"type": "Storage",
 			"attributeValueOverrides": {},
 			"attributeValuesToUseWhenEmpty": {
-				"vendor": "QNAP Storage, Inc."
+				"vendor": "QNAP Storage, Inc.",
+				"description": "QNAP storage device"
 			}
 		}
 	},
 	{
-		"deviceTypeForReferenceOnly": "HP printer - OfficeJet Pro",
+		"deviceTypeForReferenceOnly": "Storage - HP 3PAR",
+		"matchingSection": {
+			"snmpOID": "1.3.6.1.4.1.12925.1",
+			"compareType": "regEx",
+			"compareValue": "^snmpOID.*"
+		},
+		"mappingSection": {
+			"type": "Storage",
+			"attributeValueOverrides": {},
+			"attributeValuesToUseWhenEmpty": {
+				"vendor": "HP",
+				"description": "HP 3PAR storage device"
+			}
+		}
+	},
+	{
+		"deviceTypeForReferenceOnly": "Printer - HP OfficeJet",
 		"matchingSection": {
 			"snmpOID": "1.3.6.1.4.1.11.2.3.9.1",
 			"compareType": "regEx",
