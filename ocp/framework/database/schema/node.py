@@ -306,3 +306,18 @@ class Storage(NodeDevice):
 	__table_args__ = {"schema":"data"}
 	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_storage', 'inherit_condition': object_id == NodeDevice.object_id}
+
+
+class ManagementInterface(NodeDevice):
+	"""Defines a node_mgmt_interface object for the database.
+
+	Table :
+	  |  node_mgmt_interface
+	Columns:
+	  |  object_id [CHAR(32)] FK(node_server.object_id) PK
+	"""
+
+	__tablename__ = 'node_mgmt_interface'
+	__table_args__ = {"schema":"data"}
+	object_id = Column(None, ForeignKey(NodeDevice.object_id), primary_key=True)
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'node_mgmt_interface', 'inherit_condition': object_id == NodeDevice.object_id}

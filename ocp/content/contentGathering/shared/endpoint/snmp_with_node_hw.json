@@ -1,0 +1,36 @@
+{
+	"objects": [{
+			"class_name": "SNMP",
+			"attributes": ["object_type", "ipaddress", "protocol_reference", "realm", "container", "node_type"],
+			"minimum": "1",
+			"maximum": "",
+			"linchpin": true
+		},
+		{
+			"class_name": "Node",
+			"attributes": ["hostname", "domain", "snmp_oid"],
+			"minimum": "1",
+			"maximum": "1"
+		},
+		{
+			"class_name": "Hardware",
+			"attributes": ["vendor", "model", "version", "build", "asset_tag", "serial_number"],
+			"minimum": "0",
+			"maximum": ""
+		}
+	],
+	"links": [{
+		"label": "NODE_TO_SNMP",
+		"class_name": "Enclosed",
+		"attributes": [],
+		"first_id": "Node",
+		"second_id": "SNMP"
+	},
+	{
+		"label": "NODE_TO_HW",
+		"class_name": "Usage",
+		"attributes": [],
+		"first_id": "Node",
+		"second_id": "Hardware"
+	}]
+}

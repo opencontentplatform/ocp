@@ -1,0 +1,68 @@
+[
+	{
+		"deviceTypeForReferenceOnly": "Storage - QNAP",
+		"matchingSection": {
+			"snmpOID": "1.3.6.1.4.1.55062",
+			"comparisonOperator": "=="
+		},
+		"mappingSection": {
+			"1.3.6.1.4.1.55062.1.12.5": {
+				"samples": [],
+				"attributes": [{
+					"endpointQueryObject": "Hardware",
+					"objectType": "HardwareStorage",
+					"nodeAttribute": "serial_number",
+					"assignmentOperator": "=",
+					"overrideCurrentValues": false
+				}]
+			},
+			"1.3.6.1.4.1.55062.1.12.6": {
+				"samples": ["30H43", "30H44"],
+				"attributes": [{
+					"endpointQueryObject": "Hardware",
+					"objectType": "HardwareStorage",
+					"nodeAttribute": "version",
+					"assignmentOperator": "=",
+					"overrideCurrentValues": true
+				}]
+			}
+		}
+	},
+	{
+		"deviceTypeForReferenceOnly": "Printer - HP OfficeJet",
+		"matchingSection": {
+			"snmpOID": "1.3.6.1.4.1.11.2.3.9.1",
+			"comparisonOperator": "regEx",
+			"comparisonValue": "^snmpOID.*"
+		},
+		"mappingSection": {
+			"1.3.6.1.4.1.11.2.3.9.1.1.7.0" : {
+				"samples": [
+					"MFG:HP;MDL:OfficeJet Pro 7740 series;CMD:PCL3GUI,PCL3,PJL,Automatic,JPEG,PCLM,AppleRaster,PWGRaster,DW-PCL,802.11,802.3,DESKJET,DYN;CLS:PRINTER;DES:G5J38A;CID:HPIJVIPBV9;LEDMDIS:USB#FF#CC#00,USB#FF#04#01;SN:CN77A4506T;S:038080C48450000100580080000441d0014451d0014461d001441180046;Z:05000009000001000001000001000009,12000,17000000000045000045000055000000,181;"
+				],
+				"attributes": [{
+					"endpointQueryObject": "Hardware",
+					"objectType": "HardwarePrinter",
+					"nodeAttribute": "serial_number",
+					"assignmentOperator": "regEx",
+					"assignmentValue": ".*;SN[:]([^;]+);.*",
+					"overrideCurrentValues": false
+				},{
+					"endpointQueryObject": "Hardware",
+					"objectType": "HardwarePrinter",
+					"nodeAttribute": "model",
+					"assignmentOperator": "regEx",
+					"assignmentValue": ".*;MDL[:]([^;]+);.*",
+					"overrideCurrentValues": true
+				},{
+					"endpointQueryObject": "Node",
+					"objectType": "Printer",
+					"nodeAttribute": "platform",
+					"assignmentOperator": "regEx",
+					"assignmentValue": ".*;CLS[:]([^;]+);.*",
+					"overrideCurrentValues": false
+				}]
+			}
+		}
+	}
+]

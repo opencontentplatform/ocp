@@ -1,0 +1,40 @@
+{
+	"jobName" : "snmp_oid_to_attribute_mapping",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"protocolType" : "ProtocolSnmp",
+	"numberOfJobThreads" : 20,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 10,
+	"endpointQueueSize" : 40,
+	"jobScript" : "snmp_oid_to_attribute_mapping",
+	"endpointQuery" : "snmp_with_node_hw",
+	"endpointIdColumn" : "ipaddress",
+	"endpointAttrForRealmCheck": "ipaddress",
+	"createExecutionLog": false,
+	"isDisabled" : true,
+	"inputParameters" : {
+		"printDebug" : true,
+		"confFileWithMapping" : "snmpOidToNodeAttributes"
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : null,
+		"hour" : "6,16",
+		"minute" : 2,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

@@ -72,7 +72,7 @@ def processResults(runtime, mappingEntries, queryContent):
 				attributeValuesToUseWhenEmpty = mappingSection.get('attributeValuesToUseWhenEmpty', {})
 				
 				attrs = {}
-				## Explicitely set domain to null if it was null before
+				## Explicitly set domain to null if it was null before
 				nodeDomain = nodeData.get('domain')
 				attrs['hostname'] = nodeName
 				attrs['domain'] = nodeDomain
