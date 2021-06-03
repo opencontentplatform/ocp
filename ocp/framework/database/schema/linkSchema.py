@@ -5,7 +5,7 @@ These links maintain relationships via association tables.
 Classes defined are part of 'data' schema (indentation represents inheritance)::
 
 	BaseLink - base_link
-		|  StringLink - strong_link
+		|  StrongLink - strong_link
 			|  Enclosed - enclosed
 		|  WeakLink - weak_link
 			|  Usage - usage
@@ -23,9 +23,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy import and_, or_
 from sqlalchemy import event
-# Base = declarative_base()
 from sqlalchemy import UniqueConstraint
 from database.schema.baseSchema import Base, BaseObject, UniqueMixin
+
 ## Weak Link Example
 ## If there Link B/T Node and IpAddress which don't have any FK relationship
 ## B/T them then Node is the First_object and Ipaddress is the Second object
@@ -42,9 +42,44 @@ from database.schema.baseSchema import Base, BaseObject, UniqueMixin
 ## IpAddress via FK and in strong_link table. The strong_first_objects will
 ## The IPAdress object that NameRecord have FK relationships with.
 
-## Note:
-## weak_second_object,weak_second_object, strong_first_object and
-## strong_second_object are implicitly declared at BaseObject mapper.
+## Note: these are used in BaseLink below, but declared in BaseObject:
+##  weak_first_object
+##  weak_second_object
+##  strong_first_object
+##  strong_second_object
+
+## Moving from SqlAlchemy v1.3 to 1.4, there is a new validation check when
+## two or more relationships can write data to the same columns. This caused
+## warnings from BaseLink and BaseClass, where we have inheritance in links
+## and objects - creating many-to-many update scenarios. Sample warnings:
+## ===========================================================================
+## SAWarning: relationship 'BaseLink.orl1' will copy column base_object.object_id
+## to column base_link.first_id, which conflicts with relationship(s):
+##   'WeakLink.weak_first_object'       (copies base_object.object_id to base_link.first_id),
+##   'BaseObject.weak_second_objects'   (copies base_object.object_id to base_link.first_id),
+##   'StrongLink.strong_first_object'   (copies base_object.object_id to base_link.first_id),
+##   'BaseObject.strong_second_objects' (copies base_object.object_id to base_link.first_id).
+## ===========================================================================
+## SAWarning: relationship 'BaseLink.orl2' will copy column base_object.object_id
+## to column base_link.second_id, which conflicts with relationship(s):
+##   'WeakLink.weak_second_object'     (copies base_object.object_id to base_link.second_id),
+##   'BaseObject.weak_first_objects'   (copies base_object.object_id to base_link.second_id),
+##   'StrongLink.strong_second_object' (copies base_object.object_id to base_link.second_id),
+##   'BaseObject.strong_first_objects' (copies base_object.object_id to base_link.second_id).
+## ===========================================================================
+## Background on the error:
+##   https://docs.sqlalchemy.org/en/14/errors.html#relationship-x-will-copy-column-q-to-column-p-which-conflicts-with-relationship-s-y
+## Currently implementing a work around suggested on the sqlAlchemy newsgroup:
+##   https://groups.google.com/g/sqlalchemy/c/-91BeaTqzh4
+## Via these lines in BaseLink, to use backwards compatibility with "overlaps":
+## 	#orl1 = relationship('BaseObject', foreign_keys=first_id)
+##  #orl2 = relationship('BaseObject', foreign_keys=second_id)
+##  orl1 = relationship('BaseObject', overlaps='weak_first_object, strong_first_object, weak_second_objects, strong_second_objects', foreign_keys=first_id)
+##  orl2 = relationship('BaseObject', overlaps='weak_second_object, strong_second_object, weak_first_objects, strong_first_objects', foreign_keys=second_id)
+## In the future we may consider dropping inheritance in the links, to move
+## towards independent and not-inherited many-to-many Link classes. Leaving 
+## this detailed message in the header for later review.
+
 
 class BaseLink(UniqueMixin, Base):
 	"""Creates the base_link object in the database
@@ -64,8 +99,10 @@ class BaseLink(UniqueMixin, Base):
 	object_type = Column(String(16))
 	first_id = Column(CHAR(32), ForeignKey(BaseObject.object_id))
 	second_id = Column(CHAR(32), ForeignKey(BaseObject.object_id))
-	orl1 =relationship('BaseObject', foreign_keys=first_id)
-	orl2 =relationship('BaseObject', foreign_keys=second_id)
+	# orl1 = relationship('BaseObject', foreign_keys=first_id)
+	# orl2 = relationship('BaseObject', foreign_keys=second_id)
+	orl1 = relationship('BaseObject', overlaps='weak_first_object, strong_first_object, weak_second_objects, strong_second_objects', foreign_keys=first_id)
+	orl2 = relationship('BaseObject', overlaps='weak_second_object, strong_second_object, weak_first_objects, strong_first_objects', foreign_keys=second_id)
 	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'base_link', 'polymorphic_on':object_type}
 
 	@classmethod

@@ -47,8 +47,10 @@ except ImportError:
     def get_ident(): return 0
 
 if sys.platform == "win32":
-    # On Windows, the best timer is time.clock()
-    default_timer = time.clock
+    # On Windows, the best timer WAS time.clock() but it was
+    # deprecated in Python 3.8; need to use perf_counter instead:
+    # default_timer = time.clock
+    default_timer = time.perf_counter
 else:
     # On most other platforms the best timer is time.time()
     default_timer = time.time
