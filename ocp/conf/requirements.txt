@@ -3,7 +3,7 @@ APScheduler
 Arrow
 hug
 psycopg2
-SQLAlchemy
+SQLAlchemy>=1.4 # backwards compatibility with "overlaps"
 requests
 psutil
 fabric
