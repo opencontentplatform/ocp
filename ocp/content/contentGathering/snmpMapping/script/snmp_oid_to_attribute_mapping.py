@@ -136,7 +136,7 @@ def processResults(runtime, client, mappingEntries):
 		
 		## Loop through the mapping entries
 		for entry in mappingEntries:
-			ref = entry.get('deviceTypeForReferenceOnly')
+			ref = entry.get('descriptor')
 			matchingSection = entry.get('matchingSection', {})
 			
 			## Matching section

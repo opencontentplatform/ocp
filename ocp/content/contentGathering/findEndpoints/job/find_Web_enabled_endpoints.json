@@ -1,0 +1,47 @@
+{
+	"jobName" : "find_Web_enabled_endpoints",
+	"realm" : "default",
+	"clientGroup" : "default",
+	"credentialGroup" : "default",
+	"numberOfJobThreads" : 20,
+	"endpointPipeline": "service",
+	"endpointChunkSize" : 20,
+	"endpointQueueSize" : 50,
+	"jobScript" : "find_Web_enabled_endpoints",
+	"endpointQuery" : "ipv4addresses",
+	"endpointIdColumn" : "address",
+	"endpointAttrForRealmCheck": "address",
+	"createExecutionLog": true,
+	"isDisabled" : true,
+	"runTimeValues" : {
+		"maxJobRunTime" : 6,
+		"maxProtocolTime" : 600,
+		"maxCommandTime" : 60
+	},
+	"inputParameters" : {
+		"portTestBeforeConnectionAttempt" : true,
+		"portsToTest" : [443, 52707],
+		"connectTimeoutInSeconds": 3,
+		"alsoTryHTTP": true,
+		"printDebug" : true
+	},
+	"triggerType" : "cron",
+	"triggerArgs" : {
+		"year" : null,
+		"month" : null,
+		"day" : null,
+		"week" : null,
+		"day_of_week" : "sun",
+		"hour" : 19,
+		"minute" : 5,
+		"second" : null,
+		"start_date" : "",
+		"end_date" : ""
+	},
+	"schedulerArgs" : {
+		"misfire_grace_time" : 10,
+		"coalesce" : 1,
+		"max_instances" : 1,
+		"replace_existing" : 1
+	}
+}

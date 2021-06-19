@@ -1,6 +1,6 @@
 [
 	{
-		"deviceTypeForReferenceOnly": "Storage - QNAP",
+		"descriptor": "Storage - QNAP",
 		"matchingSection": {
 			"snmpOID": "1.3.6.1.4.1.55062",
 			"comparisonOperator": "=="
@@ -29,7 +29,7 @@
 		}
 	},
 	{
-		"deviceTypeForReferenceOnly": "Printer - HP OfficeJet",
+		"descriptor": "Printer - HP OfficeJet",
 		"matchingSection": {
 			"snmpOID": "1.3.6.1.4.1.11.2.3.9.1",
 			"comparisonOperator": "regEx",
