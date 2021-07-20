@@ -20,9 +20,10 @@
 	},
 	"inputParameters" : {
 		"portTestBeforeConnectionAttempt" : true,
-		"portsToTest" : [443, 52707],
+		"httpsPortsToTest" : [443, 8443],
+		"httpPortsToTest" : [80, 8080],
 		"connectTimeoutInSeconds": 3,
-		"alsoTryHTTP": true,
+		"tryHttpPorts": false,
 		"printDebug" : true
 	},
 	"triggerType" : "cron",
