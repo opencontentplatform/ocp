@@ -10,6 +10,8 @@ Classes defined are part of 'data' schema (indentation represents inheritance)::
 			|  Domain - domain
 			|  NameRecord - name_record
 			|  URL - url
+			|  SSLCertificate - ssl_certificate
+			|  WebEnabledEndpoint - web_enabled_endpoint
 
 """
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Float
@@ -250,8 +252,14 @@ class SSLCertificate(NetworkElement):
 	  |  object_updated_by [String(128)]
 	  |  description [String(256)]
 	  |  container [CHAR(32)] FK(ip_address.object_id) PK
-	  |  name [String(128)]
-	  |  value [String(64)]
+	  |  serial_number [String(256)]
+	  |  subject [JSON]
+	  |  common_name [String(256)]
+	  |  issuer [JSON]
+	  |  version [String(256)]
+	  |  not_before [DateTime]
+	  |  not_after [DateTime]
+	  |  signature_algorithm [String(2056)]
 	Constraints :
 	  |  ssl_certificate_constraint(container, name, value)
 	"""
@@ -286,3 +294,43 @@ class SSLCertificate(NetworkElement):
 	@classmethod
 	def unique_filter(cls, query, **kwargs):
 		return query.filter(and_(SSLCertificate.container == kwargs['container'], SSLCertificate.name == kwargs['serial_number']))
+
+
+class WebEnabledEndpoint(NetworkElement):
+	"""Defines an web_enabled_endpoint object for the database.
+
+	Table :
+	  |  web_enabled_endpoint
+	Columns :
+	  |  object_id [CHAR(32)] FK(network_element.object_id) PK
+	  |  time_created [DateTime]
+	  |  time_updated [DateTime]
+	  |  object_created_by [String(128)]
+	  |  object_updated_by [String(128)]
+	  |  description [String(256)]
+	  |  container [CHAR(32)] FK(ip_address.object_id) PK
+	  |  name [String(128)]
+	  |  value [String(64)]
+	Constraints :
+	  |  web_enabled_endpoint_constraint(container, name, value)
+	"""
+
+	__tablename__ = 'web_enabled_endpoint'
+	_constraints = ['container', 'url']
+	_captionRule = {"condition": [ "url" ]}
+	__table_args__ = (UniqueConstraint(*_constraints, name='web_enabled_endpoint_constraint'), {"schema":"data"})
+	object_id = Column(CHAR(32), ForeignKey(NetworkElement.object_id), primary_key=True)
+	## If TcpIpPort is deleted this will be deleted (strong relationship)
+	container = Column(None, ForeignKey(TcpIpPort.object_id), nullable=False)
+	url = Column(String(256), nullable=False)
+	ip = Column(String(128), nullable=True)
+	port = Column(Integer, nullable=True)
+	title = Column(String(128), nullable=True)
+	response_code = Column(Integer, nullable=True)
+	response_text = Column(String(4096), nullable=True)
+	container_relationship = relationship('TcpIpPort', backref = backref('web_enabled_endpoint_objects', cascade='all, delete'), foreign_keys = 'WebEnabledEndpoint.container')
+	__mapper_args__ = {'with_polymorphic': '*', 'polymorphic_identity':'web_enabled_endpoint', 'inherit_condition': object_id == NetworkElement.object_id}
+
+	@classmethod
+	def unique_filter(cls, query, **kwargs):
+		return query.filter(and_(WebEnabledEndpoint.container == kwargs['container'], WebEnabledEndpoint.name == kwargs['serial_number']))

@@ -1,0 +1,120 @@
+{
+	"Dell Unisphere - for Unity and VNX storage": {
+		"classToCreate": {
+			"type": "Storage",
+			"staticAttributes": {
+				"discovered_vendor": "Dell",
+				"discovered_model": "Unisphere"
+			}
+		},
+		"webPageMatch": {
+			"urlStubs": ["/"],
+			"title": {
+				"mapping": [{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "^(.*Unisphere.*)$",
+					"discoveredAttribute": "data_note"
+				}]
+			},
+			"document": {
+				"mapping": [{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "^(.*Unisphere.*)$"
+				}]
+			}
+		}
+	},
+	
+	"Dell EMC Isilon storage": {
+		"ciToCreate": {
+			"type": "Storage",
+			"staticAttributes": {
+				"discovered_vendor": "Dell",
+				"discovered_model": "EMC Isilon"
+			}
+		},
+		"webPageMatch": {
+			"urlStubs": ["/"],
+			"title": {
+				"mapping": [{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "^(.*EMC.*Isilon.*)$",
+					"discoveredAttribute": "data_note"
+				}]
+			}
+		}
+	},
+	
+	"HP XP7 storage": {
+		"ciToCreate": {
+			"type": "Storage",
+			"staticAttributes": {
+				"discovered_vendor": "HP",
+				"discovered_model": "XP7"
+			}
+		},
+		"webPageMatch": {
+			"urlStubs": ["/"],
+			"title": {
+				"mapping": [{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "^(.*HP\\s*XP7.*)$",
+					"discoveredAttribute": "data_note"
+				}]
+			}
+		}
+	},
+	
+	"Dell RAC management card": {
+		"ciToCreate": {
+			"type": "Node",
+			"staticAttributes": {
+				"name": "Dell RAC (hardware management card)",
+				"description": "Dell RAC (hardware management card)"
+			}
+		},
+		"webPageMatch": {
+			"urlStubs": ["/public/about.html", "/cgi-bin/webcgi/about", "/Applications/dellUI/Strings/EN_about_hlp.htm"],
+
+			"document": {
+				"mapping": [{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "(Dell\\s*Remote\\s*Access\\s*Controller)",
+					"discoveredAttribute": "data_note"
+				},{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "(iDRAC)",
+					"discoveredAttribute": "data_note"
+				}]
+			}
+		}
+	},
+	
+	"HP iLO management card": {
+		"ciToCreate": {
+			"type": "Node",
+			"staticAttributes": {
+				"name": "HP iLO (hardware management card)",
+				"description": "HP iLO (hardware management card)"
+			}
+		},
+		"webPageMatch": {
+			"urlStubs": ["/xmldata?item=all"],
+			"document": {
+				"mapping": [{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "<PN>(.*)</PN>",
+					"discoveredAttribute": "description"
+				},{
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "<SPN>(.*)</SPN>",
+					"discoveredAttribute": "platform"
+				}, {
+					"valueCompareType": "regEx",
+					"valueCompareGroup": "<SN>(.*)</SN>",
+					"discoveredAttribute": "name"
+				}]
+			}
+		}
+	}
+}
