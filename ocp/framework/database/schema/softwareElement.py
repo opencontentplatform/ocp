@@ -270,6 +270,7 @@ class Protocol(SoftwareElement):
 	object_id =  Column(None, ForeignKey(SoftwareElement.object_id), primary_key=True)
 	#container = Column(None, ForeignKey(Node.object_id), nullable=False)
 	ipaddress = Column(String(128), nullable=False)
+	endpoint = Column(String(256), nullable=True)
 	protocol_reference = Column(String(32), nullable=False)
 	node_type = Column(String(32), nullable=True)
 	realm = Column(None, ForeignKey(Realm.name), nullable=False)
