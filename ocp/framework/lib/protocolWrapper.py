@@ -96,7 +96,9 @@ def getClient(runtime, **kwargs):
 	protocolType = clientToProtocolTable.get(clientType.lower())
 	endpointContext = endpoint.get('data', endpoint)
 	protocolReference = endpointContext.get('protocol_reference')
-	endpointString = endpointContext.get('ipaddress')
+	endpointString = endpointContext.get('endpoint')
+	if endpointString is None:
+		endpointString = endpointContext.get('ipaddress')
 	runtime.logger.report(' getClient: endpoint {endpointString!r} protocol type {protocolType!r} with reference {protocolReference!r}', endpointString=endpointString, protocolType=protocolType, protocolReference=protocolReference)
 	client = thisClient(runtime, endpointString, protocolReference, protocolType, None, **kwargs)
 	if client is None:
@@ -140,7 +142,8 @@ def thisClient(runtime, endpointString, protocolReference, protocolType, connect
 	## Get protocol to use in the connection attempt
 	protocolEntry = externalProtocolHandler.getProtocolObject(runtime, protocolReference)
 	runtime.logger.report('thisClient: trying endpoint {endpoint!r} with protocol reference {protocolReference!r}', endpoint=endpointString, protocolReference=protocolReference)
-
+	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
+	
 	## SNMP
 	if protocolType == 'protocolsnmp':
 		client = Snmp(runtime, runtime.logger, endpointString, protocolReference, protocolEntry)
@@ -149,31 +152,23 @@ def thisClient(runtime, endpointString, protocolReference, protocolType, connect
 		client = Wmi(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	## PowerShell
 	elif protocolType == 'protocolpowershell':
-		endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 		client = PowerShell(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	## SSH
 	elif protocolType == 'protocolssh':
-		endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 		client = SSH(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 
 	## SQL types
 	elif protocolType == 'protocolsqlpostgres':
-		endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 		client = SqlPostgres(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	# elif protocolType == 'protocolsqloracle':
-	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 	# 	client = SqlOracle(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	# elif protocolType == 'protocolsqldb2':
-	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 	# 	client = SqlIbmDb2(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	# elif protocolType == 'protocolsqlmicrosoft':
-	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 	# 	client = SqlMicrosoft(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	# elif protocolType == 'protocolsqlmaria':
-	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 	# 	client = SqlMariaDb(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 	# elif protocolType == 'protocolsqlmy':
-	# 	endpointString = getFQDN(runtime, endpointString, connectViaFQDN)
 	# 	client = SqlMySql(runtime, runtime.logger, endpointString, protocolReference, protocolEntry, **kwargs)
 
 	## end thisClient

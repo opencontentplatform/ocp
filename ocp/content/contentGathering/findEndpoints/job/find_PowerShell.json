@@ -21,6 +21,7 @@
 		"maxCommandTime" : 60
 	},
 	"inputParameters" : {
+		"connectViaFQDN": true,
 		"portTestBeforeConnectionAttempt" : true,
 		"portsToTest" : [5985, 5986],
 		"printDebug" : false
