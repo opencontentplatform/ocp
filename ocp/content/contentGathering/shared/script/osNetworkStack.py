@@ -24,11 +24,6 @@ OS specific functions:
   windowsGetNetworking : get Windows network stack
   windowsParseNetworking : parse Windows network stack
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Feb 26, 2018
-
 """
 import sys
 import traceback

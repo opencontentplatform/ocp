@@ -3,13 +3,6 @@
 Using the CLI was the original method. It's was deprecated once the API had the
 capability to do the same, plus expose whatever other attributes a protocol had.
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct 19, 2017
-
 """
 import getpass
 import os

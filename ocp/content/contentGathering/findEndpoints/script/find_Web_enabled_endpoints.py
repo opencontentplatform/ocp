@@ -5,11 +5,6 @@ Functions:
   attemptWebRequest - Get a web response
   trackWebResponse - Create IP, Port, and WebEnabledEndpoint
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jun 18, 2021
-
 """
 import sys, traceback
 import re

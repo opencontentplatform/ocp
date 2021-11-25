@@ -3,15 +3,6 @@
 Classes:
   |  ProtocolHandler : manipulate data used in protocol connections
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Nov 3, 2018
-	  2.0 : (CS) Restructured as a class to enable embedded licensing Mar 27, 2020
-	  2.1 : (CS) Migrated to using external library, Apr 24, 2020
-
 """
 ## Module for wrapping protocol objects; avoiding standard docstrings.
 import os

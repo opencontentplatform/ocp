@@ -1,11 +1,4 @@
-"""Protocol type wrapper for the ServiceNow REST API.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July 17, 2019
-
-"""
+"""Protocol type wrapper for the ServiceNow REST API."""
 import sys
 import traceback
 import requests

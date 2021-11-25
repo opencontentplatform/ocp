@@ -1,13 +1,4 @@
-"""Test module for validating Python cert setup for Kafka SSL.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Dec 28, 2019
-
-"""
+"""Test module for validating Python cert setup for Kafka SSL."""
 
 import sys
 import traceback

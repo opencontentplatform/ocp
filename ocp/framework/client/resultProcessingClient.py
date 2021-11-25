@@ -76,17 +76,6 @@ Classes:
   * :class:`.ResultProcessingClientFactory` : Twisted factory for this client
   * :class:`.ResultProcessingClientListener` : Twisted protocol for this client
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors: Madhusudan Sridharan (MS)
-	Version info:
-	  1.0 : (CS) Created Nov 22, 2017
-	  1.1 : (CS) Refactored to use the same startup process controls as the
-	        service managers. Mar 6, 2019.
-	  1.3 : (CS) Migrated sharedClient to coreClient, to match service naming
-	        convention, Aug 7, 2020.
-
 """
 import os, sys
 import traceback

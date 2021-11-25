@@ -11,13 +11,6 @@ Classes defined for the 'archive' schema::
 		|  ModelMetaDataSnapshot - model_metadata_snapshot
 		|  DeletedObject - deleted_object
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jun 1, 2018
-
 """
 from sqlalchemy import Column, ForeignKey, String, DateTime, Integer, Sequence
 from sqlalchemy.types import JSON, CHAR

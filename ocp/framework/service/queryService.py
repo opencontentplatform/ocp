@@ -9,15 +9,6 @@ Classes:
   * :class:`.QueryService` : entry class for multiprocessing
   * :class:`.Query` : specific functionality for this service
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct 17, 2018
-	  1.1 : (CS) Changed inheritence from sharedService to localService, as
-	        services were categorized into local vs networked, Aug 4, 2020
-
 """
 import os
 import sys

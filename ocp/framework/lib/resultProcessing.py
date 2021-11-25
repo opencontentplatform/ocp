@@ -3,17 +3,6 @@
 Classes:
   :class:`ResultProcessing` : class for this module
 
-.. hidden::
-
-	Author: Madhusudan Sridharan (MS)
-	Contributors:
-	Version info:
-	  0.1 : (MS) Dec 20, 2017
-	  1.0 : (CS) added quick fixes for test cases to pass in 2018; TODO: revisit
-	        and see if we can optimize the resulting flows.
-
-	Note : "failBulkIfOneObjectFails" may need to do multiple rollbacks for
-	deleteRecreate flow; currently the entire set is dropped if failures occur.
 """
 import os, sys
 import traceback

@@ -3,13 +3,6 @@
 Classes:
   |  Wmi : wrapper class for WMI
 
-.. hidden::
-	
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jan 3, 2018
-
 """
 ## Using pythoncom since WMI is COM-based, and when using
 ## in a thread, it needs it's own COM threading model

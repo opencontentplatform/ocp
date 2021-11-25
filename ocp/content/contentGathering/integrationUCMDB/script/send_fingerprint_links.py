@@ -5,10 +5,7 @@ Functions:
   getDataSet : Pull requested dataset from ITDM
   doWork : Create and link associated objects via aliases
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 14, 2019
+If this is built on, we should generalize and wrap the data transformations.
 
 """
 import sys

@@ -5,14 +5,6 @@ Run this after initial install and whenever the database password changes.
 Functions:
   |  main : entry point
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created July 25, 2017
-	  2.0 : (CS) Migrated to using external library, Apr 24, 2020
-
 """
 import os
 import sys

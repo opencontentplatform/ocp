@@ -19,13 +19,6 @@ REST to talk to a particular vendor/product.
 Classes:
   |  REST : base class for REST connections
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Apr 3, 2021
-
 """
 import re
 import json

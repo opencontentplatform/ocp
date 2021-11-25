@@ -1,16 +1,4 @@
-"""Utility for service/client authentication.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Updated for endpoint access and client authentication, Oct 2017
-	  1.2 : (CS) Updated for newer apiUtil parameters, Aug 2019
-	  1.3 : (CS) Replaced apiUtils with Falcon middleware, Sept 2019
-
-"""
+"""Utility for service/client authentication."""
 import sys
 import traceback
 import os

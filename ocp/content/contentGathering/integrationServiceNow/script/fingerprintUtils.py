@@ -6,10 +6,7 @@ Functions:
   sendDataSet : send results and reset data structure after processing each node
   getCredentialMatchingDescriptor : wrapper to get un-managed credential type
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July 17, 2019
+If this is built on, we should generalize and wrap the transformations.
 
 """
 import sys

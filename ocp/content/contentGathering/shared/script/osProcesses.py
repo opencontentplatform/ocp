@@ -34,12 +34,6 @@ OS specific functions:
   linuxUpdateAllProcesses : update all Linux processes
   linuxUpdateThisProcess : Update details on a single Linux process
 
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 3, 2018
-
 """
 import sys
 import traceback

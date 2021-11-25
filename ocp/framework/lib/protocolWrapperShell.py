@@ -3,11 +3,6 @@
 Classes:
   |  Shell : wrapper class for Shell
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Feb 22, 2018
-
 """
 import sys
 import subprocess

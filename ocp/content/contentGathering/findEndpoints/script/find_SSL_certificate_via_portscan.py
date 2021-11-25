@@ -6,13 +6,6 @@ Functions:
   startJob - Standard job entry point
   trackCertificate - Create certificate object
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Sep 19, 2020
-  1.1 : (CS) Moved common functions into the shared utilities, to call from
-        multiple jobs. May 18, 2020.
-
 """
 import sys, traceback
 

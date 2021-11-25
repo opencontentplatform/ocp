@@ -11,11 +11,6 @@ Functions:
   queryInternalStorageTable : query system device table
   createObjects : create objects and links 
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Oct 9, 2018
-
 """
 import sys
 import re

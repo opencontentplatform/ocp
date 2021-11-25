@@ -5,11 +5,6 @@ Functions:
   doWork : get the list of python modules and compare to previous results
   getLocalLogger : create a local log handler; historical tracking purposes
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Oct 23, 2019
-
 """
 import sys
 import traceback

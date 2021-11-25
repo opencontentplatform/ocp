@@ -4,13 +4,6 @@ Classes:
  :class:`threadInstance.ThreadInstance` : Generic wrapper to manage
    multi-threaded function calls
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Dec 30, 2017
-
 """
 import sys, traceback
 import time

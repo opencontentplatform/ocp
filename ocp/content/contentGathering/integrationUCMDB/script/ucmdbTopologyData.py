@@ -1,11 +1,4 @@
-"""Class for transforming objects/links into the UCMDB TopologyData structure.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 10, 2019
-
-"""
+"""Class for transforming objects/links into the UCMDB TopologyData structure."""
 import json
 
 class UcmdbTopologyData():

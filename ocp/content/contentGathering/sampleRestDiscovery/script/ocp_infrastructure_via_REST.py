@@ -6,11 +6,6 @@ Functions:
   reportServerSection : reports on each server section
   reportClientSections : report on all clients
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Apr 10, 2021
-
 """
 from contextlib import suppress
 from ocpRestAPI import OcpRestAPI

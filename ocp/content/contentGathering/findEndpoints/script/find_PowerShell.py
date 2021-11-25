@@ -12,12 +12,6 @@ and Apple endpoints to get the associated details as I do now on Windows.
 
 Watch here for future PowerShell open source releases:
 https://github.com/PowerShell/PowerShell
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 24, 2018
-
 """
 import sys
 import traceback

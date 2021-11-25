@@ -9,11 +9,6 @@ Functions:
   |  createContentModule : Inserting the instances of ContentModule to content_module table
   |  createApiAccess     : Inserting instances of ContentModule into content_module table
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July 27, 2017
-
 """
 
 import os

@@ -5,13 +5,6 @@ In the future this may also send the deleted objects to a kafka topic.
 Classes:
   * DeleteDbObject : delete objects from the database
 
-.. hidden::
-
-	Author: Madhusudan Sridharan (MS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Mar 7, 2018
-
 """
 
 import os, sys

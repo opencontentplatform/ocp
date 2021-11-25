@@ -6,11 +6,6 @@ Functions:
   deleteStaleResultCount : issue an API call to delete matching stale results
   parseResponse : helper to get the status code and JSON response
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Sep 6, 2019
-
 """
 import json
 from contextlib import suppress

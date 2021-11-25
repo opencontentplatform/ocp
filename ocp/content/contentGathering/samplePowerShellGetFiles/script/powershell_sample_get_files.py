@@ -4,18 +4,10 @@ This script queries target endpoints for a list of files specified in the job's
 input parameters. For each entry, if the file exists then it pulls specified
 attributes and requests an MD5 hash. Those attributes are dropped on an object
 
-
 Functions:
   startJob : standard job entry point
   checkFiles : worker function to issue a command and check results
   parserFunction : helper function to illustrate the difference with logging
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  0.1 : (CS) Created Oct 9, 2017
-  1.0 : (CS) Retrofitted library calls and added lots of comments; intended to
-        enable folks planning to create new content.  Aug 1, 2018
 
 """
 import re

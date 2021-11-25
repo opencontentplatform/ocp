@@ -4,12 +4,6 @@ Module for Querying the database using JSON format and return JSON result.
 
 .. hidden::
 
-	Author:  Madhusudan Sridharan (MS)
-	Contributors: Chris Satterthwaite (CS)
-	Version info:
-	  1.0 : (MS) Created January 19, 2018
-	  1.1 : (CS) updates with beta release, 2018
-
 	  This module needs redone; current challenges:
 	  
 	  a) duplicated code blocks, should reuse code via helper functions

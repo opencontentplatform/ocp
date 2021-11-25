@@ -10,12 +10,6 @@ Functions:
   parseListFormatToDict : Convert Format-List to Python dictionary
   createObjects : create objects and links in the results
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  0.1 : (CS) Created Jan 24, 2018
-  1.0 : (CS) Instrumented shell parameters and config groups, Jun 18, 2018
-
 """
 import sys
 import traceback

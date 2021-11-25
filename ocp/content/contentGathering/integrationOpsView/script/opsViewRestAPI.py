@@ -1,11 +1,6 @@
 """Protocol type wrapper for the OpsView REST API.
 
-If I create a second job, I will generalize the calls below more. Good for now.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 12, 2019
+If this is built on, we should generalize and wrap the calls below.
 
 """
 import sys

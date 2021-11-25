@@ -21,19 +21,6 @@ Classes:
 
   * :class:`.UniversalJobService` : entry class for multiprocessing
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Dec 9, 2017
-	  2.0 : (CS) Transitioned this service to use horizontally scalable clients,
-	        instead of consuming CPU on the server side. Updated Aug 21, 2019.
-	  2.1 : (CS) added jobService to allow shared code paths for the factory's
-	        Service and Listener on remote job management. This was when the
-	        dataTransformation service became universalJob, to allow for a more
-	        generalized execution flow.  Aug 26, 2019.
-
 """
 import os
 ## Add openContentPlatform directories onto the sys path

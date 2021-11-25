@@ -2,13 +2,6 @@
 
 This is a sample script, should someone want to head the direction of a
 monitoring type framework with OCP.
-
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Dec 17, 2018
-
 """
 import sys
 import traceback

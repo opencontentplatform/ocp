@@ -6,10 +6,7 @@ Functions:
   getFullDataSet : Gather full dataset from ITDM
   getDeltaDataSet : Gather partial dataset from ITDM (based on time of last run)
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July 17, 2019
+If this is built on, we should generalize and wrap the transformations.
 
 """
 import sys

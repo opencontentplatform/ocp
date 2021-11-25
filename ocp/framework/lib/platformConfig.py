@@ -1,13 +1,4 @@
-"""Install utility.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Nov 26, 2018
-
-"""
+"""Install utility."""
 import sys
 import traceback
 import os

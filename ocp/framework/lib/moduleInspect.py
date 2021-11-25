@@ -1,13 +1,4 @@
-"""Utility to manage the validation and deployment of add-on content.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct 4, 2017
-
-"""
+"""Utility to manage the validation and deployment of add-on content."""
 import os, re, sys, traceback
 import inspect
 import zipfile

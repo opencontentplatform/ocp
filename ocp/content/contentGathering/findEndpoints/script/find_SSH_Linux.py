@@ -96,11 +96,6 @@ And you don't have to know about all of it to do an integration flow from
 a smaller dataset.
 ===========================================================================
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Aug 2, 2018
-
 """
 import sys
 import traceback

@@ -1,16 +1,6 @@
 """PowerShell detection library for Apple.
 
-Functions:
-  queryApple : entry point; run queries against Apple endpoint
-  queryOperatingSystem :
-  queryBios :
-  queryComputerSystem :
-  queryForIps :
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  0.1 : (CS) Created stub library, Jun 18, 2018
+Stubbed only.
 
 """
 import sys

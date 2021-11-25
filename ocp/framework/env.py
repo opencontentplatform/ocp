@@ -3,14 +3,6 @@
 This defines relative paths based on the installed location, and extends
 some convenience functions to conditionally add to sys.path.
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 17, 2017
-	  1.1 : (CS) Moved external and internal private paths, Oct 14, 2020
-
 """
 import os, sys
 

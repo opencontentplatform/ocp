@@ -7,17 +7,6 @@ Classes:
   * :class:`.JobClientListener` : Twisted protocol to talk to job services
   * :class:`.JobClientFactory` : Twisted factory class for this client
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors: Madhusudan Sridharan (MS)
-	Version info:
-	  1.0 : (CS) Created Dec, 2017
-	  1.1 : (CS) Improved capability for clients to reconnect when the server
-	        side is unavailable. Mar 25, 2019.
-	  1.2 : (CS) Migrated remoteClient to jobClient, and sharedClient to
-	        coreClient, to match service naming convention, Aug 7, 2020.
-
 """
 import os, sys
 import traceback

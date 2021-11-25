@@ -1,13 +1,6 @@
 """SSH detection library for Apple.
 
-Functions:
-  queryApple : entry point; run queries against Apple endpoint
-  parsePreviousCmdOutput : parse previous uname output
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  0.1 : (CS) Created stub library, Aug 2, 2018
+Stubbed only.
 
 """
 import sys

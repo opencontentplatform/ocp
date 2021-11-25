@@ -6,13 +6,6 @@ Classes:
   * :class:`.LocalService` : shared class enabling common code paths for looking at
     system health, database initialization, kafka communication, etc.
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 4, 2020
-
 """
 
 import sys

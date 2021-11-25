@@ -6,16 +6,8 @@ a long-standing shell environment where all commands are executed in the same
 runtime. It's also a convenience wrapper implementing command timeouts, shell
 resets, and data pipes.
 
-
 Classes:
   |  CmdLocal : wrapper class for a local cmd terminal
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jan 3, 2018
 
 """
 import sys

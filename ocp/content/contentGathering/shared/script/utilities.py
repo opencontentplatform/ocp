@@ -23,12 +23,6 @@ Functions:
   cleanInstallLocation : Remove args and resolve 8dot3 paths
   resolve8dot3Name : resolve Windows 8dot3 path into the full version
 
-
-Author: Chris Satterthwaite (CS)
-Contributors: Madhusudan Sridharan (MS)
-Version info:
-  1.0 : (CS) Created Mar 7, 2017
-
 """
 import sys
 import traceback

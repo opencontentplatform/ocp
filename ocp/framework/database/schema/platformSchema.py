@@ -45,16 +45,6 @@ Classes defined for the 'platform' schema::
 	*  CachedQuery - cached_query
 	*  CachedQueryChunk - cached_query_chunk
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jul 24, 2017
-	  1.1 : (CS) Split out to enable use of multiple files, Oct 3, 2017
-	  1.2 : (CS) Added QueryResults, Oct 17, 2018
-	  1.3 : (CS) Added UniversalJob classes for clients, Aug 21, 2019
-
 """
 import sys, traceback, logging, os, uuid
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Float

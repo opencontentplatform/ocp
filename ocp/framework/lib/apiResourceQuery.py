@@ -19,15 +19,6 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/query/cache/{queryId}
 	/<root>/query/cache/{queryId}/{chunkId}
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Added methods, Aug 15, 2019
-	  1.2 : (CS) Replaced apiUtils with Falcon middleware, Sept 2, 2019
-
 """
 
 import sys

@@ -1,13 +1,6 @@
 """SSH detection library for AIX.
 
-Functions:
-  queryAIX : entry point; run queries against AIX endpoint
-  parsePreviousCmdOutput : parse previous oslevel output
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  0.1 : (CS) Created stub library, Aug 2, 2018
+Stubbed only.
 
 """
 import sys

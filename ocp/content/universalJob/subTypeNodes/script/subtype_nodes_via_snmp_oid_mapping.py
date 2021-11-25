@@ -7,11 +7,6 @@ Functions:
   getQueryResults : get query results for the node type
   processResults : loop through IPs with both qualified and partial nodes
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created May 22, 2021
-
 """
 import sys
 import traceback

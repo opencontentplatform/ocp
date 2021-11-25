@@ -11,11 +11,6 @@ Functions:
   startJob - Standard job entry point
   isPingable - Uses 'ping' utility from local shell command line
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Oct 5, 2017
-
 """
 import sys
 import traceback

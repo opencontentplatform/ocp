@@ -7,11 +7,6 @@ option, you can alternatively run the 'find_ICMP_cmdline' job instead.
 Functions:
   startJob - Standard job entry point
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Oct 9, 2017
-
 """
 import sys
 import ping

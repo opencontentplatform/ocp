@@ -10,11 +10,6 @@ Functions:
   getNodesWithDomains : get the second set of nodes
   processResults : do the work
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 2, 2019
-
 """
 import sys
 import traceback

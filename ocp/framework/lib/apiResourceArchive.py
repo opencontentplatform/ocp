@@ -11,15 +11,6 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/archive/modelMetadataSnapshot/{object_id}
 	/<root>/archive/modelSnapshotTimestamp
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Replaced apiUtils with Falcon middleware, Sep 2, 2019
-	  1.2 : (CS) Added methods, Sep 3, 2019
-
 """
 
 import sys

@@ -3,13 +3,6 @@
 Classes:
   |  PowerShell : wrapper class for PowerShell
 
-.. hidden::
-	
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jan 3, 2018
-
 """
 from contextlib import suppress
 import sys

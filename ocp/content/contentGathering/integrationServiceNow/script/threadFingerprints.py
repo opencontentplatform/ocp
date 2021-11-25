@@ -22,11 +22,6 @@ to the REST API. So the threaded work here is bundled per server dataset, and is
 broken into individual calls to adhear to the ServiceNow direction.
 =============================================================================
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July 17, 2019
-
 """
 import sys
 import traceback

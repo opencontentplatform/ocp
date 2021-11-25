@@ -1,13 +1,4 @@
-"""Utility to insert a new API user.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Mar 24, 2018
-
-"""
+"""Utility to insert a new API user via CLI."""
 import sys
 import createApiUser
 

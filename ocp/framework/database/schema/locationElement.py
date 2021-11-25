@@ -37,13 +37,6 @@ Classes defined are part of 'data' schema (indentation represents inheritance)::
 	     \     /
 	    Hardware
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Mar 7, 2018
-
 """
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Float
 from sqlalchemy.types import Boolean, CHAR, JSON
