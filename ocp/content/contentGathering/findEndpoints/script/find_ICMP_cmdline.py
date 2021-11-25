@@ -7,6 +7,10 @@ necessary since the find_ICMP_socket provides an OS-agnostic way of doing that
 already. This is simply an alternative if you aren't able to run the content
 gathering client with elevated access (required for the raw socket version).
 
+Functions:
+  startJob - Standard job entry point
+  isPingable - Uses 'ping' utility from local shell command line
+
 """
 import sys
 import traceback
