@@ -4,6 +4,11 @@ This script queries target endpoints for a list of files specified in the job's
 input parameters. For each entry, if the file exists then it pulls specified
 attributes and requests an MD5 hash. Those attributes are dropped on an object
 
+Functions:
+  startJob : standard job entry point
+  checkFiles : worker function to issue a command and check results
+  parserFunction : helper function to illustrate the difference with logging
+
 """
 import re
 import sys
