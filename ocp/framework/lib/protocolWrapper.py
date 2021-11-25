@@ -8,14 +8,6 @@ Functions:
   |  getClient : simple wrapper to instantiate managed client types
   |  getFQDN : construct a fully qualified domain name for a connection
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  0.1 : (CS) Created Jan 4, 2018
-	  1.0 : (CS) Updated for current protocol types, Oct 17, 2018
-
 """
 import sys
 import traceback

@@ -3,13 +3,6 @@
 Classes:
   *  ReferenceCache - reference_cache
 
-.. hidden::
-
-	Author: Madhusudan Sridharan (MS)
-	Contributors:
-	Version info:
-	  1.0 : (MS) Created Jan 17, 2018
-
 """
 from sqlalchemy import Column, ForeignKey, DateTime
 from sqlalchemy.types import CHAR

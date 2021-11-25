@@ -3,13 +3,6 @@
 Classes:
   |  SSH : wrapper class for SSH
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 2, 2018
-
 """
 import sys
 import traceback

@@ -3,13 +3,6 @@
 Classes:
   |  SQL : wrapper class for SQL connections
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Nov 24, 2020
-
 """
 import sys
 import traceback

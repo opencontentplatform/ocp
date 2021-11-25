@@ -51,17 +51,6 @@ Functions::
   logExceptionWithSelfLogger : decorator for try/except logging, via self.logger
   logExceptionWithFactoryLogger : decorator for try/except logging, via factory
 
-
-.. hidden::
-
-	Authors: Chris Satterthwaite (CS), Madhusudan Sridharan (MS)
-	Contributors:
-	Version info:
-	  0.1 : (CS) Created Jul 25, 2017
-	  1.0 : (CS and MS) additional functions, Mar 2018
-	  1.1 : (CS) Changed kafka clients & enabled external library path, 2019
-	  1.2 : (CS) Created decorator functions for code reduction, Aug 8, 2020
-
 """
 import json
 import re

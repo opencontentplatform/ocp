@@ -39,14 +39,6 @@ Classes defined for the 'data' schema (indentation represents inheritance)::
 				|  SqlServer - sql_server
 				|  Oracle - oracle
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  0.1 : (CS) Created Jul 24, 2017
-	  1.0 : (CS) Split out to enable use of multiple files, Oct 3, 2017
-
 """
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Float
 from sqlalchemy.types import Boolean, CHAR, JSON

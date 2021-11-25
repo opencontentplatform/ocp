@@ -8,11 +8,6 @@ Functions:
   valueToBoolean
   valueToDate
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 2, 2017
-
 """
 import json
 import datetime

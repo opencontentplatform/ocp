@@ -3,14 +3,6 @@
 Classes:
   :class:`connectionPool.DatabaseClient` : SqlAlchemy session pool wrapper
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created July, 2017
-	  2.0 : (CS) Merged updates for additional schemas. Jun 1, 2018
-
 """
 
 import sys

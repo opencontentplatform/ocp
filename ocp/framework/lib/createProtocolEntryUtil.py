@@ -1,13 +1,4 @@
-"""Utility to insert credentials used by content gathering jobs.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct 19, 2017
-
-"""
+"""Utility to insert credentials via CLI used by content gathering jobs."""
 import sys
 import createProtocolEntry
 

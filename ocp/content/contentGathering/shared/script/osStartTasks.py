@@ -16,12 +16,6 @@ OS specific functions:
   windowsGetStartTasks : Get Windows Services
   windowsFilterStartTasks : Parse the Services and filter out undesirables
 
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 12, 2018
-
 """
 import sys
 import traceback

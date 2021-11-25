@@ -3,18 +3,12 @@
 This enables quick mapping sections for private MIBs, but can also be used to
 regEx parse OID response from the public MIB space.
 
-
 Functions:
   startJob : standard job entry point
   getMappingFile : read JSON mapping file
   processResults : get nodes & hardware objects and check for matches
   processThisMappingSection : check for matches & update attributes
   snmpGet : simple helper function
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created May 28, 2021
 
 """
 import sys

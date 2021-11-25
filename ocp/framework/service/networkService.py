@@ -9,14 +9,6 @@ Classes:
   * :class:`.ServiceListener` : Twisted protocol for this shared factory
   * :class:`.CustomLineReceiverProtocol` : Override default delimiter
 
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 24, 2017
-
 """
 
 import sys

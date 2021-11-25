@@ -4,13 +4,6 @@ Functions:
   |  main                : entry point
   |  createTables        : create tables
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created May 30, 2017
-
 """
 
 import os

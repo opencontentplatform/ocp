@@ -6,15 +6,6 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/data/{className}
 	/<root>/data/{className}/{object_id}
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors: Madhusudan Sridharan (MS)
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Replaced apiUtils with Falcon middleware, Sept 2, 2019
-	  1.2 : (CS) Added /data/schema resource, Sep 1, 2020
-
 """
 
 import sys

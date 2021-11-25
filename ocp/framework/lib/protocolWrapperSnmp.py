@@ -3,14 +3,6 @@
 Classes:
   |  Snmp : wrapper class for SNMP
 
-.. hidden::
-	
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jan 1, 2018
-	  2.0 : (CS) Migrated to using external library, Apr 28, 2020
-
 """
 ## Using an externally provided library defined in globalSettings and located
 ## in '<install_path>/external'.

@@ -9,13 +9,6 @@ Classes:
     job-enabled services
   * :class:`.JobServiceListener` : Twisted protocol for the job factory
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 26, 2019
-
 """
 import os
 import sys

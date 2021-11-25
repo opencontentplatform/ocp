@@ -2,14 +2,6 @@
 
 The object model leverages SqlAlchemy (https://www.sqlalchemy.org/).
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jul 24, 2017
-	  1.1 : (CS) Split out to enable use of multiple files, Oct 3, 2017
-
 """
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Float
 from sqlalchemy.types import Boolean, CHAR, JSON

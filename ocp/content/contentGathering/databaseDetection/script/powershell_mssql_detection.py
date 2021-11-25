@@ -3,13 +3,6 @@
 Discover the existence of MSSQL instances via shell. This dynamically goes after
 instance names and port numbers, instead of trying TCP ports that were assigned
 in through governance with the Internet Assigned Numbers Authority (IANA).
-
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Oct 23, 2020
-
 """
 import sys
 import traceback

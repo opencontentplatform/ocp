@@ -6,14 +6,6 @@ Functions:
   getNodesWithDomains : get the second set of nodes (more qualified)
   processResults : loop through weak/strong objects and look for matches
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 3, 2018
-  1.1 : (CS) Changed from calling DB queries directly (when running on server
-        via the ServerSideService), to using the API (when running on a client
-        via the UniversalJobService). Sep 5, 2019
-
 """
 import sys
 import traceback

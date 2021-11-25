@@ -4,13 +4,6 @@ Classes:
   :class:`remoteRuntime.Runtime` : Supporting memory structure for job
     execution (I/O and status)
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct, 2017
-
 """
 import sys
 import traceback

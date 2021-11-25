@@ -24,12 +24,6 @@ Functions:
   checkFiles : worker function to issue a command and check results
   parserFunction : helper function to illustrate the difference with logging
 
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 22, 2018
-
 """
 import sys
 import traceback

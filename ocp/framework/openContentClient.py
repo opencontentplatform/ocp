@@ -9,16 +9,6 @@ Functions:
   * :func:`spinUpTheClient` : load client libraries and start the process
   * :func:`clientLoop` : monitor active client process
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Mar 6, 2019
-	  1.1 : (CS) Migrated contentGatheringClient and universalJobClient over to
-	        using the generic remoteClient for shared code paths.  Aug 26, 2019
-	  1.2 : (CS) Updated to use the newer naming convention, Aug 7, 2020
-
 """
 import sys
 import traceback

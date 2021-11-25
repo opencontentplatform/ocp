@@ -19,11 +19,6 @@ Functions:
   rotateConfigGroupFilesByName : rotate configGroup file via datetime method
   rotateConfigGroupFilesByNumber : rotate configGroup file via numerical method
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jun 20, 2018
-
 """
 import sys
 import traceback

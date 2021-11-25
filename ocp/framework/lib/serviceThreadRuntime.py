@@ -4,13 +4,6 @@ Classes:
   :class:`serviceThreadRuntime.Runtime` : provide input/output variables and
     track jobs during execution
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct 25, 2018
-
 """
 
 ## From openContentPlatform

@@ -20,16 +20,6 @@ Spin up additional client instances to increase throughput of job execution.
 Classes:
   * :class:`.UniversalJobClient` : class for this client
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Version info:
-	  1.0 : (CS) Created Dec, 2017
-	  1.1 : (CS) added remoteClient to allow shared code for job-enabled clients.
-	        Aug 27, 2019.
-	  1.2 : (CS) Migrated remoteClient to jobClient, to match service naming
-	        convention, Aug 7, 2020.
-
 """
 import env
 import coreClient

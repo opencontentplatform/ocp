@@ -6,13 +6,6 @@ Classes defined for the 'data' schema (indentation represents inheritance)::
 		Monitor - monitor
 			|  ProcessMonitor - process_monitor
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  0.1 : (CS) Created Mar 23, 2018
-
 """
 from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.orm import relationship, backref

@@ -8,13 +8,6 @@ Functions:
   * :func:`setupLogging` : setup requested log handlers
   * :func:`serviceLoop` : monitor service managers
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 17, 2017
-
 """
 import sys
 import traceback

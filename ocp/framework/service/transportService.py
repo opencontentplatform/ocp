@@ -10,14 +10,6 @@ Classes:
 The entry class for this module is :class:`.TransportService`, which does the
 setup required for API resources to be hosted through the selected technologies.
 
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Mar 25, 2018
-
 """
 import os
 import sys

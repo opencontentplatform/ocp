@@ -3,14 +3,6 @@
 Functions:
   startJob : standard job entry point
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jul 23, 2018
-  1.1 : (CS) Changed from calling DB queries directly (when running on server
-        via the ServerSideService), to using the API (when running on a client
-        via the UniversalJobService). Sep 3, 2019
-
 """
 import sys
 import traceback

@@ -13,13 +13,6 @@ Classes:
     functionality for this service
   * :class:`.ResultProcessingListener` : Twisted protocol used by the factory
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors: Madhusudan Sridharan (MS)
-	Version info:
-	  1.0 : (CS) Created Aug 24, 2017
-
 """
 import os, sys
 import json

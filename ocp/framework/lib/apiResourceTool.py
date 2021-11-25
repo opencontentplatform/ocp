@@ -11,15 +11,6 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/tool/link/{object_id}
 	/<root>/tool/mergeObject
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors: Madhusudan Sridharan (MS)
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Replaced apiUtils with Falcon middleware, Sep 2, 2019
-	  1.2 : (CS) Extending internal mergeObject through API, Sep 5, 2019
-
 """
 
 import sys

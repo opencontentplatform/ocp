@@ -24,15 +24,6 @@ This module defines the Application Programming Interface (API) methods for the
 	/<root>/config/cred
 	/<root>/config/search/{class}
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Replaced apiUtils with Falcon middleware, Sep 2, 2019
-	  1.2 : (CS) Added /config/search resources, Oct 15, 2019
-
 """
 
 import sys

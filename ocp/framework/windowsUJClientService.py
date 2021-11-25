@@ -7,11 +7,6 @@ Usage::
   $ python windowsUJClientService.py stop
   $ python windowsUJClientService.py remove
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Instrumented through Windows Services wrapper, Feb 25, 2019
-
 """
 import sys
 import traceback

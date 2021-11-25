@@ -1,14 +1,4 @@
-"""Shared functions for the API Resource modules.
-
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Migrated non-url functions here, after spliting the single API
-	        Application module into separate modules per API resource.
-
-"""
+"""Shared functions for the API Resource modules."""
 
 import sys
 import traceback

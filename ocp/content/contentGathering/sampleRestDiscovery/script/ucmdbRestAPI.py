@@ -1,11 +1,4 @@
-"""Class for interacting with the MicroFocus UCMDB REST API.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Apr 10, 2021
-
-"""
+"""Class for interacting with the MicroFocus UCMDB REST API."""
 import sys
 import traceback
 import json

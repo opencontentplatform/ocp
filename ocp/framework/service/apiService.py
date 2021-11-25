@@ -22,13 +22,6 @@ Classes:
 
   * :class:`.ApiService` : class for this service
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Sep 14, 2017
-
 """
 import os
 import sys

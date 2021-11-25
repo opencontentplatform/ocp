@@ -7,11 +7,6 @@ Functions:
   parseCsvRecord : Parse and validate a row in the CSV
   createCIsForThisRecord: Create and relate objects
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 2, 2018
-
 """
 import sys
 import traceback

@@ -2,11 +2,6 @@
 
 Troubleshooting aid for troubled endpoint testing.
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Sep 1, 2020
-
 """
 import sys
 import traceback

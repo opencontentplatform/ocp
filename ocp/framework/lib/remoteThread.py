@@ -4,13 +4,6 @@ Classes:
   :class:`remoteThread.RemoteThread` : Wraps job invocation with a common
     framework
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct, 2017
-
 """
 import sys
 import traceback

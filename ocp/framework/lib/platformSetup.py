@@ -3,13 +3,6 @@
 This sets up the key files and the database schemas/tables and inserts the
 keys into the database, which is required before running OCP the first time.
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Jul 25, 2017
-
 """
 import os
 import sys

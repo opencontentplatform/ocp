@@ -3,11 +3,6 @@
 Classes:
   WorkerThread : Wraps job invocation with a common framework
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July, 2019
-
 """
 import sys
 import traceback

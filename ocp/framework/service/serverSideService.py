@@ -13,13 +13,6 @@ Classes:
   * :class:`.ServerSideService` : entry class for this service
   * :class:`.ServerSideFactory` : Twisted factory for this service
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Dec 9, 2017
-
 """
 import os
 import sys

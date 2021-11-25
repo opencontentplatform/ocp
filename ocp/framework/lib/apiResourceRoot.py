@@ -24,17 +24,6 @@ API resources::
 	/<root>/task
 	/<root>/archive
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Version info:
-	  1.0 : (CS) Created Sep 15, 2017
-	  1.1 : (CS) Updated for endpoint access and client authentication, Oct 2017
-	  1.2 : (CS) Added query, job, and archive methods
-	  1.3 : (CS) Split the global module into separate modules per API resource
-	  1.4 : (CS) Moved SqlAlchemy DB session into falcon middleware, Aug 30, 2019
-	  1.5 : (CS) Replaced apiUtils with Falcon middleware, Sep 2, 2019
-
 """
 
 import os

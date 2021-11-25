@@ -7,13 +7,6 @@ Usage::
   $ python windowsPlatformService.py stop
   $ python windowsPlatformService.py remove
 
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Aug 17, 2017
-  1.1 : (CS) Instrumented Windows Services capability via pywin32, Dec 4, 2018
-
 """
 import sys
 import traceback

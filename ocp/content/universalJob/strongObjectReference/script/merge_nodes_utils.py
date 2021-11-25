@@ -4,7 +4,6 @@ Functions:
   mergeObjects : issue an API call to merge the weak/strong objects
   getQueryResults : run a query to get all matching objects
 
-Author: Chris Satterthwaite (CS)
 """
 
 import json

@@ -7,11 +7,6 @@ Functions:
   getOsType: determine what OS variant we landed on
   createObjects: create objects and links
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jul 30, 2018
-
 """
 import sys
 import traceback

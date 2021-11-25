@@ -9,11 +9,6 @@ Functions:
   detectWMI : attempt to connect to the endpoint via WMI
   createObjects: Create objects and links
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 3, 2018
-
 """
 import sys
 import traceback

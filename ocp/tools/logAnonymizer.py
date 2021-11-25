@@ -58,11 +58,6 @@ Modifying these match block parameters:
 Usage:
 	python logAnonymizer.py <source_directory> <target_directory>
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 27, 2019
-
 """
 
 import sys, traceback

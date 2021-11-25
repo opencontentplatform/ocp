@@ -13,12 +13,6 @@ disks previously defined on the host for monitoring), then the new add of those
 3 processes with a PUT operation on the host, will overwrite the previous list
 and effectively delete all the previously defined disks.
 
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 12, 2019
-
 """
 import sys
 import traceback

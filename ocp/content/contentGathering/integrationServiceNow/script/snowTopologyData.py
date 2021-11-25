@@ -1,11 +1,4 @@
-"""Class for transforming objects/links into the ServiceNow JSON structure.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created July 17, 2019
-
-"""
+"""Class for transforming objects/links into the ServiceNow JSON structure."""
 import json
 
 class SnowTopologyData():

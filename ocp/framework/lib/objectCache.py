@@ -20,15 +20,6 @@ referenceCache structure::
 
 	{'c345f92f84554a82aecd1e98600ace31':'e1c291dd3dc84572b48a133306f369b7'}
 
-.. hidden::
-
-	Author: Madhusudan Sridharan (MS)
-	Contributors: Chris Satterthwaite (CS)
-	Version info:
-	  1.0 : (MS) Created Jan 18, 2018
-	  2.0 : (CS) Consolidated duplicated functions, May 9, 2018
-	  2.1 : (CS) Syntax changes and comments, Jun 1, 2018
-
 """
 import os, sys
 import traceback

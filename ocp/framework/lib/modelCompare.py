@@ -3,13 +3,6 @@
 This was setup specifically to find detailed differences between logical models,
 but can be used to compare any JSONs returned from an API query.
 
-.. hidden::
-
-    Author: Chris Satterthwaite (CS)
-    Contributors:
-    Version info:
-      1.0 : (CS) Created Aug 21, 2018
-
 """
 import json
 import traceback

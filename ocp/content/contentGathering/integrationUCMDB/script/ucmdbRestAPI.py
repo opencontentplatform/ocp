@@ -1,11 +1,4 @@
-"""Protocol type wrapper for the UCMDB REST API.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jan 10, 2019
-
-"""
+"""Protocol type wrapper for the UCMDB REST API."""
 import sys
 import traceback
 import requests

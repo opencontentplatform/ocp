@@ -4,11 +4,6 @@ Functions:
   startJob : standard job entry point, establish a client connection
   createObjects : create and connect the node and REST object
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Apr 10, 2021
-
 """
 import sys
 import traceback

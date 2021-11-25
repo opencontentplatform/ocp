@@ -2,11 +2,6 @@
 
 Troubleshooting aid for client testing.
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Sep 6, 2020
-
 """
 
 import sys

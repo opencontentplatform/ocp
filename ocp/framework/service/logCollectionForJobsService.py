@@ -7,13 +7,6 @@ Classes:
   * :class:`.LogCollectionForJobsService` : entry class for multiprocessing
   * :class:`.LogCollectionForJobs` : specific functionality for this service
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 4, 2020
-
 """
 import os
 import sys

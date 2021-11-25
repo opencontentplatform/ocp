@@ -3,13 +3,6 @@
 Classes:
   :class:`results.Results` : JSON structure used in ResultProcessing
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Oct 25, 2017
-
 """
 import sys
 import traceback

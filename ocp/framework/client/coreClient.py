@@ -10,17 +10,6 @@ Classes:
   * :class:`.coreClient.CustomLineReceiverProtocol` : overrides LineReceiver
       with a customdelimiter
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Created Aug 24, 2017
-	  1.1 : (CS) Refactored to use the same startup process controls as the service
-	        managers. Mar 6, 2019.
-	  1.2 : (CS) Split functionality out from sharedClient, to match service
-	        naming convention, Aug 7, 2020
-
 """
 import sys
 import traceback

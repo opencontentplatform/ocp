@@ -1,11 +1,4 @@
-"""Utility to insert a new API user.
-
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 24, 2018
-
-"""
+"""Utility to insert a new API user."""
 import os
 import sys
 import traceback

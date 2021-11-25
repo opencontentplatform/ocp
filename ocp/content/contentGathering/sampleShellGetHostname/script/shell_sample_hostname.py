@@ -43,13 +43,6 @@ Functions:
   doSomething : worker function to issue a command and check results
   parserFunction : helper function to illustrate the difference with logging
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  0.1 : (CS) Created Oct 9, 2017
-  1.0 : (CS) Retrofitted library calls and added lots of comments; intended to
-        enable folks planning to create new content.  Aug 1, 2018
-
 """
 import re
 import sys

@@ -3,11 +3,6 @@
 Functions:
   startJob : standard job entry point
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Mar 19, 2018
-
 """
 from contextlib import suppress
 ## From openContentPlatform

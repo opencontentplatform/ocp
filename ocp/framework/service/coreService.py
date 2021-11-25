@@ -22,13 +22,6 @@ LogCollectionService (a local service that runs on server) MRO:
   localService.LocalService -> coreService.CoreService
 ===========================================================
 
-.. hidden::
-
-	Author: Chris Satterthwaite (CS)
-	Contributors:
-	Version info:
-	  1.0 : (CS) Split functionality out from sharedService on Aug 4, 2020
-
 """
 
 import sys

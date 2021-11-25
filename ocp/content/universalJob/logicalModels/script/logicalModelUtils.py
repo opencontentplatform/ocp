@@ -4,11 +4,6 @@ Functions:
   getQueryResults : run a query to get all matching objects
   getMetaDataResults : run a query to get all matching metadata objects
 
-Author: Chris Satterthwaite (CS)
-Contributors:
-Version info:
-  1.0 : (CS) Created Jul 23, 2018
-
 """
 import sys
 import traceback
