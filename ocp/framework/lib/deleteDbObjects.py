@@ -176,7 +176,7 @@ class DeleteDbObject:
 				self.dbSession.delete(thisEntry)
 				self.dbSession.commit()
 				val = weakObjects.get("objects",-1)
-				if val is not -1:
+				if val != -1:
 					weakObjects.get("objects")
 					return weakObjects.get("objects")
 
