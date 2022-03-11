@@ -3,26 +3,26 @@
 This module defines the Application Programming Interface (API) methods for the
 /<root>/config endpoint. Available resources follow::
 
-	/<root>/config/Realm
-	/<root>/config/Realm/{realmName}
-	/<root>/config/RealmScope
-	/<root>/config/NetworkScope
-	/<root>/config/NetworkScope/{realm}
-	/<root>/config/NetworkScope/{realm}/{object_id}
-	/<root>/config/ConfigGroups
-	/<root>/config/ConfigGroups/{realm}
-	/<root>/config/ConfigGroups/{realm}/{configGroupName}
-	/<root>/config/ConfigDefault
-	/<root>/config/ConfigDefault/{realm}
-	/<root>/config/OsParameters
-	/<root>/config/OsParameters/{realm}
-	/<root>/config/ApiConsumerAccess
-	/<root>/config/ApiConsumerAccess/{user}
-	/<root>/config/client
-	/<root>/config/client/{endpoint}
-	/<root>/config/runtime
-	/<root>/config/cred
-	/<root>/config/search/{class}
+	<root>/config/Realm
+	<root>/config/Realm/{realmName}
+	<root>/config/RealmScope
+	<root>/config/NetworkScope
+	<root>/config/NetworkScope/{realm}
+	<root>/config/NetworkScope/{realm}/{object_id}
+	<root>/config/ConfigGroups
+	<root>/config/ConfigGroups/{realm}
+	<root>/config/ConfigGroups/{realm}/{configGroupName}
+	<root>/config/ConfigDefault
+	<root>/config/ConfigDefault/{realm}
+	<root>/config/OsParameters
+	<root>/config/OsParameters/{realm}
+	<root>/config/ApiConsumerAccess
+	<root>/config/ApiConsumerAccess/{user}
+	<root>/config/client
+	<root>/config/client/{endpoint}
+	<root>/config/runtime
+	<root>/config/cred
+	<root>/config/search/{class}
 
 """
 
@@ -1485,27 +1485,29 @@ def getSearchResults(className, content:hugJson, request, response):
 	"""Query specified class in platform schema, using the provided filter.
 
 	Sample content:
-	============================================================
-	"content": {
-		"count": false,
-		"filter": [{
-			"operator": "and",
-			"expression": [{
-					"condition": {
-						"attribute": "name",
-						"operator": "==",
-						"value": "TestCluster.com"
+	
+	::
+
+		"content": {
+			"count": false,
+			"filter": [{
+				"operator": "and",
+				"expression": [{
+						"condition": {
+							"attribute": "name",
+							"operator": "==",
+							"value": "TestCluster.com"
+						}
+					},{
+						"condition": {
+							"attribute": "group_type",
+							"operator": "==",
+							"value": "test harness"
+						}
 					}
-				},{
-					"condition": {
-						"attribute": "group_type",
-						"operator": "==",
-						"value": "test harness"
-					}
-				}
-			]
-		}]}
-	============================================================
+				]
+			}]}
+
 	"""
 	try:
 		if hasRequiredData(request, response, content, ['filter']):

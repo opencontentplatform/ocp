@@ -28,20 +28,22 @@ from utilities import runPortTest, requestsRetrySession
 class RestAPI:
 	"""Base class for common code paths and encapsulation.
 	
-	Arguments:
-	  runtime (dict)   : object used for providing input into jobs and tracking
-	                     the job thread through the life of its runtime
-	  httpType (str)   : http or https
-	  endpoint (str)   : destination target; either an IP or FQDN
-	  ports (str|list) : single port or a list of multiple
-	  proxyServer (str) : name of a proxy server if using one
-	  reference (int)  : optional - ID of the credential to use; if provided,
-	                     only the provided credential will be attempted. Used
-	                     for recurring discovery, when previously established
-	  descriptor (str) : optional - regEx; if provided, only protocol entries
-	                     with matching description fields, will be attempted
-	  requestsVerify (str) : 'verify' parameter for requests library
-	  requestsDebug (str)  : 'debug' parameter for requests library
+	Arguments::
+	
+		runtime (dict)   : object used for providing input into jobs and tracking
+						   the job thread through the life of its runtime
+		httpType (str)   : http or https
+		endpoint (str)   : destination target; either an IP or FQDN
+		ports (str|list) : single port or a list of multiple
+		proxyServer (str) : name of a proxy server if using one
+		reference (int)  : optional - ID of the credential to use; if provided,
+						   only the provided credential will be attempted. Used
+						   for recurring discovery, when previously established
+		descriptor (str) : optional - regEx; if provided, only protocol entries
+						   with matching description fields, will be attempted
+		requestsVerify (str) : 'verify' parameter for requests library
+		requestsDebug (str)  : 'debug' parameter for requests library
+
 	"""
 	def __init__(self, runtime, httpType, endpoint, ports, proxyServer=None, descriptor=None, requestsVerify=False, requestsDebug=False):
 		self.runtime = runtime

@@ -71,9 +71,12 @@ def getNewEvent(shutdownEvents):
 
 def registerSignals():
 	"""Register any signals that should be caught and handled.
+	
 	This is needed for Linux daemon shutdown and can be leveraged on Windows.
-	Note, that only the following signals are valid on Windows:
-	  SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, or SIGBREAK
+	Note, that only the following signals are valid on Windows::
+	
+		SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, or SIGBREAK
+	
 	ValueError is raised for all other signals on Windows.
 	"""
 	validSignals = []
