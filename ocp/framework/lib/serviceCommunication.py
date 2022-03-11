@@ -79,12 +79,14 @@ class SQLAlchemySessionMiddleware:
 
 class AccessAndLoggerMiddleware:
 	"""Settup logging, validate user, and log each API request.
-
+	
 	This extends the following variables onto the request.context, for functions
-	to use:
-	  request.context['logger']
-	  request.context['apiUser']
-	  request.context['payload'] = {'errors': []}
+	to use::
+	
+		request.context['logger']
+		request.context['apiUser']
+		request.context['payload'] = {'errors': []}
+	
 	"""
 	def __init__(self, logger):
 		### Get a handle on the global logger

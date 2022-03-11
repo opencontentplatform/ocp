@@ -333,11 +333,13 @@ def parseBinaryOperator(logger, operator, attribute, value=None):
 
 def classLinkDict(dicts, clsObject):
 	"""Recursion to store all sub-children in a value list for the parent link.
-
-	Arguments:
+	
+	Arguments::
+	
 	  dicts : Dictionary containing the class names as keys, and the value as
 	          the object
 	  clsObject : Base class to start listing
+	
 	"""
 	## this is to include strongLink and weakLink baseLink classes.
 	dicts[clsObject.__name__] = clsObject
@@ -352,10 +354,12 @@ def classLinkDict(dicts, clsObject):
 def classDict(dicts, clsObject):
 	"""Recursion to store sub-children in a value list for the parent object.
 
-	Arguments:
+	Arguments::
+	
 	  dicts : Dictionary containing the class names as keys, and the value as
 	          the object and its children
 	  clsObject : Base class to start listing.
+
 	"""
 	for i in clsObject.__subclasses__():
 		tempdict = dict()
@@ -372,10 +376,12 @@ def classDict(dicts, clsObject):
 def recursionDict(dicts, theList):
 	"""Function to interate through the dictionary and build out the children.
 
-	Arguments:
+	Arguments::
+	
 	  dicts : Dictionary containing the class names as keys, and the value as
 	          the object and its children
 	  theList : list of children of the parent class
+	
 	"""
 	for i in theList:
 		result = recursionDict(dicts, dicts[i]['children'])
@@ -395,8 +401,10 @@ def finalDictBulid(dicts):
 def uuidCheck(identifier):
 	"""This is used to check if the identifier is a 32 bit hex.
 
-	Argumet:
+	Arguments::
+	
 	  identifier : String containing the identifier
+	
 	"""
 	objIdChk  = True
 	try:
@@ -693,10 +701,11 @@ def setupLogFile(serviceName, env, logSettingsFileName, pid=None, directoryName=
 
 def masterLog(env, fileName, pid=None, directoryName=None, setStdout=True):
 	"""Catch the Twisted generated logs and abnormals.
+	
 	Arguments:
-	  env               : Module containing the env paths
-	  fileName (str) 	: Log file name.
-
+		env            : Module containing the env paths
+		fileName (str) : Log file name.
+	
 	"""
 	if directoryName is not None:
 		logPath = os.path.join(env.logPath,directoryName)

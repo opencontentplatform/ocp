@@ -2,8 +2,9 @@
 
 In the future this may also send the deleted objects to a kafka topic.
 
-Classes:
-  * DeleteDbObject : delete objects from the database
+Classes::
+
+	DeleteDbObject : delete objects from the database
 
 """
 
@@ -190,8 +191,10 @@ class DeleteDbObject:
 
 	def recreateMappingSubtype(self, thisEntry):
 		"""Creates a JSON copy of an object and its children using recursion.
+		
 		Arguments:
-		  thisEntry (BaseObject) : DB object instance
+			thisEntry (BaseObject) : DB object instance
+		
 		"""
 		weakLinkObjects = set()
 		StrongLinkObjects = set()
@@ -256,7 +259,8 @@ class DeleteDbObject:
 		"""Storing BaseObject connections linked via reference_id in JSON.
 
 		Arguments:
-		  thisEntry (BaseObject)     : DB object instance
+			thisEntry (BaseObject)     : DB object instance
+		
 		"""
 		weakObjects = {}
 		entry = set(getattr(thisEntry, 'base_object_children'))

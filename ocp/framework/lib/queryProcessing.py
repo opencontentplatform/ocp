@@ -1,25 +1,23 @@
 """QueryProcessing.
 
 Module for Querying the database using JSON format and return JSON result.
-
-.. hidden::
-
-	  This module needs redone; current challenges:
-	  
-	  a) duplicated code blocks, should reuse code via helper functions
-	  
-	  b) chunking: when requested (especially with Nested formats) we need to
-	  build comprehensive result sets for the desired size *during* the query
-	  processing. If we attempt to post-process the query result and later split
-	  it up, we're doubling performance overhead while attempting to split on 
-	  less context than we had during the processing step where objects (eg. the
-	  subpart containers that are treated as linchpins in their own dataset) are
-	  intentionally and conditionally dropped. And those are the boundaries 
-	  across which a bulk would split, and/or need added again after said split.
-	  
+  
 """
+
+# This module needs refinement; current challenges:
+# a) duplicated code blocks, should reuse code via helper functions
+# b) chunking: when requested (especially with Nested formats) we need to
+# build comprehensive result sets for the desired size *during* the query
+# processing. If we attempt to post-process the query result and later split
+# it up, we're doubling performance overhead while attempting to split on 
+# less context than we had during the processing step where objects (eg. the
+# sub-part containers that are treated as linchpins in their own dataset) are
+# intentionally and conditionally dropped. And those are the boundaries 
+# across which a bulk would split, and/or need added again after said split.
+
 ## NOTE: maximum default = 2147483647, if the size grows more than 2147483647,
 ## enter expected larger value.
+
 import os, sys, traceback, json
 from collections import OrderedDict
 from sqlalchemy import inspect, and_, join
@@ -1593,11 +1591,12 @@ class QueryProcessing:
 
 	def returnNestedResults(self, dataHandle, dictKey, nestedResults):
 		"""This function is used to transform the mapSet into nested result format.
-
+		
 		Arguments:
-		  dataHandle (dict)   : Dictionary of the mapSet before processing.
-		  dictKey (str)       : String containing the key for traversalstructure.
-		 nestedResults (list) : List handle for the dictKey.
+		  dataHandle (dict)    : Dictionary of the mapSet before processing.
+		  dictKey (str)        : String containing the key for traversalstructure.
+		  nestedResults (list) : List handle for the dictKey.
+		
 		"""
 		try:
 			for object_id in dataHandle:
@@ -1659,9 +1658,10 @@ class QueryProcessing:
 		"""This function is used to transform mapSet into simple flat.
 
 		Arguments:
-		  dataHandle (dict)   : Dictionary of the mapSet before processing.
-		  dictKey (str)       : String containing the key for traversalstructure.
-		 nestedResults (list) : List handle for the dictKey.
+		  dataHandle (dict)    : Dictionary of the mapSet before processing.
+		  dictKey (str)        : String containing the key for traversalstructure.
+		  nestedResults (list) : List handle for the dictKey.
+		
 		"""
 		try:
 			for object_id in dataHandle:

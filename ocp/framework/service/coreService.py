@@ -6,21 +6,21 @@ execution environment, database initialization, kafka communication, etc). The
 the service uses clients (i.e. micro-service and horizontally scalable) or is
 contained within the app server (i.e. local).
 
-Comments on Method Resolution Order (MRO) for the different service types:
-===========================================================
-Services with clients will inherit networkService.ServiceFactory, which then
-inherits both this class and the twisted.internet.protocol.ServerFactory.
 
-Services without clients simply inherit this class.
-
-To illustrate the point:
-ContentGatheringService (a horizontally scalable/micro-service) MRO:
-  jobService.JobServiceFactory -> networkService.ServiceFactory ->
-  coreService.CoreService -> twisted.internet.protocol.ServerFactory
-
-LogCollectionService (a local service that runs on server) MRO:
-  localService.LocalService -> coreService.CoreService
-===========================================================
+Comments on Method Resolution Order (MRO) for the different service types::
+	
+	Services with clients will inherit networkService.ServiceFactory, which then
+	inherits both this class and the twisted.internet.protocol.ServerFactory.
+	
+	Services without clients simply inherit this class.
+	
+	To illustrate the point:
+	ContentGatheringService (a horizontally scalable/micro-service) MRO:
+		jobService.JobServiceFactory -> networkService.ServiceFactory ->
+		coreService.CoreService -> twisted.internet.protocol.ServerFactory
+	
+	LogCollectionService (a local service that runs on server) MRO:
+		localService.LocalService -> coreService.CoreService
 
 """
 
